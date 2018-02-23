@@ -2,7 +2,7 @@
 
 set -e
 
-if [[ ! -z "$APP_PORT" ]]
+if [ -n "$APP_PORT" ]
 then
 		echo "Configuring Schema Registry with APP_PORT: $APP_PORT"
 		DOCKER_MIRROR_HOST=$(/sbin/ip route|awk '/default/ { print $3 }')
