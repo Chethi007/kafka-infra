@@ -12,3 +12,4 @@ cert-file
 cert-signed
 ca-cert.srl
 output/
+db/
