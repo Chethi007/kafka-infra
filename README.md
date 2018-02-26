@@ -72,32 +72,34 @@ curl -s localhost:8083/connectors | jq
 ```
 ```json
 [
-  "cassandra-sink-connector"
+  "cassandra-sink-connector-simple"
 ]
 ```
 
-## Show configuration of `cassandra-sink-connector`
+## Show configuration of `cassandra-sink-connector-simple`
 ```bash
-curl -s localhost:8083/connectors/cassandra-sink-connector | jq
+curl -s localhost:8083/connectors/cassandra-sink-connector-simple | jq
 ```
 ```json
 {
-  "name": "cassandra-sink-connector",
+  "name": "cassandra-sink-connector-simple",
   "config": {
+    "name": "cassandra-sink-connector-simple",
     "connector.class": "com.datamountaineer.streamreactor.connect.cassandra.sink.CassandraSinkConnector",
-    "connect.cassandra.consistency.level": "ONE",
-    "connect.cassandra.key.space": "targetkeyspace",
     "tasks.max": "10",
-    "topics": "test",
-    "connect.cassandra.kcql": "INSERT INTO target SELECT * FROM test",
-    "connect.cassandra.password": "cassandra",
-    "connect.progress.enabled": "true",
-    "connect.cassandra.username": "cassandra",
+    "topics": "test-no-schema",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
     "connect.cassandra.contact.points": "cassandra",
     "connect.cassandra.port": "9042",
-    "name": "cassandra-sink-connector",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "key.converter": "org.apache.kafka.connect.storage.StringConverter"
+    "connect.cassandra.key.space": "targetkeyspace",
+    "connect.cassandra.username": "cassandra",
+    "connect.cassandra.password": "cassandra",
+    "connect.cassandra.kcql": "INSERT INTO SimpleTable SELECT * FROM test-simple",
+    "connect.cassandra.consistency.level": "ONE",
+    "connect.progress.enabled": "true"
   },
   "tasks": [
     {
@@ -143,3 +145,39 @@ curl -s localhost:8083/connectors/cassandra-sink-connector | jq
   ],
   "type": "sink"
 }
+
+## Test the connector
+
+Check table is empty:
+```bash
+docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
+```
+```
+ id
+----
+
+(0 rows)
+```
+
+Produce a couple of messages:
+```bash
+docker exec -it kafka kafka-console-producer --broker-list kafka:9092 --topic test-simple
+```
+Type in the following lines and then CTRL+C to stop producer:
+```
+{"id": "foo"}
+{"id": "bar"}
+```
+
+Check that the messages are in the table:
+```bash
+docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
+```
+```
+ id
+----
+ bar
+ foo
+
+(2 rows)
+```
