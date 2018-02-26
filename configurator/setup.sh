@@ -23,6 +23,7 @@ done
 echo ""
 echo "Setting up topic..."
 kafka-topics --zookeeper zookeeper:2181 --create --topic test-simple --replication-factor 1 --partitions 1
+kafka-topics --zookeeper zookeeper:2181 --create --topic test-avro --replication-factor 1 --partitions 1
 
 result=
 while [[ ${result} != 0 ]]; do
@@ -36,6 +37,9 @@ echo ""
 echo "Setting up connectors..."
 curl -XPUT -H "Content-Type: application/json" -d @/usr/local/share/cassandra-sink-connector-simple.json \
     http://connect-1:8083/connectors/cassandra-sink-connector-simple/config
+echo ""
+curl -XPUT -H "Content-Type: application/json" -d @/usr/local/share/cassandra-sink-connector-avro.json \
+    http://connect-1:8083/connectors/cassandra-sink-connector-avro/config
 
 echo ""
 echo "Done"

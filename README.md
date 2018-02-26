@@ -32,15 +32,12 @@ docker-compose up -d
 
 # Test Kafka Connect API
 
-For connect-1 container use port 8083 and for connect-2 container use
-port 8084.
-
 You should be able to access the REST API on both containers and get the
 same response.
 
 ## List connector plugins
 ```bash
-curl -s localhost:8083/connector-plugins | jq
+docker exec -it connect-1 curl -s localhost:8083/connector-plugins | jq
 ```
 ```json [
   {
@@ -68,17 +65,18 @@ curl -s localhost:8083/connector-plugins | jq
 
 ## List active connectors
 ```bash
-curl -s localhost:8083/connectors | jq
+docker exec -it connect-1 curl -s localhost:8083/connectors | jq
 ```
 ```json
 [
-  "cassandra-sink-connector-simple"
+  "cassandra-sink-connector-simple",
+  "cassandra-sink-connector-avro"
 ]
 ```
 
 ## Show configuration of `cassandra-sink-connector-simple`
 ```bash
-curl -s localhost:8083/connectors/cassandra-sink-connector-simple | jq
+docker exec -it connect-1 curl -s localhost:8083/connectors/cassandra-sink-connector-simple | jq
 ```
 ```json
 {
@@ -146,30 +144,22 @@ curl -s localhost:8083/connectors/cassandra-sink-connector-simple | jq
   "type": "sink"
 }
 
-## Test the connector
+## Test the connectors
 
-Check table is empty:
-```bash
-docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
-```
-```
- id
-----
-
-(0 rows)
-```
+### cassandra-sink-connector-simple
 
 Produce a couple of messages:
 ```bash
 docker exec -it kafka kafka-console-producer --broker-list kafka:9092 --topic test-simple
 ```
-Type in the following lines and then CTRL+C to stop producer:
+
+Type in the following lines and then CTRL+C to stop the producer:
 ```
 {"id": "foo"}
 {"id": "bar"}
 ```
 
-Check that the messages are in the table:
+Check that the new messages are in the table:
 ```bash
 docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
 ```
@@ -180,4 +170,51 @@ docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from Test
  foo
 
 (2 rows)
+```
+
+### cassandra-sink-connector-avro
+
+For some reason, the console producer for AVRO is not available in kafka
+container. You have to execute this on the `schema-registry` container.
+
+```bash
+docker exec -it schema-registry kafka-avro-console-producer --broker-list kafka:9092 --property value.schema='{"type": "record", "name": "simple_avro_record", "fields": [{"name": "id", "type": "string"}]}' --topic test-avro
+```
+
+You'll see some INFO logs like this:
+```
+[2018-02-26 17:59:40,275] INFO ProducerConfig values:
+        acks = 1
+        batch.size = 16384
+        bootstrap.servers = [kafka:9092]
+        ...
+        ...
+        ...
+        ...
+        transactional.id = null
+        value.serializer = class org.apache.kafka.common.serialization.ByteArraySerializer
+ (org.apache.kafka.clients.producer.ProducerConfig)
+[2018-02-26 17:59:40,362] INFO Kafka version : 1.0.0-cp1 (org.apache.kafka.common.utils.AppInfoParser)
+[2018-02-26 17:59:40,362] INFO Kafka commitId : ec61c5e93da662df (org.apache.kafka.common.utils.AppInfoParser)
+```
+
+Type in the following lines and then CTRL+C to stop the producer:
+```
+{"id": "baz"}
+{"id": "dob"}
+```
+
+Check that the new messages are in the table:
+```bash
+docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
+```
+```
+ id
+----
+ foo
+ bar
+ baz
+ dob
+
+(4 rows)
 ```
