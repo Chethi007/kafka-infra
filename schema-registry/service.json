@@ -358,9 +358,7 @@
             "Image": {
               "Fn::Sub": "landoop/schema-registry-ui"
             },
-            "Cpu": {
-              "Ref": "Cpu"
-            },
+            "Cpu": "100",
             "PortMappings": [
               {
                 "ContainerPort": 8000,
@@ -375,9 +373,7 @@
                 }
               }
             ],
-            "MemoryReservation": {
-              "Ref": "Memory"
-            },
+            "MemoryReservation": "512",
             "Essential": "true",
             "LogConfiguration": {
               "LogDriver": "awslogs",
