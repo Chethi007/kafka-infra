@@ -13,6 +13,10 @@
       "Type": "Number",
       "Description": "The priority to register with the Load Balancer"
     },
+    "UIPriority": {
+      "Type": "Number",
+      "Description": "The priority to register with the Load Balancer for Schema Registry UI"
+    },
     "AppName": {
       "Type": "String",
       "Description": "Name of app. Should be the same as docker repository name.",
@@ -43,6 +47,11 @@
       "Default": "100"
     },
     "AppDesiredCount": {
+      "Type": "Number",
+      "Description": "Number of instances of the service to run",
+      "Default": "1"
+    },
+    "UIDesiredCount": {
       "Type": "Number",
       "Description": "Number of instances of the service to run",
       "Default": "1"
@@ -150,6 +159,74 @@
         ]
       }
     },
+    "TargetGroupUI": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "HealthCheckIntervalSeconds": 10,
+        "HealthCheckProtocol": "HTTP",
+        "HealthCheckTimeoutSeconds": 5,
+        "HealthCheckPath": {
+          "Fn::Sub": "/"
+        },
+        "HealthyThresholdCount": 2,
+        "Matcher": {
+          "HttpCode": "200-299"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [
+          {
+            "Key": "deregistration_delay.timeout_seconds",
+            "Value": "300"
+          }
+        ],
+        "UnhealthyThresholdCount": 3,
+        "VpcId": {
+          "Fn::ImportValue": {
+            "Fn::Sub": "${ClusterStackName}-VpcId"
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "ECS Target Group - ${AWS::StackName} - UI"
+            }
+          }
+        ]
+      }
+    },
+    "ListenerRuleUI": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Properties": {
+        "ListenerArn": {
+          "Fn::ImportValue": {
+            "Fn::Sub": "${ClusterStackName}-Listener"
+          }
+        },
+        "Priority": {
+          "Ref": "UIPriority"
+        },
+        "Conditions": [
+          {
+            "Field": "host-header",
+            "Values": [
+              {
+                "Ref": "DNSRecordUI"
+              }
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "TargetGroupUI"
+            },
+            "Type": "forward"
+          }
+        ]
+      }
+    },
     "EcsTaskRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -250,6 +327,110 @@
             },
             "ContainerName": {
               "Ref": "AppName"
+            }
+          }
+        ],
+        "Cluster": {
+          "Fn::ImportValue": {
+            "Fn::Sub": "${ClusterStackName}-ClusterName"
+          }
+        },
+        "PlacementStrategies": [
+          {
+            "Field": "attribute:ecs.availability-zone",
+            "Type": "spread"
+          },
+          {
+            "Field": "instanceId",
+            "Type": "spread"
+          }
+        ]
+      }
+    },
+    "TaskDefinitionUI": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Name": {
+              "Fn::Sub": "${AppName}-ui"
+            },
+            "Image": {
+              "Fn::Sub": "landoop/schema-registry-ui"
+            },
+            "Cpu": {
+              "Ref": "Cpu"
+            },
+            "PortMappings": [
+              {
+                "ContainerPort": 8000,
+                "HostPort": 0
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "SCHEMAREGISTRY_URL",
+                "Value": {
+                  "Fn::Sub": "https://${DNSRecordUI}"
+                }
+              }
+            ],
+            "MemoryReservation": {
+              "Ref": "Memory"
+            },
+            "Essential": "true",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "ecs"
+              }
+            }
+          }
+        ],
+        "Volumes": [],
+        "Family": {
+          "Ref": "AWS::StackName"
+        },
+        "TaskRoleArn": {
+          "Ref": "EcsTaskRole"
+        }
+      }
+    },
+    "ServiceUI": {
+      "Type": "AWS::ECS::Service",
+      "DependsOn": [
+        "ListenerRuleUI",
+        "LogGroup"
+      ],
+      "Properties": {
+        "ServiceName": {
+          "Fn::Sub": "${AppName}-UI"
+        },
+        "Role": {
+          "Fn::ImportValue": {
+            "Fn::Sub": "${ClusterStackName}-EcsServiceRole"
+          }
+        },
+        "TaskDefinition": {
+          "Ref": "TaskDefinitionUI"
+        },
+        "DesiredCount": {
+          "Ref": "UIDesiredCount"
+        },
+        "LoadBalancers": [
+          {
+            "TargetGroupArn": {
+              "Ref": "TargetGroupUI"
+            },
+            "ContainerPort": 8000,
+            "ContainerName": {
+              "Fn::Sub": "${AppName}-ui"
             }
           }
         ],
@@ -559,6 +740,48 @@
         },
         "Type": "A"
       }
+    },
+    "DNSRecordUI": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "AliasTarget": {
+          "HostedZoneId": {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${ClusterStackName}-LoadBalancerCanonicalHostedZoneID"
+            }
+          },
+          "DNSName": {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${ClusterStackName}-LoadBalancerDNSName"
+            }
+          }
+        },
+        "HostedZoneName": {
+          "Fn::ImportValue": {
+            "Fn::Sub": "${HostedZoneStackName}-ZoneName"
+          }
+        },
+        "SetIdentifier": {
+          "Ref": "AWS::StackName"
+        },
+        "Weight": 50,
+        "Name": {
+          "Fn::Sub": [
+            "${AppName}-ui.${HostedZoneName}",
+            {
+              "AppName": {
+                "Ref": "AppName"
+              },
+              "HostedZoneName": {
+                "Fn::ImportValue": {
+                  "Fn::Sub": "${HostedZoneStackName}-ZoneName"
+                }
+              }
+            }
+          ]
+        },
+        "Type": "A"
+      }
     }
   },
   "Outputs": {
@@ -589,13 +812,24 @@
       }
     },
     "ServiceDNS": {
-      "Description": "The dns name of the app load balancer for the service",
+      "Description": "The dns name of the service",
       "Value": {
         "Ref": "DNSRecord"
       },
       "Export": {
         "Name": {
           "Fn::Sub": "${AWS::StackName}-DNSName"
+        }
+      }
+    },
+    "UIDNS": {
+      "Description": "The dns name of the UI for the service",
+      "Value": {
+        "Ref": "DNSRecordUI"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-DNSNameUI"
         }
       }
     },
