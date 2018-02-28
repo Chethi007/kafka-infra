@@ -8,4 +8,4 @@ COPY config/certs /root/certs
 
 RUN setup-plugins.sh
 
-ENTRYPOINT ["/usr/local/bin/bootstrap", "/usr/local/bin/s3-cp", "/etc/confluent/docker/run"]
+ENTRYPOINT ["/usr/local/bin/bootstrap", "/usr/local/bin/s3-cp.sh", "/etc/confluent/docker/run"]
