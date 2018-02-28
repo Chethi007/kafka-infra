@@ -79,6 +79,10 @@
     "HostedZoneStackName": {
       "Type": "String",
       "Description": "The Hosted Zone stack name to create the service's record set in"
+    },
+    "TrustedCertsBucket": {
+      "Type": "String",
+      "Description": "The S3 bucket where the trusted certs are available"
     }
   },
   "Resources": {
@@ -166,7 +170,22 @@
             }
           ]
         },
-        "Path": "/"
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "S3-Access",
+            "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Action": "s3:GetObject",
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:s3:::${TrustedCertsBucket}/*"
+                    }
+                }]
+            }
+          }
+        ]
       }
     },
     "TaskDefinition": {

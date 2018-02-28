@@ -7,6 +7,10 @@ dest=/usr/local/share/kafka/plugins
 
 # Create destination folder in case its missing
 mkdir -p ${dest}
+# Create destination folder for certs
+if [ -n "$S3_CP_LOCAL_PATH" ]; then
+	mkdir -p ${S3_CP_LOCAL_PATH}
+fi
 
 # Download the connectors
 echo "Downloading Kafka Connect Plugin ${src}..."
