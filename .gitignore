@@ -5,7 +5,8 @@
 *.zip
 *.tar.gz
 *.jks
-certs/
+*.keystore
+*.truststore
 ca-cert
 ca-key
 cert-file

@@ -1,10 +1,11 @@
-FROM confluentinc/cp-kafka
+FROM confluentinc/cp-kafka:4.0.0-3
 
 RUN pip install --upgrade pip && pip install cqlsh
 
-ADD setup.sh /usr/local/bin/
-ADD db-schema.cql /usr/local/share/
-ADD cassandra-sink-connector-simple.json /usr/local/share/
-ADD cassandra-sink-connector-avro.json /usr/local/share/
+COPY setup.sh /usr/local/bin/
+COPY db-schema.cql /usr/local/share/
+COPY cassandra-sink-connector-simple.json /usr/local/share/
+COPY cassandra-sink-connector-avro.json /usr/local/share/
+COPY config/.cassandra /root/.cassandra
 
 CMD /usr/local/bin/setup.sh

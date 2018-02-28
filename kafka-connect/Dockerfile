@@ -4,6 +4,7 @@ MAINTAINER LoyaltyOne
 
 COPY bootstrap /usr/local/bin/
 COPY setup-plugins.sh /usr/local/bin/setup-plugins.sh
+COPY config/certs /root/certs
 
 RUN setup-plugins.sh
 

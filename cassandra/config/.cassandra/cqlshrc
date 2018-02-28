@@ -1,0 +1,17 @@
+[authentication]
+username = cassandra
+password = cassandra
+
+[cql]
+version = 3.4.4
+
+[connection]
+hostname = localhost
+port = 9042
+
+[tracing]
+max_trace_wait = 10.0
+
+[ssl]
+certfile = /root/.cassandra/cluster-ca-certificate.pem
+validate = true

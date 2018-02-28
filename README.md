@@ -2,6 +2,36 @@
 
 A docker image based on the Confluent Platform docker images
 
+# Prerequisites
+
+## Cassandra SSL
+
+The [Cassandra AWS](https://github.com/LoyaltyOne/cassandra-aws) repo
+has tools to generate SSL certificates.
+
+Generate the certificates:
+```bash
+git clone https://github.com/LoyaltyOne/cassandra-aws.git
+cd cassandra-aws
+./truststore-setup cassandra cassandra
+```
+
+Switch back to `kafka-infra` path and copy certificates, keystore and truststore:
+```bash
+cd path-to/kafka-infra
+mkdir -p cassandra/config/.cassandra
+cp /path-to/cassandra-aws/cluster-ca-certificate.pem cassandra/config/.cassandra/
+
+mkdir -p cassandra/config/etc/cassandra/conf/certs
+cp /path-to/cassandra-aws/cassandra-config/conf/certs/* cassandra/config/etc/cassandra/conf/certs/
+
+mkdir -p configurator/config/.cassandra
+cp /path-to/cassandra-aws/cluster-ca-certificate.pem configurator/config/.cassandra/
+
+mkdir -p kafka-connect/config/certs
+cp /path-to/cassandra-aws/cassandra-config/conf/certs/* kafka-connect/config/certs/
+```
+
 # Build images
 
 ```bash
@@ -161,7 +191,7 @@ Type in the following lines and then CTRL+C to stop the producer:
 
 Check that the new messages are in the table:
 ```bash
-docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
+docker exec -it cassandra cqlsh --ssl -e 'select * from TestKeySpace.SimpleTable;'
 ```
 ```
  id
@@ -206,7 +236,7 @@ Type in the following lines and then CTRL+C to stop the producer:
 
 Check that the new messages are in the table:
 ```bash
-docker exec -it cassandra cqlsh -u cassandra -p cassandra -e 'select * from TestKeySpace.SimpleTable;'
+docker exec -it cassandra cqlsh --ssl -e 'select * from TestKeySpace.SimpleTable;'
 ```
 ```
  id
