@@ -9,27 +9,43 @@ A docker image based on the Confluent Platform docker images
 The [Cassandra AWS](https://github.com/LoyaltyOne/cassandra-aws) repo
 has tools to generate SSL certificates.
 
-Generate the certificates:
+Get the `cassandra-aws` repo:
 ```bash
 git clone https://github.com/LoyaltyOne/cassandra-aws.git
-cd cassandra-aws
-./truststore-setup cassandra cassandra
 ```
 
-Switch back to `kafka-infra` path and copy certificates, keystore and truststore:
+Switch to `kafka-infra` path to generate the certificates and copy them
+to appropriate locations:
 ```bash
 cd path-to/kafka-infra
+
+path-to/cassandra-aws/truststore-setup cassandra cassandra
+
 mkdir -p cassandra/config/.cassandra
-cp /path-to/cassandra-aws/cluster-ca-certificate.pem cassandra/config/.cassandra/
+cp cluster-ca-certificate.pem cassandra/config/.cassandra/
 
 mkdir -p cassandra/config/etc/cassandra/conf/certs
-cp /path-to/cassandra-aws/cassandra-config/conf/certs/* cassandra/config/etc/cassandra/conf/certs/
+cp cassandra-config/conf/certs/* cassandra/config/etc/cassandra/conf/certs/
+```
 
+__NOTE:__ Ideally, a different keystore/truststore should be created for
+clients using different passwords. The same CA certificate can be used to
+sign the client certificates and the truststore can contain the CA
+certificate.
+
+For now, we'll use the same keystore/truststore for the local
+environment.
+```bash
 mkdir -p configurator/config/.cassandra
-cp /path-to/cassandra-aws/cluster-ca-certificate.pem configurator/config/.cassandra/
+cp cluster-ca-certificate.pem configurator/config/.cassandra/
 
 mkdir -p kafka-connect/config/certs
-cp /path-to/cassandra-aws/cassandra-config/conf/certs/* kafka-connect/config/certs/
+cp cassandra-config/conf/certs/* kafka-connect/config/certs/
+```
+
+Cleanup:
+```bash
+rm -rf cluster-ca-certificate.pem cassandra-config
 ```
 
 # Build images

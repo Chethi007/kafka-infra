@@ -13,7 +13,7 @@
   "connect.cassandra.username": "cassandra",
   "connect.cassandra.password": "cassandra",
   "connect.cassandra.ssl.enabled": "true",
-  "connect.cassandra.trust.store.path": "/root/certs/cassandra.keystore",
+  "connect.cassandra.trust.store.path": "/root/certs/cassandra.truststore",
   "connect.cassandra.trust.store.password": "cassandra",
   "connect.cassandra.kcql": "INSERT INTO SimpleTable SELECT * FROM test-simple",
   "connect.cassandra.consistency.level": "ONE",
