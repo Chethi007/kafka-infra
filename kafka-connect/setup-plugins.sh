@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Install AWS CLI
+pip install --upgrade pip
+pip install awscli
+
 # Setup some vars
 src=https://github.com/Landoop/stream-reactor/releases/download/1.0.0/kafka-connect-cassandra-1.0.0-1.0.0-all.tar.gz
 filename=${src##*/}
