@@ -189,6 +189,7 @@ docker exec -it connect-1 curl -s localhost:8083/connectors/cassandra-sink-conne
   ],
   "type": "sink"
 }
+```
 
 ## Test the connectors
 
