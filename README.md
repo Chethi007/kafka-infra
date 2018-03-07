@@ -58,22 +58,6 @@ Cleanup:
 rm -rf cluster-ca-certificate.pem cassandra-config
 ```
 
-# Build images
-
-```bash
-pushd cassandra
-docker build . -t loyaltyone/cassandra:test
-popd
-
-pushd configurator
-docker build . -t loyaltyone/configurator:test
-popd
-
-pushd kafka-connect
-docker build . -t loyaltyone/kafka-connect:test
-popd
-```
-
 # Running locally
 
 Make sure cassandra db directory exists:

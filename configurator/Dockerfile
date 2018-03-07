@@ -8,4 +8,4 @@ COPY cassandra-sink-connector-simple.json /usr/local/share/
 COPY cassandra-sink-connector-avro.json /usr/local/share/
 COPY config/.cassandra /root/.cassandra
 
-CMD /usr/local/bin/setup.sh
+ENTRYPOINT ["/usr/local/bin/setup.sh"]
