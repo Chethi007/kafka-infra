@@ -4,18 +4,20 @@ set -e
 
 if [ -n "$APP_PORT" ]
 then
-		echo "Configuring Schema Registry with APP_PORT: $APP_PORT"
-		DOCKER_MIRROR_HOST=$(/sbin/ip route|awk '/default/ { print $3 }')
-		DOCKER_MIRROR_PORT=${MIRROR_PORT:-9001}
-		DOCKER_MIRROR="http://$DOCKER_MIRROR_HOST:$DOCKER_MIRROR_PORT"
+    echo "Configuring Schema Registry with APP_PORT: $APP_PORT"
+	DOCKER_MIRROR_HOST=$(/sbin/ip route|awk '/default/ { print $3 }')
+	DOCKER_MIRROR_PORT=${MIRROR_PORT:-9001}
+	DOCKER_MIRROR="http://$DOCKER_MIRROR_HOST:$DOCKER_MIRROR_PORT"
 
-		export HOST_IP=$(curl $DOCKER_MIRROR/hostip)    
-    export HOST_PORT=$(curl $DOCKER_MIRROR/container/$HOSTNAME/port/$APP_PORT)
-		export SCHEMA_REGISTRY_HOST_NAME=$HOST_IP
-		export SCHEMA_REGISTRY_LISTENERS="http://0.0.0.0:$HOST_PORT,http://0.0.0.0:$APP_PORT"
-
-		echo "SCHEMA_REGISTRY_HOST_NAME: $SCHEMA_REGISTRY_HOST_NAME"
-		echo "SCHEMA_REGISTRY_LISTENERS: $SCHEMA_REGISTRY_LISTENERS"
+	export HOST_IP=$(curl $DOCKER_MIRROR/hostip)
+	export HOST_PORT=$(curl $DOCKER_MIRROR/container/$HOSTNAME/port/$APP_PORT)
+	export SCHEMA_REGISTRY_HOST_NAME=$HOST_IP
+	export SCHEMA_REGISTRY_LISTENERS="http://0.0.0.0:$HOST_PORT,http://0.0.0.0:$APP_PORT"
+else
+	export SCHEMA_REGISTRY_HOST_NAME=$APP_HOST
 fi
+
+echo "SCHEMA_REGISTRY_HOST_NAME: $SCHEMA_REGISTRY_HOST_NAME"
+echo "SCHEMA_REGISTRY_LISTENERS: $SCHEMA_REGISTRY_LISTENERS"
 
 exec "$@"
