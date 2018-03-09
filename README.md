@@ -12,9 +12,9 @@
 
 A docker image based on the Confluent Platform docker images
 
-# Prerequisites
+## Prerequisites
 
-## Cassandra SSL
+### Cassandra SSL
 
 The [Cassandra AWS](https://github.com/LoyaltyOne/cassandra-aws) repo
 has tools to generate SSL certificates.
@@ -58,23 +58,7 @@ Cleanup:
 rm -rf cluster-ca-certificate.pem cassandra-config
 ```
 
-# Build images
-
-```bash
-pushd cassandra
-docker build . -t loyaltyone/cassandra:test
-popd
-
-pushd configurator
-docker build . -t loyaltyone/configurator:test
-popd
-
-pushd kafka-connect
-docker build . -t loyaltyone/kafka-connect:test
-popd
-```
-
-# Running locally
+## Running locally
 
 Make sure cassandra db directory exists:
 
@@ -86,12 +70,12 @@ mkdir -p db
 docker-compose up -d
 ```
 
-# Test Kafka Connect API
+## Test Kafka Connect API
 
 You should be able to access the REST API on both containers and get the
 same response.
 
-## List connector plugins
+### List connector plugins
 ```bash
 docker exec -it connect-1 curl -s localhost:8083/connector-plugins | jq
 ```
@@ -119,7 +103,7 @@ docker exec -it connect-1 curl -s localhost:8083/connector-plugins | jq
 ]
 ```
 
-## List active connectors
+### List active connectors
 ```bash
 docker exec -it connect-1 curl -s localhost:8083/connectors | jq
 ```
@@ -130,7 +114,7 @@ docker exec -it connect-1 curl -s localhost:8083/connectors | jq
 ]
 ```
 
-## Show configuration of `cassandra-sink-connector-simple`
+### Show configuration of `cassandra-sink-connector-simple`
 ```bash
 docker exec -it connect-1 curl -s localhost:8083/connectors/cassandra-sink-connector-simple | jq
 ```
@@ -201,9 +185,9 @@ docker exec -it connect-1 curl -s localhost:8083/connectors/cassandra-sink-conne
 }
 ```
 
-## Test the connectors
+### Test the connectors
 
-### cassandra-sink-connector-simple
+#### cassandra-sink-connector-simple
 
 Produce a couple of messages:
 ```bash
@@ -229,7 +213,7 @@ docker exec -it cassandra cqlsh --ssl -e 'select * from TestKeySpace.SimpleTable
 (2 rows)
 ```
 
-### cassandra-sink-connector-avro
+#### cassandra-sink-connector-avro
 
 For some reason, the console producer for AVRO is not available in kafka
 container. You have to execute this on the `schema-registry` container.
@@ -274,4 +258,155 @@ docker exec -it cassandra cqlsh --ssl -e 'select * from TestKeySpace.SimpleTable
  dob
 
 (4 rows)
+```
+
+# Kafka Rest Proxy
+
+## Deploy
+
+Parameters File __dev.params.json_:
+```json
+AWS_REGION=us-east-1
+APP_PORT=8082
+KAFKA_REST_BOOTSTRAP_SERVERS=change_me
+KAFKA_REST_ZOOKEEPER_CONNECT=change_me
+KAFKA_REST_SCHEMA_REGISTRY_URL=change_me
+```
+Environment File __dev.env__:
+```
+{
+    "ClusterStackName": "change_me",
+    "Priority": "104",
+    "KinesisStackName": "change_me",
+    "AppMaxCount": "1",
+    "AppMinCount": "1",
+    "Cpu": "1024",
+    "Memory": "1024",
+    "HostedZoneStackName": "change_me",
+    "TrustedCertsBucket": "change_me"
+}
+```
+Tags File __dev.tags.json:
+```json
+{
+  "Team": "change_me",
+  "Project": "change_me",
+  "Environment": "dev",
+  "Component": "kafka-rest"
+}
+```
+
+```bash
+cd kafka-rest
+
+ecs-service deploy dev-cp-kafka-rest 0.1-beta service.json \
+    ../../kafka-infra-config/kafka-rest/dev.params.json \
+    --env-file ../../kafka-infra-config/kafka-rest/dev.env \
+    --tag-file ../../kafka-infra-config/kafka-rest/dev.tags.json \
+    --region us-east-1 \
+    --profile assumed_role
+```
+
+## Testing REST Proxy
+
+Change the host name based on your hosted zone:
+```bash
+KAFKA_REST_URL=https://cp-kafka-rest.change_me
+```
+
+### JSON Messages
+
+#### Produce
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.json.v2+json" \
+    -H "Accept: application/vnd.kafka.v2+json" \
+    --data '{"records":[{"value":{"foo":"bar"}}]}' \
+    $KAFKA_REST_URL/topics/test-simple
+```
+
+#### Consume
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+    $KAFKA_REST_URL/consumers/my_json_consumer
+
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"topics":["test-simple"]}' \
+    $KAFKA_REST_URL/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+curl -X GET \
+    -H "Accept: application/vnd.kafka.json.v2+json" \
+    $KAFKA_REST_URL/consumers/my_json_consumer/instances/my_consumer_instance/records
+
+curl -X DELETE \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    $KAFKA_REST_URL/consumers/my_json_consumer/instances/my_consumer_instance
+```
+
+### Avro Messages with Embedded Schema
+
+#### Produce
+
+```bash
+curl -X POST -H "Content-Type: application/vnd.kafka.avro.v2+json" \
+    -H "Accept: application/vnd.kafka.v2+json" \
+    --data '{"value_schema": "{\"type\": \"record\", \"name\": \"User\", \"fields\": [{\"name\": \"name\", \"type\": \"string\"}]}", "records": [{"value": {"name": "testUser"}}]}' \
+    $KAFKA_REST_URL/topics/avrotest
+```
+
+#### Consume
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"name": "my_consumer_instance", "format": "avro", "auto.offset.reset": "earliest"}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer
+
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"topics":["avrotest"]}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/subscription
+
+curl -X GET \
+    -H "Accept: application/vnd.kafka.avro.v2+json" \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/records
+```
+
+### Avro Messages using Schema Registry
+
+#### Produce
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.avro.v2+json" \
+    -H "Accept: application/vnd.kafka.v2+json" \
+    --data '{"key_schema": "{\"name\":\"user_id\"  ,\"type\": \"int\"}", "value_schema": "{\"type\": \"record\", \"name\": \"User\", \"fields\": [{\"name\": \"name\", \"type\": \"string\"}]}", "records": [{"key" : 1 , "value": {"name": "testUser"}}]}' \
+    $KAFKA_REST_URL/topics/avrotest2
+```
+
+#### Consume
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"name": "my_consumer_instance", "format": "avro", "auto.offset.reset": "earliest"}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer
+
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"topics":["avrotest2"]}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/subscription
+
+curl -X GET \
+    -H "Accept: application/vnd.kafka.avro.v2+json" \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/records
+
+curl -X DELETE \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance
 ```

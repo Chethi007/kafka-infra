@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+if [ -n "$APP_PORT" ]
+then
+	echo "Configuring REST Proxy with APP_PORT: $APP_PORT"
+	DOCKER_MIRROR_HOST=$(/sbin/ip route|awk '/default/ { print $3 }')
+	DOCKER_MIRROR_PORT=${MIRROR_PORT:-9001}
+	DOCKER_MIRROR="http://$DOCKER_MIRROR_HOST:$DOCKER_MIRROR_PORT"
+
+	export HOST_IP=$(curl $DOCKER_MIRROR/hostip)
+	export HOST_PORT=$(curl $DOCKER_MIRROR/container/$HOSTNAME/port/$APP_PORT)
+
+    export KAFKA_REST_HOST_NAME=${HOST_IP}
+    export KAFKA_REST_LISTENERS="http://0.0.0.0:$HOST_PORT,http://0.0.0.0:$APP_PORT"
+else
+    export KAFKA_REST_HOST_NAME=${APP_HOST}
+fi
+
+uuid=$(cat /proc/sys/kernel/random/uuid)
+export KAFKA_REST_ID=${uuid}
+
+echo "KAFKA_REST_HOST_NAME: ${KAFKA_REST_HOST_NAME}"
+echo "KAFKA_REST_LISTENERS: ${KAFKA_REST_LISTENERS}"
+exec "$@"
