@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+[[ "${DEBUG}" == 'true' ]] && set -o xtrace
+
+ERRORS=$(aws cloudformation validate-template --template-body file://master-template.yaml | jq .Error)
+
+if [ ! -z "${ERRORS}" ]; then
+    echo "Template has errors: ${ERRORS}" && exit 1
+fi
+
+aws cloudformation package --template-file master-template.yaml \
+    --s3-bucket loyaltyone-"${ENV:-dev}"-infra --s3-prefix kafka --force-upload \
+    --output-template-file master.yaml
+
+aws cloudformation deploy --template-file ./master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM
+
+# TODO if failure, delete stack
+# aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
+
+rm -rf master.yaml

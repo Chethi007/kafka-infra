@@ -1,7 +1,7 @@
 # TODO
 
 - pipeline (update canary, test, update live)
-- investigate nested stacks
+- investigate nested stacks (**DONE**)
 - ssl self signed certs? (can we use a cert manager?)
 - align configurator and target-domain (functional overlap)
 - drop .sh on command files

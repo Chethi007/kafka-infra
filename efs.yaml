@@ -1,0 +1,80 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates an EFS file system with mount targets
+
+Parameters:
+  VPCId:
+    Description: VPC in which to create stack
+    Type: AWS::EC2::VPC::Id
+  SubnetIdA:
+    Description: Subnet in which to create mount target (must be in distinct AZ from other subnets supplied)
+    Type: AWS::EC2::Subnet::Id
+  SubnetIdB:
+    Description: Subnet in which to create mount target (must be in distinct AZ from other subnets supplied)
+    Type: AWS::EC2::Subnet::Id
+  SubnetIdC:
+    Description: Subnet in which to create mount target (must be in distinct AZ from other subnets supplied)
+    Type: AWS::EC2::Subnet::Id
+  PerformanceMode:
+    Description: EFS performance mode (General Purpose, Max IO)
+    Type: String
+    AllowedValues: [generalPurpose,maxIO]
+
+Resources:
+  FileSystemAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref 'VPCId'
+      GroupDescription: Security group for EFS access
+  MountTargetSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref 'VPCId'
+      GroupDescription: Security group for mount target
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '2049'
+        ToPort: '2049'
+        SourceSecurityGroupId: !Ref 'FileSystemAccessSecurityGroup'
+  FileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: !Ref 'PerformanceMode'
+      FileSystemTags:
+      - Key: Name
+        Value: !Ref 'AWS::StackName'
+  MountTargetA:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref 'FileSystem'
+      SubnetId: !Ref 'SubnetIdA'
+      SecurityGroups:
+      - !Ref 'MountTargetSecurityGroup'
+  MountTargetB:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref 'FileSystem'
+      SubnetId: !Ref 'SubnetIdB'
+      SecurityGroups:
+      - !Ref 'MountTargetSecurityGroup'
+  MountTargetC:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref 'FileSystem'
+      SubnetId: !Ref 'SubnetIdC'
+      SecurityGroups:
+      - !Ref 'MountTargetSecurityGroup'
+
+Outputs:
+  FSAccessSecurityGroup:
+    Description: The ID of the Security group which is allowed to access the file system
+    Value: !GetAtt FileSystemAccessSecurityGroup.GroupId
+    Export:
+      Name: !Sub '${AWS::StackName}-FSAccessSecurityGroupID'
+  FileSystemId:
+    Description: ID of the filesystem created
+    Value: !Ref 'FileSystem'
+    Export:
+      Name: !Sub '${AWS::StackName}-FileSystemId'

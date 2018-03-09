@@ -1,0 +1,92 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >
+  This template deploys a VPC, with a pair of public and private subnets spread
+  across two Availabilty Zones. It deploys an Internet Gateway, with a default
+  route on the public subnets. It deploys a pair of NAT Gateways (one in each AZ),
+  and default routes for them in the private subnets.
+
+  It then deploys a highly available ECS cluster using an AutoScaling Group, with
+  ECS hosts distributed across multiple Availability Zones.
+
+  Finally, it deploys a pair of example ECS services from containers published in
+  Amazon EC2 Container Registry (Amazon ECR).
+
+Parameters:
+  KeyName:
+    Description: Key Pair name for SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+  VPCId:
+    Description: Choose which VPC this cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  VPCCidrBlock:
+    Description: VPC CIDR Block
+    Type: String
+  Subnets:
+    Description: Choose three private subnets this cluster should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+  PerformanceMode:
+    Description: EFS performance mode (General Purpose, Max IO)
+    Type: String
+    AllowedValues: [generalPurpose,maxIO]
+    Default: generalPurpose
+  InstanceType:
+    Description: Which instance type should we use to build the ECS cluster?
+    ConstraintDescription: Must be a valid EC2 instance type
+    Type: String
+    AllowedValues: [r4.large]
+    Default: r4.large
+  EFSMountPath:
+    Description: Path at which to create the volume mount for EFS
+    Type: String
+    Default: /mnt/efs
+  ASGMinSize:
+    Description: Minimum size of ECS Auto Scaling Group
+    Type: Number
+    Default: 3
+  ASGMaxSize:
+    Description: Maximum size of ECS Auto Scaling Group
+    Type: Number
+    Default: 3
+  ASGDesiredCapacity:
+    Description: Desired Capacity of the ECS Auto Scaling Group
+    Type: Number
+    Default: 3
+  RollingUpdateMinInService:
+    Description: Minimum instance in service during rolling update
+    Type: Number
+    Default: 2
+  ASGEventsTopic:
+    Type: String
+    Description: SNS topic to notify of ASG events
+
+Resources:
+  EFS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./efs.yaml
+      Parameters:
+        VPCId: !Ref 'VPCId'
+        SubnetIdA: !Select [ 0, !Ref 'Subnets' ]
+        SubnetIdB: !Select [ 1, !Ref 'Subnets' ]
+        SubnetIdC: !Select [ 2, !Ref 'Subnets' ]
+        PerformanceMode: !Ref 'PerformanceMode'
+  ECS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./ecs.yaml
+      Parameters:
+        KeyName: !Ref 'KeyName'
+        VPCId: !Ref 'VPCId'
+        VPCCidrBlock: !Ref 'VPCCidrBlock'
+        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        InstanceType: !Ref 'InstanceType'
+        EFSFileSystemId: !GetAtt 'EFS.Outputs.FileSystemId'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ASGMinSize: !Ref 'ASGMinSize'
+        ASGMaxSize: !Ref 'ASGMaxSize'
+        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
+        ASGEventsTopic: !Ref 'ASGEventsTopic'
+    DependsOn: EFS
