@@ -88,9 +88,7 @@
         "HealthCheckIntervalSeconds": 10,
         "HealthCheckProtocol": "HTTP",
         "HealthCheckTimeoutSeconds": 5,
-        "HealthCheckPath": {
-          "Fn::Sub": "/subjects"
-        },
+        "HealthCheckPath": "/",
         "HealthyThresholdCount": 2,
         "Matcher": {
           "HttpCode": "200-299"
