@@ -276,10 +276,10 @@ Environment File __dev.env__:
 ```
 {
     "ClusterStackName": "change_me",
-    "Priority": "103",
+    "Priority": "104",
     "KinesisStackName": "change_me",
-    "AppMaxCount": "5",
-    "AppMinCount": "3",
+    "AppMaxCount": "1",
+    "AppMinCount": "1",
     "Cpu": "1024",
     "Memory": "1024",
     "HostedZoneStackName": "change_me",
@@ -305,4 +305,108 @@ ecs-service deploy dev-cp-kafka-rest 0.1-beta service.json \
     --tag-file ../../kafka-infra-config/kafka-rest/dev.tags.json \
     --region us-east-1 \
     --profile assumed_role
+```
+
+## Testing REST Proxy
+
+Change the host name based on your hosted zone:
+```bash
+KAFKA_REST_URL=https://cp-kafka-rest.change_me
+```
+
+### JSON Messages
+
+#### Produce
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.json.v2+json" \
+    -H "Accept: application/vnd.kafka.v2+json" \
+    --data '{"records":[{"value":{"foo":"bar"}}]}' \
+    $KAFKA_REST_URL/topics/test-simple
+```
+
+#### Consume
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+    $KAFKA_REST_URL/consumers/my_json_consumer
+
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"topics":["test-simple"]}' \
+    $KAFKA_REST_URL/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+curl -X GET \
+    -H "Accept: application/vnd.kafka.json.v2+json" \
+    $KAFKA_REST_URL/consumers/my_json_consumer/instances/my_consumer_instance/records
+
+curl -X DELETE \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    $KAFKA_REST_URL/consumers/my_json_consumer/instances/my_consumer_instance
+```
+
+### Avro Messages with Embedded Schema
+
+#### Produce
+
+```bash
+curl -X POST -H "Content-Type: application/vnd.kafka.avro.v2+json" \
+    -H "Accept: application/vnd.kafka.v2+json" \
+    --data '{"value_schema": "{\"type\": \"record\", \"name\": \"User\", \"fields\": [{\"name\": \"name\", \"type\": \"string\"}]}", "records": [{"value": {"name": "testUser"}}]}' \
+    $KAFKA_REST_URL/topics/avrotest
+```
+
+#### Consume
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"name": "my_consumer_instance", "format": "avro", "auto.offset.reset": "earliest"}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer
+
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"topics":["avrotest"]}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/subscription
+
+curl -X GET \
+    -H "Accept: application/vnd.kafka.avro.v2+json" \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/records
+```
+
+### Avro Messages using Schema Registry
+
+#### Produce
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.avro.v2+json" \
+    -H "Accept: application/vnd.kafka.v2+json" \
+    --data '{"key_schema": "{\"name\":\"user_id\"  ,\"type\": \"int\"}", "value_schema": "{\"type\": \"record\", \"name\": \"User\", \"fields\": [{\"name\": \"name\", \"type\": \"string\"}]}", "records": [{"key" : 1 , "value": {"name": "testUser"}}]}' \
+    $KAFKA_REST_URL/topics/avrotest2
+```
+
+#### Consume
+
+```bash
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"name": "my_consumer_instance", "format": "avro", "auto.offset.reset": "earliest"}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer
+
+curl -X POST \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    --data '{"topics":["avrotest2"]}' \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/subscription
+
+curl -X GET \
+    -H "Accept: application/vnd.kafka.avro.v2+json" \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance/records
+
+curl -X DELETE \
+    -H "Content-Type: application/vnd.kafka.v2+json" \
+    $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance
 ```
