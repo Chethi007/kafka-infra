@@ -4,9 +4,11 @@ set -o errexit
 set -o pipefail
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
+# TODO loop over templates
+
 ERRORS=$(aws cloudformation validate-template --template-body file://master-template.yaml | jq .Error)
 
-if [ ! -z "${ERRORS}" ]; then
+if [ "${ERRORS}" != "null" ]; then
     echo "Template has errors: ${ERRORS}" && exit 1
 fi
 
