@@ -102,6 +102,7 @@ Resources:
               'ec2messages:GetEndpoint',
               'ec2messages:GetMessages',
               'ec2messages:SendReply',
+              'ecs:Describe*',
               'logs:CreateLogGroup',
               'logs:DescribeLogGroups',
               'logs:DescribeLogStreams',
