@@ -130,7 +130,7 @@ Resources:
     Properties:
       Path: /
       Roles:
-        - 'ECSInstanceRole'
+        - !Ref 'ECSInstanceRole'
 
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
