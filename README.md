@@ -319,9 +319,25 @@ KAFKA_REST_URL=https://cp-kafka-rest.change_me
 The Prometheus JMX Exporter agent is used to expose metrics via HTTP on
 port 9404. The metrics will need to be scraped by a Prometheus server.
 
+To see the metrics using the exporter:
 ```bash
-docker exec -it kafka-rest-1 curl localhost:9404
+docker exec -it kafka-rest-1 curl http://localhost:9404
 ```
+
+If you access an endpoint like this:
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:8082/brokers
+```
+
+You should be able to see all metrics related to this endpoint:
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:9404 | grep 'brokers.list'
+```
+
+You can also search for the metrics in Prometheus server by visiting
+`http://localhost:9090/`. For example, type in
+`kafka_rest_jersey_metrics_brokers_list_request_rate` and click
+__Execute__.
 
 ### JSON Messages
 
