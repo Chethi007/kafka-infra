@@ -1,0 +1,20 @@
+{
+  "name": "cassandra-sink-connector-avro",
+  "connector.class": "com.datamountaineer.streamreactor.connect.cassandra.sink.CassandraSinkConnector",
+  "tasks.max": "10",
+  "topics": "test-avro",
+  "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "value.converter": "io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url": "http://schema-registry:8081",
+  "connect.cassandra.contact.points": "cassandra",
+  "connect.cassandra.port": "9042",
+  "connect.cassandra.key.space": "TestKeySpace",
+  "connect.cassandra.username": "cassandra",
+  "connect.cassandra.password": "cassandra",
+  "connect.cassandra.ssl.enabled": "true",
+  "connect.cassandra.trust.store.path": "/root/certs/cassandra.truststore",
+  "connect.cassandra.trust.store.password": "cassandra",
+  "connect.cassandra.kcql": "INSERT INTO SimpleTable SELECT * FROM test-avro",
+  "connect.cassandra.consistency.level": "ONE",
+  "connect.progress.enabled": "true"
+}

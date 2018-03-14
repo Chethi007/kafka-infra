@@ -27,6 +27,14 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
 
+  cassandra:
+    build: ../cassandra
+    container_name: cassandra
+    ports:
+      - '9042:9042'
+    volumes:
+      - ../db:/var/lib/cassandra
+
   schema-registry:
     image: confluentinc/cp-schema-registry:latest
     container_name: schema-registry
@@ -42,6 +50,39 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
       SCHEMA_REGISTRY_JMX_OPTS: '-javaagent:/usr/local/share/data/jmx_prometheus_javaagent-0.2.0.jar=9404:/usr/local/share/data/schema-registry-metrics.yml'
+
+  # Load connector manually
+  # docker exec -it connect-1 /usr/local/share/data/setup-connectors
+  connect-1:
+    build: ../kafka-connect # Because we need the data mounaineer plugin
+    container_name: connect-1
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+      - cassandra
+    ports:
+      - '8083:8083'
+    volumes:
+      - ./data:/usr/local/share/data
+    environment:
+      APP_HOST: connect-1
+      CONNECT_BOOTSTRAP_SERVERS: 'kafka:9092'
+      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      CONNECT_GROUP_ID: kafka-connect-group
+      CONNECT_PLUGIN_PATH: /usr/local/share/kafka/plugins
+      CONNECT_CONFIG_STORAGE_TOPIC: kafka-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: kafka-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: kafka-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/data/jmx_prometheus_javaagent-0.2.0.jar=9404:/usr/local/share/data/kafka-connect-metrics.yml'
 
   # Multiple Kafka REST Proxies will not work properly for consuming
   kafka-rest-1:

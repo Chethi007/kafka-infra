@@ -9,3 +9,6 @@ scrape_configs:
   - job_name: 'schema-registry'
     static_configs:
       - targets: ['schema-registry:9404']
+  - job_name: 'connect-rest'
+    static_configs:
+      - targets: ['connect-1:9404']

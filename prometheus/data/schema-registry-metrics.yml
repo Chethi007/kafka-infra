@@ -3,10 +3,10 @@ lowercaseOutputName: false
 lowercaseOutputLabelNames: false
 rules:
   - pattern: 'kafka.schema.registry<type=(.+)><>(.+): (.+)'
-    name: schema_registry_$1_$2
+    name: 'schema_registry_$1_$2'
     value: $3
     labels: {}
-    help: "Schema Registry metric $1 $2"
+    help: 'schema_registry_$1_$2'
     type: GAUGE
     attrNameSnakeCase: false
 
