@@ -435,3 +435,28 @@ curl -X DELETE \
     -H "Content-Type: application/vnd.kafka.v2+json" \
     $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance
 ```
+
+# Monitoring
+
+## Local
+
+```bash
+cd prometheus
+
+docker-compose up -d
+```
+
+Kafka REST
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:9404/metrics
+```
+
+Schema Registry
+```bash
+docker exec -it schema-registry curl http://localhost:9404/metrics
+```
+
+You can visit `http://localhost:9090` and search for metrics. Some
+examples are:
+- kafka_rest_jersey_metrics_brokers_list_request_rate
+- schema_registry_jersey_metrics_subjects_list_request_rate

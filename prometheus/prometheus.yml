@@ -6,3 +6,6 @@ scrape_configs:
   - job_name: 'kafka-rest'
     static_configs:
       - targets: ['kafka-rest-1:9404']
+  - job_name: 'schema-registry'
+    static_configs:
+      - targets: ['schema-registry:9404']

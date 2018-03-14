@@ -2,11 +2,11 @@ startDelaySeconds: 0
 lowercaseOutputName: false
 lowercaseOutputLabelNames: false
 rules:
-  - pattern: 'kafka.rest<type=(.+)><>(.+): (.+)'
-    name: kafka_rest_$1_$2
+  - pattern: 'kafka.schema.registry<type=(.+)><>(.+): (.+)'
+    name: schema_registry_$1_$2
     value: $3
     labels: {}
-    help: "Kafka REST metric $1 $2"
+    help: "Schema Registry metric $1 $2"
     type: GAUGE
     attrNameSnakeCase: false
 
