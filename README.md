@@ -314,6 +314,15 @@ Change the host name based on your hosted zone:
 KAFKA_REST_URL=https://cp-kafka-rest.change_me
 ```
 
+## Monitoring REST Proxy
+
+The Prometheus JMX Exporter agent is used to expose metrics via HTTP on
+port 9404. The metrics will need to be scraped by a Prometheus server.
+
+```bash
+docker exec -it kafka-rest-1 curl localhost:9404
+```
+
 ### JSON Messages
 
 #### Produce
