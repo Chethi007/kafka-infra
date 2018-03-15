@@ -3,10 +3,10 @@ lowercaseOutputName: false
 lowercaseOutputLabelNames: false
 rules:
   - pattern: 'kafka.rest<type=(.+)><>(.+): (.+)'
-    name: 'kafka_rest_$1_$2'
+    name: '$1_$2'
     value: $3
     labels: {}
-    help: 'kafka_rest_$1_$2'
+    help: '$1_$2'
     type: GAUGE
     attrNameSnakeCase: false
 

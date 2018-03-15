@@ -336,8 +336,7 @@ docker exec -it kafka-rest-1 curl http://localhost:9404 | grep 'brokers.list'
 
 You can also search for the metrics in Prometheus server by visiting
 `http://localhost:9090/`. For example, type in
-`kafka_rest_jersey_metrics_brokers_list_request_rate` and click
-__Execute__.
+`jersey_metrics_brokers_list_request_rate` and click __Execute__.
 
 ### JSON Messages
 
@@ -458,5 +457,5 @@ docker exec -it schema-registry curl http://localhost:9404/metrics
 
 You can visit `http://localhost:9090` and search for metrics. Some
 examples are:
-- kafka_rest_jersey_metrics_brokers_list_request_rate
-- schema_registry_jersey_metrics_subjects_list_request_rate
+- jersey_metrics_brokers_list_request_rate
+- jersey_metrics_subjects_list_request_rate
