@@ -1,0 +1,43 @@
+---
+version: '3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - '2181:2181'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      JMX_PORT: 8989
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      # On OSX, edit /etc/hosts and add 'kafka' to 127.0.0.1
+      # This is because the way broker is advertising and won't listen
+      # if the host machine uses 'localhost:9092'. From the host machine
+      # Use 'kafka:9092' to bootstrap.
+      - '9092:9092'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      JMX_PORT: 8989
+
+  jmxtrans:
+    build:
+      context: .
+      args:
+        JMXTRANS_VERSION: 270
+    container_name: jmxtrans
+    ports:
+      - '9999:9999'
+    volumes:
+      - ~/.aws:/root/.aws
+    environment:
+      SECONDS_BETWEEN_RUNS: 5
