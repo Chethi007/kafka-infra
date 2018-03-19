@@ -1,4 +1,4 @@
 ARG JMXTRANS_VERSION
 FROM jmxtrans/jmxtrans
 MAINTAINER LoyaltyOne
-COPY *.json /var/lib/jmxtrans/
+COPY config/*.json /var/lib/jmxtrans/

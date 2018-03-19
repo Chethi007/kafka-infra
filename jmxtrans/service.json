@@ -16,16 +16,11 @@
     "AppName": {
       "Type": "String",
       "Description": "Name of app. Should be the same as docker repository name.",
-      "Default": "cp-kafka-connect"
+      "Default": "jmxtrans"
     },
     "AppVersion": {
       "Type": "String",
       "Description": "Version label of app"
-    },
-    "AppContainerPort": {
-      "Type": "Number",
-      "Description": "Port the app runs on in the image",
-      "Default": "8083"
     },
     "ImageRepository": {
       "Type": "String",
@@ -75,51 +70,9 @@
     "KinesisStackName": {
       "Type": "String",
       "Description": "Name of the CF stack used to create the Kinesis stream"
-    },
-    "HostedZoneStackName": {
-      "Type": "String",
-      "Description": "The Hosted Zone stack name to create the service's record set in"
-    },
-    "TrustedCertsBucket": {
-      "Type": "String",
-      "Description": "The S3 bucket where the trusted certs are available"
     }
   },
   "Resources": {
-    "EcsTaskRole": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Sid": "",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "ecs-tasks.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
-          ]
-        },
-        "Path": "/",
-        "Policies": [
-          {
-            "PolicyName": "S3-Access",
-            "PolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Action": "s3:GetObject",
-                    "Resource": {
-                      "Fn::Sub": "arn:aws:s3:::${TrustedCertsBucket}/*"
-                    }
-                }]
-            }
-          }
-        ]
-      }
-    },
     "TaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties": {
@@ -134,14 +87,6 @@
             "Cpu": {
               "Ref": "Cpu"
             },
-            "PortMappings": [
-              {
-                "ContainerPort": {
-                  "Ref": "AppContainerPort"
-                },
-                "HostPort": 0
-              }
-            ],
             "MemoryReservation": {
               "Ref": "Memory"
             },
@@ -163,9 +108,6 @@
         "Volumes": [],
         "Family": {
           "Ref": "AWS::StackName"
-        },
-        "TaskRoleArn": {
-          "Ref": "EcsTaskRole"
         }
       }
     },
@@ -177,11 +119,6 @@
       "Properties": {
         "ServiceName": {
           "Ref": "AppName"
-        },
-        "Role": {
-          "Fn::ImportValue": {
-            "Fn::Sub": "${ClusterStackName}-EcsServiceRole"
-          }
         },
         "TaskDefinition": {
           "Ref": "TaskDefinition"
@@ -453,7 +390,7 @@
           }
         ]
       }
-    },
+    }
   },
   "Outputs": {
     "Service": {
