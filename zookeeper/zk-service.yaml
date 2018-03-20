@@ -61,6 +61,12 @@ Resources:
             Value: !Ref 'ServerId'
           - Name: ZOOKEEPER_SERVERS
             Value: !Ref 'ServerNames'
+          - Name: ZOOKEEPER_TICK_TIME
+            Value: 2000
+          - Name: ZOOKEEPER_INIT_LIMIT
+            Value: 5
+          - Name: ZOOKEEPER_SYNC_LIMIT
+            Value: 2
         PortMappings:
           - ContainerPort: 2181
             HostPort: 2181

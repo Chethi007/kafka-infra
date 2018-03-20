@@ -114,7 +114,7 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 1
         ServerName: !Sub '${AWS::StackName}-zk1'
-        ServerNames: !Sub '${AWS::StackName}-zk1.internal.loyalty.com:2888:3888;${AWS::StackName}-zk2.internal.loyalty.com:2888:3888;${AWS::StackName}-zk3.internal.loyalty.com:2888:3888'
+        ServerNames: !Sub '0.0.0.0:2888:3888;${AWS::StackName}-zk2.internal.loyalty.com:2888:3888;${AWS::StackName}-zk3.internal.loyalty.com:2888:3888'
         LogGroup: !GetAtt 'ZookeeperLG.Outputs.ZKNodesLogGroup'
         SecurityGroup: !GetAtt 'ZookeeperSG.Outputs.InternalZKSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
@@ -131,7 +131,7 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 2
         ServerName: !Sub '${AWS::StackName}-zk2'
-        ServerNames: !Sub '${AWS::StackName}-zk1.internal.loyalty.com:2888:3888;${AWS::StackName}-zk2.internal.loyalty.com:2888:3888;${AWS::StackName}-zk3.internal.loyalty.com:2888:3888'
+        ServerNames: !Sub '${AWS::StackName}-zk1.internal.loyalty.com:2888:3888;0.0.0.0:2888:3888;${AWS::StackName}-zk3.internal.loyalty.com:2888:3888'
         LogGroup: !GetAtt 'ZookeeperLG.Outputs.ZKNodesLogGroup'
         SecurityGroup: !GetAtt 'ZookeeperSG.Outputs.InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
@@ -148,7 +148,7 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 3
         ServerName: !Sub '${AWS::StackName}-zk3'
-        ServerNames: !Sub '${AWS::StackName}-zk1.internal.loyalty.com:2888:3888;${AWS::StackName}-zk2.internal.loyalty.com:2888:3888;${AWS::StackName}-zk3.internal.loyalty.com:2888:3888'
+        ServerNames: !Sub '${AWS::StackName}-zk1.internal.loyalty.com:2888:3888;${AWS::StackName}-zk2.internal.loyalty.com:2888:3888;0.0.0.0:2888:3888'
         LogGroup: !GetAtt 'ZookeeperLG.Outputs.ZKNodesLogGroup'
         SecurityGroup: !GetAtt 'ZookeeperSG.Outputs.InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
