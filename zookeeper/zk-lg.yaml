@@ -1,0 +1,21 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates Log Group for ZK Nodes
+
+Parameters:
+  StackName:
+    Description: Stack Name
+    Type: String
+
+Resources:
+  ZKNodesLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '${StackName}/zk'
+      RetentionInDays: 1
+
+Outputs:
+  ZKNodesLogGroup:
+    Description: ZK Nodes Log Group
+    Value: !Ref 'ZKNodesLogGroup'

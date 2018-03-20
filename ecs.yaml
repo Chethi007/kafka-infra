@@ -45,19 +45,19 @@ Parameters:
 Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
   #
-  #   amzn-ami-2017.09.i-amazon-ecs-optimized
-  #   ECS agent:    1.17.1
-  #   Docker:       17.09.1-ce
-  #   ecs-init:     1.17.1.1
+  #   amzn-ami-2017.09.j-amazon-ecs-optimized
+  #   ECS agent:    1.17.2
+  #   Docker:       17.12.0-ce
+  #   ecs-init:     1.17.2-1
   #
   # You can find the latest available on this page of our documentation:
   # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
   # (note the AMI identifier is region specific)
   AWSRegionToAMI:
     us-east-1:
-      AMI: ami-5e414e24
+      AMI: ami-cad827b7
     ca-central-1:
-      AMI: ami-4b9c182f
+      AMI: ami-db48cfbf
 
 Resources:
   ECSCluster:
@@ -102,9 +102,15 @@ Resources:
               'ec2messages:GetEndpoint',
               'ec2messages:GetMessages',
               'ec2messages:SendReply',
+              'ecs:Describe*',
               'logs:CreateLogGroup',
               'logs:DescribeLogGroups',
               'logs:DescribeLogStreams',
+              'route53:GetHostedZone',
+              'route53:ListHostedZones',
+              'route53:ChangeResourceRecordSets',
+              'route53:ListResourceRecordSets',
+              'route53:ListHostedZonesByName',
               's3:PutObject',
               's3:AbortMultipartUpload',
               'ssm:DescribeAssociation',
@@ -129,7 +135,7 @@ Resources:
     Properties:
       Path: /
       Roles:
-        - 'ECSInstanceRole'
+        - !Ref 'ECSInstanceRole'
 
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup

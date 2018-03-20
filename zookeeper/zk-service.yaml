@@ -1,0 +1,109 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates a Zookeeper Service
+
+Parameters:
+  Cluster:
+    Description: ECS Cluster
+    Type: String
+  StackName:
+    Description: Stack Name
+    Type: String
+  Cpu:
+    Description: CPU (1024 = 1 core)
+    Type: Number
+    Default: 1024
+  Memory:
+    Description: Memory
+    Type: Number
+    Default: 4096
+  EFSMountPath:
+    Description: Path to EFS Directory
+    Type: String
+  ServerId:
+    Description: Server Id
+    Type: Number
+  ServerName:
+    Description: Server Name
+    Type: String
+  ServerNames:
+    Description: Server Names
+    Type: String
+  LogGroup:
+    Description: Log Group
+    Type: String
+  SecurityGroup:
+    Description: Security Group
+    Type: AWS::EC2::SecurityGroup::Id
+  SubnetId:
+    Description: SubnetId
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+  ZkNodeTaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      NetworkMode: awsvpc
+      ContainerDefinitions:
+      - Name: zookeeper
+        Image: confluentinc/cp-zookeeper:4.0.0-3
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        MemoryReservation: !Ref 'Memory'
+        User: root
+        DockerLabels:
+          'discovery.service.name': !Ref 'ServerName'
+        Environment:
+          - Name: ZOOKEEPER_CLIENT_PORT
+            Value: 2181
+          - Name: ZOOKEEPER_SERVER_ID
+            Value: !Ref 'ServerId'
+          - Name: ZOOKEEPER_SERVERS
+            Value: !Ref 'ServerNames'
+        PortMappings:
+          - ContainerPort: 2181
+            HostPort: 2181
+          - ContainerPort: 2888
+            HostPort: 2888
+          - ContainerPort: 3888
+            HostPort: 3888
+        MountPoints:
+          - SourceVolume: data
+            ContainerPath: /var/lib/zookeeper/data
+          - SourceVolume: log
+            ContainerPath: /var/lib/zookeeper/log
+          - SourceVolume: secrets
+            ContainerPath: /etc/zookeeper/secrets
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Sub 'zk${ServerId}'
+      Volumes:
+        - Name: data
+          Host:
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/zk/${ServerId}/data'
+        - Name: log
+          Host:
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/zk/${ServerId}/log'
+        - Name: secrets
+          Host:
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/zk/${ServerId}/secrets'
+      Family: !Sub '${StackName}-zk-${ServerId}'
+
+  ZkNodeService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      ServiceName: !Sub '${StackName}-zk-${ServerId}'
+      Cluster: !Ref 'Cluster'
+      DesiredCount: 1
+      TaskDefinition: !Ref 'ZkNodeTaskDefinition'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+             - !Ref 'SecurityGroup'
+          Subnets:
+             - !Ref 'SubnetId'

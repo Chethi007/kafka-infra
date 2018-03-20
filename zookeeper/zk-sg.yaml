@@ -1,0 +1,53 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates SGs for external and internal zookeeper access
+
+Parameters:
+  VPCId:
+    Description: VPC ECS cluster is deployed to
+    Type: AWS::EC2::VPC::Id
+
+Resources:
+  ExternalZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: ExternalZKSG
+      GroupDescription: Allows External Access to ZK Nodes
+      VpcId: !Ref 'VPCId'
+  InternalZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: InternalZKSG
+      GroupDescription: Allows External Access to ZK Nodes
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref ExternalZKSG
+          IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+      VpcId: !Ref 'VPCId'
+  InternalZKSGIngress2888Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: 2888
+      ToPort: 2888
+      GroupId: !Ref InternalZKSG
+      SourceSecurityGroupId: !Ref InternalZKSG
+  InternalZKSGIngress3888Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: 3888
+      ToPort: 3888
+      GroupId: !Ref InternalZKSG
+      SourceSecurityGroupId: !Ref InternalZKSG
+
+Outputs:
+  ExternalZKSG:
+    Description: Allows External Access to ZK Nodes
+    Value: !Ref 'ExternalZKSG'
+  InternalZKSG:
+    Description: Allows Internal Access to ZK Nodes
+    Value: !Ref 'InternalZKSG'
+
