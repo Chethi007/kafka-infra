@@ -3,7 +3,7 @@
     "KeyName": "dev-kafka",
     "VPCId": "vpc-a23b4ec6",
     "VPCCidrBlock": "10.0.0.0/16",
-    "Subnets": ["subnet-32b75e18", "subnet-335ed569", "subnet-aefb21d8"],
+    "Subnets": "subnet-32b75e18,subnet-335ed569,subnet-aefb21d8",
     "PerformanceMode": "generalPurpose",
     "InstanceType": "r4.large",
     "EFSMountPath": "/mnt/efs",
