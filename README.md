@@ -437,11 +437,10 @@ curl -X DELETE \
 
 # Monitoring
 
-## Local
+## Prometheus Local
 
 ```bash
 cd prometheus
-
 docker-compose up -d
 ```
 
@@ -459,3 +458,20 @@ You can visit `http://localhost:9090` and search for metrics. Some
 examples are:
 - jersey_metrics_brokers_list_request_rate
 - jersey_metrics_subjects_list_request_rate
+
+## JMXTRANS Local
+
+```bash
+cd jmxtrans
+docker-compose up -d
+```
+
+Log into the container:
+```bash
+docker exec -it jmxtrans /bin/bash
+```
+
+Zookeeper metrics output by KeyOutWriter:
+```bash
+tail -f /tmp/zookeeper*
+```
