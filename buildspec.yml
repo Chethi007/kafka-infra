@@ -21,10 +21,10 @@ phases:
   build:
     commands:
       - echo "Copying child stack templates to S3"
-            - |
-              for child_template in $CHILD_TEMPLATES; do
-                aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$child_template"
-              done
+      - |
+        for child_template in $CHILD_TEMPLATES; do
+          aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$child_template"
+        done
   #post_build:
     #commands:
       # - command
