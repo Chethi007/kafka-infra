@@ -16,14 +16,15 @@ phases:
       # - command
   pre_build:
     commands:
+      - gem install cfn-nag && cfn_nag_scan --input-path ./master-template.yaml #&& cfn_nag_scan --input-path ecs.yaml && cfn_nag_scan --input-path efs.yaml
+
+  build:
+    commands:
       - echo "Copying child stack templates to S3"
             - |
               for child_template in $CHILD_TEMPLATES; do
                 aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$child_template"
               done
-  build:
-    commands:
-      - gem install cfn-nag && cfn_nag_scan --input-path ./master-template.yaml #&& cfn_nag_scan --input-path ecs.yaml && cfn_nag_scan --input-path efs.yaml
   #post_build:
     #commands:
       # - command

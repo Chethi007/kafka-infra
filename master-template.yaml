@@ -60,12 +60,16 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
+  TemplatePath:
+    Type: String
+    Description: Path of the child templates uploaded to S3
 
 Resources:
   EFS:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./efs.yaml
+      TemplateURL:
+        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/efs.yaml"
       Parameters:
         VPCId: !Ref 'VPCId'
         SubnetIdA: !Select [ 0, !Ref 'Subnets' ]
@@ -75,7 +79,8 @@ Resources:
   ECS:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./ecs.yaml
+      TemplateURL:
+        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/ecs.yaml"
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'

@@ -11,6 +11,7 @@
     "ASGMaxSize": "3",
     "ASGDesiredCapacity": "3",
     "RollingUpdateMinInService": "2",
-    "ASGEventsTopic": "arn:aws:sns:us-east-1:444913385113:dloiko"
+    "ASGEventsTopic": "arn:aws:sns:us-east-1:444913385113:dloiko",
+    "TemplatePath": "dev-kafka-artifacts"
   }
 }
