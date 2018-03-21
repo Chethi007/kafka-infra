@@ -7,6 +7,19 @@ Parameters:
   VPCId:
     Description: VPC ECS cluster is deployed to
     Type: AWS::EC2::VPC::Id
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
 
 Resources:
   ExternalZKSG:
@@ -15,6 +28,16 @@ Resources:
       GroupName: ExternalZKSG
       GroupDescription: Allows External Access to ZK Nodes
       VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
+
   InternalZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -26,6 +49,15 @@ Resources:
           FromPort: 2181
           ToPort: 2181
       VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
   InternalZKSGIngress2888Rule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:

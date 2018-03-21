@@ -41,6 +41,19 @@ Parameters:
   ASGEventsTopic:
     Description: SNS topic to notify of ASG events
     Type: String
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
 
 Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
@@ -347,6 +360,21 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'ECS Container Instance - ${AWS::StackName}'
+          PropagateAtLaunch: true
+        - Key: Project
+          Value: !Ref 'Project'
+          PropagateAtLaunch: true
+        - Key: Team
+          Value: !Ref 'Team'
+          PropagateAtLaunch: true
+        - Key: Environment
+          Value: !Ref 'Environment'
+          PropagateAtLaunch: true
+        - Key: Component
+          Value: ecs
+          PropagateAtLaunch: true
+        - Key: Scheduler
+          Value: false
           PropagateAtLaunch: true
     CreationPolicy:
       ResourceSignal:

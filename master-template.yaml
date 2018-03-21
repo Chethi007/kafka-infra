@@ -60,6 +60,19 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
 
 Resources:
   EFS:
@@ -72,6 +85,9 @@ Resources:
         SubnetIdB: !Select [ 1, !Ref 'Subnets' ]
         SubnetIdC: !Select [ 2, !Ref 'Subnets' ]
         PerformanceMode: !Ref 'PerformanceMode'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
   ECS:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -89,6 +105,9 @@ Resources:
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
         RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
     DependsOn: EFS
   ZookeeperLG:
     Type: 'AWS::CloudFormation::Stack'
@@ -102,6 +121,9 @@ Resources:
       TemplateURL: ./zookeeper/zk-sg.yaml
       Parameters:
         VPCId: !Ref 'VPCId'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
   ZookeeperNode0:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

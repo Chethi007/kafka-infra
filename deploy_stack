@@ -19,7 +19,8 @@ aws cloudformation package --template-file master-template.yaml \
 aws cloudformation deploy --template-file ./master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM \
     --parameter-overrides VPCId=vpc-a23b4ec6 KeyName=dev-kafka \
     ASGEventsTopic=arn:aws:sns:us-east-1:444913385113:dev-ecs-rolling-updates-base-infrastructure-SnsTopic-1S5BKWJWOW4YS \
-    Subnets=subnet-32b75e18,subnet-aefb21d8,subnet-335ed569 VPCCidrBlock=10.0.0.0/16
+    Subnets=subnet-32b75e18,subnet-aefb21d8,subnet-335ed569 VPCCidrBlock=10.0.0.0/16 \
+    Project=AMX Team=Things Environment=${ENV:dev}
 
 # TODO if failure, delete stack
 # aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table

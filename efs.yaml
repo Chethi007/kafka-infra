@@ -20,6 +20,19 @@ Parameters:
     Description: EFS performance mode (General Purpose, Max IO)
     Type: String
     AllowedValues: [generalPurpose,maxIO]
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
 
 Resources:
   FileSystemAccessSecurityGroup:
@@ -45,6 +58,14 @@ Resources:
       FileSystemTags:
       - Key: Name
         Value: !Ref 'AWS::StackName'
+      - Key: Project
+        Value: !Ref 'Project'
+      - Key: Team
+        Value: !Ref 'Team'
+      - Key: Environment
+        Value: !Ref 'Environment'
+      - Key: Component
+        Value: efs
   MountTargetA:
     Type: AWS::EFS::MountTarget
     Properties:
