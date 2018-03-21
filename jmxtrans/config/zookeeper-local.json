@@ -1,8 +1,8 @@
 {
   "servers": [
     {
-      "alias": "zookeeper_test",
-      "host": "zookeeper",
+      "alias": "HOSTNAME",
+      "host": "HOSTNAME",
       "port": "8989",
       "numQueryThreads" : 2,
       "queries": [
@@ -12,13 +12,11 @@
           "attr": ["QuorumSize"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Zookeeper",
-                "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
-                ]
-              }
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.server.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
             }
           ]
         },
@@ -41,13 +39,11 @@
           ],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Zookeeper",
-                "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
-                ]
-              }
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.clients.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
             }
           ]
         },
@@ -57,13 +53,11 @@
           "attr": ["NodeCount", "WatchCount"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Zookeeper",
-                "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
-                ]
-              }
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.in-memory-data-tree.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
             }
           ]
         },
@@ -73,13 +67,11 @@
           "attr": ["HeapMemoryUsage", "NonHeapMemoryUsage"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Zookeeper",
-                "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
-                ]
-              }
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.jvm-memory.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
             }
           ]
         },
@@ -89,13 +81,11 @@
           "attr": ["ThreadCount"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Zookeeper",
-                "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
-                ]
-              }
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.jvm-threading.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
             }
           ]
         }

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+
+mkdir -p /usr/local/share/metrics
+
+if [ -z "$JMXTRANS_ENV" ];
+then
+    JMXTRANS_ENV=local
+fi
+echo "JMXTRANS_ENV='$JMXTRANS_ENV'"
+
+if [ -z "$JMXTRANS_HOSTS" ];
+then
+    JMXTRANS_HOSTS=zookeeper
+fi
+echo "JMXTRANS_HOSTS='$JMXTRANS_HOSTS'"
+
+IFS=', ' read -r -a JMXTRANS_HOSTS_ARRAY <<< "$JMXTRANS_HOSTS"
+echo "JMXTRANS_HOSTS_ARRAY='${JMXTRANS_HOSTS_ARRAY[@]}'"
+
+src=/usr/local/share/config/zookeeper-${JMXTRANS_ENV}.json
+echo "src='${src}'"
+
+for i in ${!JMXTRANS_HOSTS_ARRAY[@]};
+do
+  host=${JMXTRANS_HOSTS_ARRAY[$i]};
+  dest=/var/lib/jmxtrans/zookeeper-${i}.json
+
+  echo "host='${host}'"
+  echo "dest='${dest}'"
+  cp ${src} ${dest}
+
+  sed -i -e "s/HOSTNAME/${host}/g" ${dest}
+done;
+
+exec "$@"
