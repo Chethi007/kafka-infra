@@ -1,9 +1,10 @@
 version: 0.2
 
-#env:
-  #variables:
-     # key: "value"
-     # key: "value"
+env:
+  variables:
+    CHILD_TEMPLATES: |
+      ecs.yaml
+      efs.yaml
   #parameter-store:
      # key: "value"
      # key: "value"
@@ -13,10 +14,13 @@ phases:
     #commands:
       # - command
       # - command
-  #pre_build:
-    #commands:
-      # - command
-      # - command
+  pre_build:
+    commands:
+      - echo "Copying child stack templates to S3"
+            - |
+              for child_template in $CHILD_TEMPLATES; do
+                aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$child_template"
+              done
   build:
     commands:
       - gem install cfn-nag && cfn_nag_scan --input-path ./master-template.yaml #&& cfn_nag_scan --input-path ecs.yaml && cfn_nag_scan --input-path efs.yaml
