@@ -15,7 +15,7 @@ echo "JMXTRANS_HOSTS='$JMXTRANS_HOSTS'"
 
 echo ""
 
-# JMXTRANS_HOSTS=type1-host1:port1,host2:port2,host3:port3..|type2-host4:port4,host5:port5,...|...
+# JMXTRANS_HOSTS=type1#host1:port1,host2:port2,host3:port3..|type2#host4:port4,host5:port5,...|...
 # type=zookeeper|kafka|schema-registry|kafka-connect|kafka-rest
 
 # Retrieve individual host groups
@@ -26,7 +26,7 @@ echo "host_groups='${host_groups[@]}'"
 for i in ${!host_groups[@]}; do
     # Retrieve the type and list of hosts
     unset hosts
-    IFS='-' read -r -a hosts <<< "${host_groups[$i]}"
+    IFS='#' read -r -a hosts <<< "${host_groups[$i]}"
     host_type=${hosts[0]}
     host_list=${hosts[1]}
 

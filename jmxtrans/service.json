@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Creates a service / task def for jmxtrans",
+  "Description": "Service / task definition for monitoring using jmxtrans",
   "Parameters": {
     "ClusterStackName": {
       "Description": "Name of an active CloudFormation stack that contains an ECS cluster",
@@ -45,7 +45,7 @@
     "AppMaxCount": {
       "Type": "Number",
       "Description": "Max number of instances of the service to scale out to",
-      "Default": "3"
+      "Default": "1"
     },
     "AppMinCount": {
       "Type": "Number",

@@ -78,4 +78,4 @@ services:
     environment:
       SECONDS_BETWEEN_RUNS: 10
       JMXTRANS_ENV: local
-      JMXTRANS_HOSTS: zookeeper-zk1:8989,zk2:8989,zk3:8989
+      JMXTRANS_HOSTS: zookeeper#zk1:8989,zk2:8989,zk3:8989
