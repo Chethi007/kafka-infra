@@ -73,6 +73,11 @@ services:
       args:
         JMXTRANS_VERSION: 270
     container_name: jmxtrans
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+      - kafka
     volumes:
       - ~/.aws:/root/.aws
     environment:

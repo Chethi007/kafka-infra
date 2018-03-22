@@ -466,12 +466,7 @@ cd jmxtrans
 docker-compose up -d
 ```
 
-Log into the container:
+Zookeeper metrics:
 ```bash
-docker exec -it jmxtrans /bin/bash
-```
-
-Zookeeper metrics output by KeyOutWriter:
-```bash
-tail -f /tmp/zookeeper*
+docker exec -it jmxtrans /bin/bash -c 'tail -f /tmp/zookeeper*'
 ```
