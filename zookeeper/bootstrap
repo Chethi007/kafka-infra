@@ -2,18 +2,12 @@
 
 set -e
 
-if [ -n "${KAFKA_JMX_HOSTNAME}" ];
+# If the JMX port is specified but the host name isn't, use the container's FQDN
+# Note: This is specifically for containers running in ECS. Specifying KAFKA_JMX_HOSTNAME
+# in ECS causes problems because service discovery isn't available yet.
+if [ -n "${KAFKA_JMX_PORT}" ] && [ -z "$KAFKA_JMX_HOSTNAME ]";
 then
-    echo "Setting up alias in /etc/hosts for ${KAFKA_JMX_HOSTNAME}..."
-
-    # Alias the hostname in /etc/hosts
-    # Note: "sed -i" will not work in docker for some reason on /etc/hosts
-    sed -e "s/^\(127\.0\.0\.1.*\)$/\1 ${KAFKA_JMX_HOSTNAME}/" \
-        -e "s/^\(::1.*\)$/\1 ${KAFKA_JMX_HOSTNAME}/" /etc/hosts > new_hosts
-    cp -f new_hosts /etc/hosts
-
-    echo "New hosts file:"
-    cat /etc/hosts
+    export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -A | cut -d" " -f1)}
 fi
 
 exec "$@"
