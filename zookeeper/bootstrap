@@ -5,9 +5,10 @@ set -e
 # If the JMX port is specified but the host name isn't, use the container's FQDN
 # Note: This is specifically for containers running in ECS. Specifying KAFKA_JMX_HOSTNAME
 # in ECS causes problems because service discovery isn't available yet.
-if [ -n "${KAFKA_JMX_PORT}" ] && [ -z "$KAFKA_JMX_HOSTNAME ]";
+if [ -n "${KAFKA_JMX_PORT}" ];
 then
     export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -A | cut -d" " -f1)}
+    echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
 fi
 
 exec "$@"
