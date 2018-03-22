@@ -1,22 +1,58 @@
 ---
 version: '3'
 services:
-  zookeeper:
+  zk1:
     image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
+    container_name: zk1
     ports:
-      - '2181:2181'
+      - '22181:22181'
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 22181
       ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
       KAFKA_JMX_PORT: 8989
-      KAFKA_JMX_HOSTNAME: zookeeper
+      KAFKA_JMX_HOSTNAME: zk1
+
+  zk2:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zk2
+    ports:
+      - '32181:32181'
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 32181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+      KAFKA_JMX_PORT: 8989
+      KAFKA_JMX_HOSTNAME: zk2
+
+  zk3:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zk3
+    ports:
+      - '42181:42181'
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 42181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+      KAFKA_JMX_PORT: 8989
+      KAFKA_JMX_HOSTNAME: zk3
 
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka
     depends_on:
-      - zookeeper
+      - zk1
+      - zk2
+      - zk3
     ports:
       # On OSX, edit /etc/hosts and add 'kafka' to 127.0.0.1
       # This is because the way broker is advertising and won't listen
@@ -25,7 +61,7 @@ services:
       - '9092:9092'
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
       KAFKA_JMX_PORT: 8989
@@ -40,6 +76,6 @@ services:
     volumes:
       - ~/.aws:/root/.aws
     environment:
-      SECONDS_BETWEEN_RUNS: 5
+      SECONDS_BETWEEN_RUNS: 10
       JMXTRANS_ENV: local
-      JMXTRANS_HOSTS: zookeeper
+      JMXTRANS_HOSTS: zookeeper-zk1:8989,zk2:8989,zk3:8989

@@ -3,7 +3,7 @@
     {
       "alias": "HOSTNAME",
       "host": "HOSTNAME",
-      "port": "8989",
+      "port": "HOSTPORT",
       "numQueryThreads" : 2,
       "queries": [
         {
