@@ -4,11 +4,16 @@ set -e
 
 if [ -n "${KAFKA_JMX_HOSTNAME}" ];
 then
+    echo "Setting up alias in /etc/hosts for ${KAFKA_JMX_HOSTNAME}..."
+
     # Alias the hostname in /etc/hosts
     # Note: "sed -i" will not work in docker for some reason on /etc/hosts
     sed -e "s/^\(127\.0\.0\.1.*\)$/\1 ${KAFKA_JMX_HOSTNAME}/" \
         -e "s/^\(::1.*\)$/\1 ${KAFKA_JMX_HOSTNAME}/" /etc/hosts > new_hosts
     cp -f new_hosts /etc/hosts
+
+    echo "New hosts file:"
+    cat /etc/hosts
 fi
 
 exec "$@"
