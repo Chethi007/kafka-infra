@@ -4,21 +4,32 @@ set -o errexit
 set -o pipefail
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
-# TODO loop over templates
+readonly CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
 
-ERRORS=$(aws cloudformation validate-template --template-body file://master-template.yaml | jq .Error)
+for cfn in ${CFNS}; do
+    echo "Validating template ${cfn}"
+    ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
 
-if [ "${ERRORS}" != "null" ]; then
-    echo "Template has errors: ${ERRORS}" && exit 1
-fi
+    if [ "${ERRORS}" != "null" ]; then
+        echo "${cfn} has errors: ${ERRORS}" && exit 1
+    fi
+done
 
+echo "Create/Update EFS"
+aws cloudformation deploy --template-file efs.yaml --stack-name "${ENV:-dev}"-kafka-efs --capabilities CAPABILITY_IAM
+
+echo "Packaging master template"
 aws cloudformation package --template-file master-template.yaml \
     --s3-bucket loyaltyone-"${ENV:-dev}"-infra --s3-prefix kafka --force-upload \
     --output-template-file master.yaml
 
-aws cloudformation deploy --template-file ./master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM
+echo "Deploying master template"
+aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM
 
-# TODO if failure, delete stack
-# aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
+aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
 
+echo "Cleaning up"
 rm -rf master.yaml
+
+echo "Deployed stack successfully"
+
