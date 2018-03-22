@@ -312,7 +312,6 @@
             }
           ]
         },
-
         {
           "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce",
           "resultAlias": "Kafka_Network",
