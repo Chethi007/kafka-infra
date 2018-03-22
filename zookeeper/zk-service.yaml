@@ -8,7 +8,7 @@ Parameters:
     Description: ECS Cluster
     Type: String
   StackName:
-    Description: Stack Name
+    Description: The Parent Stack Name
     Type: String
   Cpu:
     Description: CPU (1024 = 1 core)

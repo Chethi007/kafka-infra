@@ -11,7 +11,7 @@ Description: >
 
 Parameters:
   EfsStackName:
-    Description: Key Pair name for SSH access
+    Description: CloudFormation Stack Name for EFS
     Type: String
   KeyName:
     Description: Key Pair name for SSH access
