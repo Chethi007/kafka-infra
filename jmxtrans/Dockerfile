@@ -11,8 +11,6 @@ ENV JMXTRANS_ENV=local
 # aws: host1,host2,host3
 ENV JMXTRANS_HOSTS=zookeeper
 
-RUN apt-get update && apt-get -y install jq
-
 COPY config/*.json /usr/local/share/config/
 COPY bootstrap /usr/local/bin/
 
