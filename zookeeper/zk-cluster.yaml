@@ -44,15 +44,23 @@ Parameters:
     Description: Project tag
     Type: String
     MinLength: 1
+    ConstraintDescription: Must be a non-empty string
   Team:
     Description: Team tag
     Type: String
     MinLength: 1
+    ConstraintDescription: Must be a non-empty string
   Environment:
     Description: Environment (dev|sandbox|prod)
     Type: String
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
+    ConstraintDescription: Must be one of dev|sandbox|prod.
+  DomainName:
+    Description: The domain name for Zookeeper hosts
+    Type: String
+    AllowedPattern: '(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
+    ConstraintDescription: Must be a valid domain name
 
 Resources:
   ZKNodesLogGroup:
@@ -126,7 +134,7 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 1
         ServerName: !Sub '${StackName}-zk1'
-        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo}'
+        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
         ClientPort: !Ref 'ClientPort'
         PeerPortOne: !Ref 'PeerPortOne'
         PeerPortTwo: !Ref 'PeerPortTwo'
@@ -146,7 +154,7 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 2
         ServerName: !Sub '${StackName}-zk2'
-        ServerNames: !Sub '${StackName}-zk1.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo}'
+        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
         ClientPort: !Ref 'ClientPort'
         PeerPortOne: !Ref 'PeerPortOne'
         PeerPortTwo: !Ref 'PeerPortTwo'
@@ -166,7 +174,7 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 3
         ServerName: !Sub '${StackName}-zk3'
-        ServerNames: !Sub '${StackName}-zk1.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
+        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
         ClientPort: !Ref 'ClientPort'
         PeerPortOne: !Ref 'PeerPortOne'
         PeerPortTwo: !Ref 'PeerPortTwo'

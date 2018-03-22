@@ -58,15 +58,23 @@ Parameters:
     Description: Project tag
     Type: String
     MinLength: 1
+    ConstraintDescription: Must be a non-empty string
   Team:
     Description: Team tag
     Type: String
     MinLength: 1
+    ConstraintDescription: Must be a non-empty string
   Environment:
     Description: Environment (dev|sandbox|prod)
     Type: String
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
+    ConstraintDescription: Must be one of dev|sandbox|prod.
+  DomainName:
+    Description: The domain name for Zookeeper hosts
+    Type: String
+    AllowedPattern: '(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
+    ConstraintDescription: Must be a valid domain name
 
 Resources:
   ECS:
@@ -103,4 +111,5 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
+        DomainName: !Ref 'DomainName'
     DependsOn: 'ECS'
