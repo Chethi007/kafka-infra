@@ -39,7 +39,7 @@ for i in ${!host_groups[@]}; do
 
     # Retrieve an array of host names with port
     unset host_array
-    IFS=',' read -r -a host_array <<< "${host_list[$j]}"
+    IFS=',' read -r -a host_array <<< "${host_list}"
 
     # Setup config for each host
     for j in ${!host_array[@]};
