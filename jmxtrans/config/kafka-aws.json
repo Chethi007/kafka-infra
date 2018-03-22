@@ -1,0 +1,840 @@
+{
+  "servers": [
+    {
+      "alias": "HOSTNAME",
+      "host": "HOSTNAME",
+      "port": "HOSTPORT",
+      "numQueryThreads" : 2,
+      "queries": [
+        {
+          "obj": "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "BrokerTopicMetrics"},
+                  {"name": "Metric", "value": "MessagesInPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "BrokerTopicMetrics"},
+                  {"name": "Metric", "value": "BytesInPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "BrokerTopicMetrics"},
+                  {"name": "Metric", "value": "BytesOutPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaManager,name=LeaderCount",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaManager"},
+                  {"name": "Metric", "value": "LeaderCount"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaManager,name=PartitionCount",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaManager"},
+                  {"name": "Metric", "value": "PartitionCount"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaManager,name=FailedIsrUpdatesPerSec",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaManager"},
+                  {"name": "Metric", "value": "FailedIsrUpdatesPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaManager,name=IsrShrinksPerSec",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaManager"},
+                  {"name": "Metric", "value": "IsrShrinksPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaManager,name=IsrExpandsPerSec",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaManager"},
+                  {"name": "Metric", "value": "IsrExpandsPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaManager"},
+                  {"name": "Metric", "value": "UnderReplicatedPartitions"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ReplicaFetcherManager"},
+                  {"name": "Metrics", "value": "MaxLag.Replica"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Produce",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "DelayedOperationPurgatory"},
+                  {"name": "Metrics", "value": "PurgatorySize.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Fetch",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "DelayedOperationPurgatory"},
+                  {"name": "Metrics", "value": "PurgatorySize.Fetch"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent",
+          "resultAlias": "Kafka_Server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "KafkaRequestHandlerPool"},
+                  {"name": "Metrics", "value": "RequestHandlerAvgIdlePercent"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=Produce",
+          "resultAlias": "Kafka_Server",
+          "attr": ["queue-size"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "Produce"},
+                  {"name": "Metrics", "value": "QueueSize"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=Fetch",
+          "resultAlias": "Kafka_Server",
+          "attr": ["queue-size"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "Fetch"},
+                  {"name": "Metrics", "value": "QueueSize"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.server:type=Request",
+          "resultAlias": "Kafka_Server",
+          "attr": ["queue-size"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "Request"},
+                  {"name": "Metrics", "value": "QueueSize"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RequestsPerSec.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "TotalTimeMs.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=LocalTimeMs,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "LocalTimeMs.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RemoteTimeMs,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RemoteTimeMs.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "ResponseQueueTimeMs.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RequestQueueTimeMs.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs,request=Produce",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "ResponseSendTimeMs.Produce"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "TotalTimeMs.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=LocalTimeMs,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "LocalTimeMs.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RemoteTimeMs,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RemoteTimeMs.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "ResponseQueueTimeMs.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RequestQueueTimeMs.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "ResponseSendTimeMs.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchConsumer",
+          "resultAlias": "Kafka_Network",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RequestsPerSec.FetchConsumer"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "TotalTimeMs.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=LocalTimeMs,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "LocalTimeMs.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RemoteTimeMs,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RemoteTimeMs.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "ResponseQueueTimeMs.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RequestQueueTimeMs.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "ResponseSendTimeMs.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchFollower",
+          "resultAlias": "Kafka_Network",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "RequestMetrics"},
+                  {"name": "Metric", "value": "RequestsPerSec.FetchFollower"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent",
+          "resultAlias": "Kafka_Network",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "SocketServer"},
+                  {"name": "Metric", "value": "NetworkProcessorAvgIdlePercent"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.controller:type=KafkaController,name=ActiveControllerCount",
+          "resultAlias": "Kafka_Controller",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "KafkaController"},
+                  {"name": "Metric", "value": "ActiveControllerCount"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs",
+          "resultAlias": "Kafka_Controller",
+          "attr": [
+            "FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate","Min","Max","Count","StdDev","Mean",
+            "50thPercentile","75thPercentile","95thPercentile","98thPercentile","99thPercentile","999thPercentile"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ControllerStats"},
+                  {"name": "Metric", "value": "LeaderElectionRateAndTimeMs"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.controller:type=ControllerStats,name=UncleanLeaderElectionsPerSec",
+          "resultAlias": "Kafka_Controller",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"},
+                  {"name": "MetricType", "value": "ControllerStats"},
+                  {"name": "Metric", "value": "UncleanLeaderElectionsPerSec"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "java.lang:type=Memory",
+          "resultAlias": "JVM_Memory",
+          "attr": ["HeapMemoryUsage", "NonHeapMemoryUsage"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "java.lang:type=Threading",
+          "resultAlias": "JVM_Threading",
+          "attr": ["ThreadCount"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "InstanceId", "value": "${instance_id}"}
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

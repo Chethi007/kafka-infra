@@ -470,3 +470,8 @@ Zookeeper metrics:
 ```bash
 docker exec -it jmxtrans /bin/bash -c 'tail -f /tmp/zookeeper*'
 ```
+
+Kafka metrics:
+```bash
+docker exec -it jmxtrans /bin/bash -c 'tail -f /tmp/kafka*'
+```

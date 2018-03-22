@@ -46,26 +46,53 @@ services:
       KAFKA_JMX_PORT: 8989
       KAFKA_JMX_HOSTNAME: zk3
 
-  kafka:
+  k1:
     image: confluentinc/cp-kafka:latest
-    container_name: kafka
+    container_name: k1
     depends_on:
       - zk1
       - zk2
       - zk3
     ports:
-      # On OSX, edit /etc/hosts and add 'kafka' to 127.0.0.1
-      # This is because the way broker is advertising and won't listen
-      # if the host machine uses 'localhost:9092'. From the host machine
-      # Use 'kafka:9092' to bootstrap.
-      - '9092:9092'
+      - '19092:19092'
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://k1:19092'
       KAFKA_JMX_PORT: 8989
-      KAFKA_JMX_HOSTNAME: kafka
+      KAFKA_JMX_HOSTNAME: k1
+
+  k2:
+    image: confluentinc/cp-kafka:latest
+    container_name: k2
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+    ports:
+      - '29092:29092'
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zk2:22181,zk2:32181,zk3:42181
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://k2:29092'
+      KAFKA_JMX_PORT: 8989
+      KAFKA_JMX_HOSTNAME: k2
+
+  k3:
+    image: confluentinc/cp-kafka:latest
+    container_name: k3
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+    ports:
+      - '39092:39092'
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zk3:22181,zk2:32181,zk3:42181
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://k3:39092'
+      KAFKA_JMX_PORT: 8989
+      KAFKA_JMX_HOSTNAME: k3
 
   jmxtrans:
     build:
@@ -77,10 +104,12 @@ services:
       - zk1
       - zk2
       - zk3
-      - kafka
+      - k1
+      - k2
+      - k3
     volumes:
       - ~/.aws:/root/.aws
     environment:
       SECONDS_BETWEEN_RUNS: 10
       JMXTRANS_ENV: local
-      JMXTRANS_HOSTS: zookeeper#zk1:8989,zk2:8989,zk3:8989
+      JMXTRANS_HOSTS: zookeeper#zk1:8989,zk2:8989,zk3:8989|kafka#k1:8989,k2:8989,k3:8989
