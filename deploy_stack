@@ -15,13 +15,16 @@ for cfn in ${CFNS}; do
     fi
 done
 
+echo "Create/Update EFS"
+aws cloudformation deploy --template-file efs.yaml --stack-name "${ENV:-dev}"-kafka-efs --capabilities CAPABILITY_IAM
+
 echo "Packaging master template"
 aws cloudformation package --template-file master-template.yaml \
     --s3-bucket loyaltyone-"${ENV:-dev}"-infra --s3-prefix kafka --force-upload \
     --output-template-file master.yaml
 
 echo "Deploying master template"
-aws cloudformation deploy --template-file ./master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM
+aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM
 
 aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
 

@@ -1,0 +1,183 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Zookeeper Cluster
+
+Parameters:
+  Cluster:
+    Description: ECS Cluster
+    Type: String
+  StackName:
+    Description: Stack Name
+    Type: String
+  VPCId:
+    Description: Choose which VPC this cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  EFSMountPath:
+    Description: Path at which to create the volume mount for EFS
+    Type: String
+    Default: /mnt/efs
+  Subnets:
+    Description: Choose three private subnets this cluster should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+  ClientPort:
+    Description: Zookeeper client port
+    Type: Number
+    Default: 2181
+  PeerPortOne:
+    Description: Zookeeper first peer port
+    Type: Number
+    Default: 2888
+  PeerPortTwo:
+    Description: Zookeeper second peer port
+    Type: Number
+    Default: 3888
+  Cpu:
+    Description: Amount of CPU to reserve
+    Type: Number
+    Default: 1024
+  Memory:
+    Description: Amount of Memory to reserve
+    Type: Number
+    Default: 4096
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
+
+Resources:
+  ZKNodesLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '${StackName}/zk'
+      RetentionInDays: 1
+  ExternalZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: ExternalZKSG
+      GroupDescription: Allows External Access to ZK Nodes
+      VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
+  InternalZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: InternalZKSG
+      GroupDescription: Allows External Access to ZK Nodes
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref 'ExternalZKSG'
+          IpProtocol: tcp
+          FromPort: !Ref 'ClientPort'
+          ToPort: !Ref 'ClientPort'
+      VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
+    DependsOn: 'ExternalZKSG'
+  InternalZKSGIngressPeerOneRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PeerPortOne'
+      ToPort: !Ref 'PeerPortOne'
+      GroupId: !Ref 'InternalZKSG'
+      SourceSecurityGroupId: !Ref 'InternalZKSG'
+    DependsOn: 'InternalZKSG'
+  InternalZKSGIngressPeerTwoRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PeerPortTwo'
+      ToPort: !Ref 'PeerPortTwo'
+      GroupId: !Ref 'InternalZKSG'
+      SourceSecurityGroupId: !Ref 'InternalZKSG'
+    DependsOn: 'InternalZKSG'
+  ZookeeperNode1:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./zk-service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        StackName: !Ref 'StackName'
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ServerId: 1
+        ServerName: !Sub '${StackName}-zk1'
+        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo}'
+        ClientPort: !Ref 'ClientPort'
+        PeerPortOne: !Ref 'PeerPortOne'
+        PeerPortTwo: !Ref 'PeerPortTwo'
+        LogGroup: !Ref 'ZKNodesLogGroup'
+        SecurityGroup: !Ref 'InternalZKSG'
+        SubnetId: !Select [ 0, !Ref 'Subnets' ]
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+  ZookeeperNode2:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./zk-service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        StackName: !Ref 'StackName'
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ServerId: 2
+        ServerName: !Sub '${StackName}-zk2'
+        ServerNames: !Sub '${StackName}-zk1.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo}'
+        ClientPort: !Ref 'ClientPort'
+        PeerPortOne: !Ref 'PeerPortOne'
+        PeerPortTwo: !Ref 'PeerPortTwo'
+        LogGroup: !Ref 'ZKNodesLogGroup'
+        SecurityGroup: !Ref 'InternalZKSG'
+        SubnetId: !Select [ 1, !Ref 'Subnets' ]
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+  ZookeeperNode3:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./zk-service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        StackName: !Ref 'StackName'
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ServerId: 3
+        ServerName: !Sub '${StackName}-zk3'
+        ServerNames: !Sub '${StackName}-zk1.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
+        ClientPort: !Ref 'ClientPort'
+        PeerPortOne: !Ref 'PeerPortOne'
+        PeerPortTwo: !Ref 'PeerPortTwo'
+        LogGroup: !Ref 'ZKNodesLogGroup'
+        SecurityGroup: !Ref 'InternalZKSG'
+        SubnetId: !Select [ 2, !Ref 'Subnets' ]
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+
+Outputs:
+  ExternalZKSG:
+    Description: Allows External Access to ZK Nodes
+    Value: !Ref 'ExternalZKSG'
+    Export:
+      Name: !Sub '${StackName}-ExternalZKSG'

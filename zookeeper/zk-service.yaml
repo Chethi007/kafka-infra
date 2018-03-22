@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Creates a Zookeeper Service
+Description: Creates an ECS Zookeeper Service and Task
 
 Parameters:
   Cluster:
@@ -30,6 +30,18 @@ Parameters:
   ServerNames:
     Description: Server Names
     Type: String
+  ClientPort:
+    Description: Zookeeper client port
+    Type: Number
+    Default: 2181
+  PeerPortOne:
+    Description: Zookeeper first peer port
+    Type: Number
+    Default: 2888
+  PeerPortTwo:
+    Description: Zookeeper second peer port
+    Type: Number
+    Default: 3888
   LogGroup:
     Description: Log Group
     Type: String
@@ -68,12 +80,12 @@ Resources:
           - Name: ZOOKEEPER_SYNC_LIMIT
             Value: 2
         PortMappings:
-          - ContainerPort: 2181
-            HostPort: 2181
-          - ContainerPort: 2888
-            HostPort: 2888
-          - ContainerPort: 3888
-            HostPort: 3888
+          - ContainerPort: !Ref 'ClientPort'
+            HostPort: !Ref 'ClientPort'
+          - ContainerPort: !Ref 'PeerPortOne'
+            HostPort: !Ref 'PeerPortOne'
+          - ContainerPort: !Ref 'PeerPortTwo'
+            HostPort: !Ref 'PeerPortTwo'
         MountPoints:
           - SourceVolume: data
             ContainerPath: /var/lib/zookeeper/data
@@ -98,7 +110,6 @@ Resources:
           Host:
             SourcePath: !Sub '${EFSMountPath}/${StackName}/zk/${ServerId}/secrets'
       Family: !Sub '${StackName}-zk-${ServerId}'
-
   ZkNodeService:
     Type: 'AWS::ECS::Service'
     Properties:

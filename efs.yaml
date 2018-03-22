@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Creates an EFS file system with mount targets
+Description: Creates an EFS with mount targets in 3 AZs
 
 Parameters:
   VPCId:
@@ -20,6 +20,7 @@ Parameters:
     Description: EFS performance mode (General Purpose, Max IO)
     Type: String
     AllowedValues: [generalPurpose,maxIO]
+    Default: generalPurpose
   Project:
     Description: Project tag
     Type: String
@@ -91,7 +92,7 @@ Resources:
 Outputs:
   FSAccessSecurityGroup:
     Description: The ID of the Security group which is allowed to access the file system
-    Value: !GetAtt FileSystemAccessSecurityGroup.GroupId
+    Value: !GetAtt 'FileSystemAccessSecurityGroup.GroupId'
     Export:
       Name: !Sub '${AWS::StackName}-FSAccessSecurityGroupID'
   FileSystemId:
