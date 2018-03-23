@@ -2,9 +2,7 @@ version: 0.2
 
 env:
   variables:
-    CHILD_TEMPLATES: |
-      ecs.yaml
-      efs.yaml
+    TEMPLATE_BUCKET: "dev-kafka-artifacts"
   #parameter-store:
      # key: "value"
      # key: "value"
@@ -16,8 +14,17 @@ phases:
       # - command
   pre_build:
     commands:
-      - gem install cfn-nag && cfn_nag_scan --input-path ./master-template.yaml #&& cfn_nag_scan --input-path ecs.yaml && cfn_nag_scan --input-path efs.yaml
-
+      - readonly CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
+      - gem install cfn-nag
+      - |
+        for cfn in ${CFNS}; do
+            echo "Validating template ${cfn}"
+            ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
+            cfn_nag_scan --input-path ${cfn}
+            if [ "${ERRORS}" != "null" ]; then
+                echo "${cfn} has errors: ${ERRORS}" && exit 1
+            fi
+        done
   build:
     commands:
       - echo "Copying child stack templates to S3"
@@ -25,6 +32,11 @@ phases:
         for child_template in $CHILD_TEMPLATES; do
           aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$child_template"
         done
+      - echo "Packaging master template"
+      - aws cloudformation package --template-file master-template.yaml \
+            --s3-bucket $TEMPLATE_BUCKET --s3-prefix kafka --force-upload \
+            --output-template-file master.yaml
+
   #post_build:
     #commands:
       # - command
