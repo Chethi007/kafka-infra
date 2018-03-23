@@ -15,9 +15,9 @@ phases:
   pre_build:
     commands:
       - #!/bin/bash
+      - gem install cfn-nag
       - |
-        gem install cfn-nag
-        readonly CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
+        CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
             ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
