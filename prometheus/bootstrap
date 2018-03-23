@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -e
+
+# PROM_STATIC_CONFIGS=name1#host1:port1,host2:port2,host3:port3..|name2#host4:port4,host5:port5,...|...
+if [ -z "$PROM_STATIC_CONFIGS" ]; then
+    echo "Warning: PROM_STATIC_CONFIGS not specified"
+fi
+
+touch /tmp/partial-config.yml
+
+OLD_IFS=$IFS
+IFS='|'
+for job in $PROM_STATIC_CONFIGS; do
+    echo "$job" > /tmp/jobs.txt
+    IFS='#' read job_name targets < /tmp/jobs.txt
+
+    echo "  - job_name: '${job_name}'" >> /tmp/partial-config.yml
+    echo "    static_configs:" >> /tmp/partial-config.yml
+    echo "      - targets: ['${targets/,/','}']" >> /tmp/partial-config.yml
+done
+IFS=$OLD_IFS
+
+partial_config=`cat /tmp/partial-config.yml`
+if [ -n "$partial_config" ]; then
+    echo "Writing /etc/prometheus/prometheus.yml..."
+    cat << EOF | tee /etc/prometheus/prometheus.yml
+global:
+  scrape_interval: ${PROM_SCRAPE_INTERVAL:-10s}
+  scrape_timeout: ${PROM_SCRAPE_TIMEOUT:-10s}
+  evaluation_interval: ${PROM_EVALUATION_INTERVAL:-1m}
+scrape_configs:
+$partial_config
+EOF
+else
+    echo "No configurations to write."
+fi
+
+exec "$@"

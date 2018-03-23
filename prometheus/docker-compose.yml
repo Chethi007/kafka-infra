@@ -140,3 +140,5 @@ services:
     depends_on: [zk1,zk2,zk3,kafka,schema-registry,kafka-rest-1]
     ports:
       - '9090:9090'
+    environment:
+      PROM_STATIC_CONFIGS: 'kafka-rest#kafka-rest-1:9404|schema-registry#schema-registry:9404|kafka-connect#connect-1:9404|zookeeper#zk1:9404,zk2:9404,zk3:9404'
