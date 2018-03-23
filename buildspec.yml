@@ -8,14 +8,12 @@ env:
      # key: "value"
 
 phases:
-  #install:
-    #commands:
-      # - command
-      # - command
+  install:
+    commands:
+       - gem install cfn-nag
+       - apt-get -y jq
   pre_build:
     commands:
-      - #!/bin/bash
-      - gem install cfn-nag
       - |
         CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
         for cfn in ${CFNS}; do
