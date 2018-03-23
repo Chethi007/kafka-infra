@@ -68,8 +68,7 @@ Resources:
   EFS:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL:
-        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/efs.yaml"
+      TemplateURL: ./efs.yaml
       Parameters:
         VPCId: !Ref 'VPCId'
         SubnetIdA: !Select [ 0, !Ref 'Subnets' ]
@@ -79,8 +78,7 @@ Resources:
   ECS:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL:
-        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/ecs.yaml"
+      TemplateURL: ./ecs.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
