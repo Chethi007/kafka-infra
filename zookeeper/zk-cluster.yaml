@@ -61,6 +61,10 @@ Parameters:
     Type: String
     AllowedPattern: '(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
     ConstraintDescription: Must be a valid domain name
+  PrometheusJmxExporterPort:
+    Description: The JMX port to use for metric collection
+    Type: Number
+    Default: 9404
 
 Resources:
   ZKNodesLogGroup:
@@ -68,11 +72,26 @@ Resources:
     Properties:
       LogGroupName: !Sub '${StackName}/zk'
       RetentionInDays: 1
-  ExternalZKSG:
+  ClientZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: ExternalZKSG
-      GroupDescription: Allows External Access to ZK Nodes
+      GroupName: !Sub '${AWS::StackName}-client-zk-sg'
+      GroupDescription: Allows Client Access to Zookeeper Nodes
+      VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
+  MonitoringZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-monitoring-zk-sg'
+      GroupDescription: Allows Monitoring Access to Zookeeper Nodes
       VpcId: !Ref 'VPCId'
       Tags:
         - Key: Project
@@ -86,13 +105,17 @@ Resources:
   InternalZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: InternalZKSG
-      GroupDescription: Allows External Access to ZK Nodes
+      GroupName: !Sub '${AWS::StackName}-internal-zk-sg'
+      GroupDescription: Allows Internal Access to Zookeeper Nodes
       SecurityGroupIngress:
-        - SourceSecurityGroupId: !Ref 'ExternalZKSG'
+        - SourceSecurityGroupId: !Ref 'ClientZKSG'
           IpProtocol: tcp
           FromPort: !Ref 'ClientPort'
           ToPort: !Ref 'ClientPort'
+        - SourceSecurityGroupId: !Ref 'MonitoringZKSG'
+          IpProtocol: tcp
+          FromPort: !Ref 'PrometheusJmxExporterPort'
+          ToPort: !Ref 'PrometheusJmxExporterPort'
       VpcId: !Ref 'VPCId'
       Tags:
         - Key: Project
@@ -103,7 +126,7 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: zookeeper
-    DependsOn: 'ExternalZKSG'
+    DependsOn: 'ClientZKSG'
   InternalZKSGIngressPeerOneRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
@@ -141,6 +164,7 @@ Resources:
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZookeeperNode2:
     Type: 'AWS::CloudFormation::Stack'
@@ -161,6 +185,7 @@ Resources:
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZookeeperNode3:
     Type: 'AWS::CloudFormation::Stack'
@@ -181,11 +206,17 @@ Resources:
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
 
 Outputs:
-  ExternalZKSG:
-    Description: Allows External Access to ZK Nodes
-    Value: !Ref 'ExternalZKSG'
+  ClientZKSG:
+    Description: Allows Client Access to Zookeeper Nodes
+    Value: !Ref 'ClientZKSG'
     Export:
-      Name: !Sub '${StackName}-ExternalZKSG'
+      Name: !Sub '${StackName}-ClientZKSG'
+  MonitoringZKSG:
+    Description: Allows Monitoring Access to Zookeeper Nodes
+    Value: !Ref 'MonitoringZKSG'
+    Export:
+      Name: !Sub '${StackName}-MonitoringZKSG'
