@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Creates an EFS file system with mount targets
+Description: Creates an EFS with mount targets in 3 AZs
 
 Parameters:
   VPCId:
@@ -20,6 +20,20 @@ Parameters:
     Description: EFS performance mode (General Purpose, Max IO)
     Type: String
     AllowedValues: [generalPurpose,maxIO]
+    Default: generalPurpose
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
 
 Resources:
   FileSystemAccessSecurityGroup:
@@ -45,6 +59,14 @@ Resources:
       FileSystemTags:
       - Key: Name
         Value: !Ref 'AWS::StackName'
+      - Key: Project
+        Value: !Ref 'Project'
+      - Key: Team
+        Value: !Ref 'Team'
+      - Key: Environment
+        Value: !Ref 'Environment'
+      - Key: Component
+        Value: efs
   MountTargetA:
     Type: AWS::EFS::MountTarget
     Properties:
@@ -70,7 +92,7 @@ Resources:
 Outputs:
   FSAccessSecurityGroup:
     Description: The ID of the Security group which is allowed to access the file system
-    Value: !GetAtt FileSystemAccessSecurityGroup.GroupId
+    Value: !GetAtt 'FileSystemAccessSecurityGroup.GroupId'
     Export:
       Name: !Sub '${AWS::StackName}-FSAccessSecurityGroupID'
   FileSystemId:

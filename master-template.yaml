@@ -2,18 +2,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Description: >
-  This template deploys a VPC, with a pair of public and private subnets spread
-  across two Availabilty Zones. It deploys an Internet Gateway, with a default
-  route on the public subnets. It deploys a pair of NAT Gateways (one in each AZ),
-  and default routes for them in the private subnets.
-
-  It then deploys a highly available ECS cluster using an AutoScaling Group, with
+  This template deploys a highly available ECS cluster using an AutoScaling Group, with
   ECS hosts distributed across multiple Availability Zones.
 
-  Finally, it deploys a pair of example ECS services from containers published in
-  Amazon EC2 Container Registry (Amazon ECR).
+  It then deploys a Zookeeper cluster from containers published in Docker Hub.
+
+  TODO: move containers to ECR?
 
 Parameters:
+  EfsStackName:
+    Description: CloudFormation Stack Name for EFS
+    Type: String
   KeyName:
     Description: Key Pair name for SSH access
     Type: AWS::EC2::KeyPair::KeyName
@@ -26,17 +25,12 @@ Parameters:
   Subnets:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
-  PerformanceMode:
-    Description: EFS performance mode (General Purpose, Max IO)
-    Type: String
-    AllowedValues: [generalPurpose,maxIO]
-    Default: generalPurpose
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     ConstraintDescription: Must be a valid EC2 instance type
     Type: String
-    AllowedValues: [r4.large]
-    Default: r4.large
+    AllowedValues: [r4.xlarge]
+    Default: r4.xlarge
   EFSMountPath:
     Description: Path at which to create the volume mount for EFS
     Type: String
@@ -60,23 +54,23 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
-  TemplatePath:
+  Project:
+    Description: Project tag
     Type: String
-    Description: Path of the child templates uploaded to S3
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
 
 Resources:
-  EFS:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ./efs.yaml
-      Parameters:
-        VPCId: !Ref 'VPCId'
-        SubnetIdA: !Select [ 0, !Ref 'Subnets' ]
-        SubnetIdB: !Select [ 1, !Ref 'Subnets' ]
-        SubnetIdC: !Select [ 2, !Ref 'Subnets' ]
-        PerformanceMode: !Ref 'PerformanceMode'
   ECS:
-    Type: AWS::CloudFormation::Stack
+    Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ecs.yaml
       Parameters:
@@ -85,11 +79,28 @@ Resources:
         VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
-        EFSFileSystemId: !GetAtt 'EFS.Outputs.FileSystemId'
+        EFSFileSystemId: !ImportValue
+          'Fn::Sub': '${EfsStackName}-FileSystemId'
         EFSMountPath: !Ref 'EFSMountPath'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
         RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
-    DependsOn: EFS
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+  Zookeeper:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./zookeeper/zk-cluster.yaml
+      Parameters:
+        Cluster: !GetAtt 'ECS.Outputs.ECSCluster'
+        StackName: !Ref 'AWS::StackName'
+        VPCId: !Ref 'VPCId'
+        EFSMountPath: !Ref 'EFSMountPath'
+        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+    DependsOn: 'ECS'
