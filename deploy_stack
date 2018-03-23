@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -o errexit
-set -o pipefail
+#set -o errexit
+#set -o pipefail
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
 readonly CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
@@ -24,7 +24,8 @@ aws cloudformation package --template-file master-template.yaml \
     --output-template-file master.yaml
 
 echo "Deploying master template"
-aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM
+aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM \
+    --parameter-overrides DomainName=internal.loyalty.com
 
 aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
 
