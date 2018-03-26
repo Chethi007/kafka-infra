@@ -6,7 +6,6 @@ env:
   #parameter-store:
      # key: "value"
      # key: "value"
-
 phases:
   install:
     commands:
