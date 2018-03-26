@@ -11,7 +11,7 @@ phases:
   install:
     commands:
        - gem install cfn-nag
-       - apt-get -y jq
+       - apt-get install -y jq
   pre_build:
     commands:
       - |
