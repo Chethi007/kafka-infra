@@ -38,9 +38,9 @@ phases:
       - aws cloudformation package --template-file master-template.yaml
         --s3-bucket $TEMPLATE_BUCKET --s3-prefix kafka --force-upload
         --output-template-file master.yaml
-#artifacts:
-  #files:
-    # - location
+artifacts:
+  files:
+    - ./master.yaml
     # - location
   #discard-paths: yes
   #base-directory: location
