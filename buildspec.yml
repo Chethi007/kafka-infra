@@ -16,7 +16,7 @@ phases:
   pre_build:
     commands:
       - |
-        CFNS=$(grep --exclude=deploy_stack --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
+        CFNS=$(grep --exclude=deploy_stack --exclude=buildspec.yml --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
             ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
