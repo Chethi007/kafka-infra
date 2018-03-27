@@ -3,9 +3,7 @@ version: 0.2
 env:
   variables:
     TEMPLATE_BUCKET: "dev-kafka-artifacts"
-  #parameter-store:
-     # key: "value"
-     # key: "value"
+
 phases:
   install:
     commands:
@@ -41,9 +39,3 @@ phases:
 artifacts:
   files:
     - ./master.yaml
-    # - location
-  #discard-paths: yes
-  #base-directory: location
-#cache:
-  #paths:
-    # - paths
