@@ -61,12 +61,12 @@ Parameters:
     Description: Subnet in which to create load balancer instances
 
   # Features
-  EnableDockerMirror:
+  ClusterType:
     Type: String
-    Description: This will run docker-mirror on the container host instances
-    AllowedValues: [true, false]
-    Default: false
-    ConstraintDescription: Must be either 'true' or 'false'
+    Description: This will configure the ECS cluster for either running servics or kafka
+    AllowedValues: [service,kafka]
+    Default: service
+    ConstraintDescription: Must be either 'service' or 'kafka'
 
   # Tags
   Project:
@@ -177,6 +177,20 @@ Resources:
       Path: /
       Roles:
         - !Ref 'ECSInstanceRole'
+
+  EcsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: ecs.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
 
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -504,8 +518,8 @@ Resources:
 
                 exec > >(tee /var/log/user-data.log|logger -t docker-mirror -s 2>/dev/console) 2>&1
 
-                echo "Checking EnableDockerMirror='${EnableDockerMirror}'..."
-                if [ "${EnableDockerMirror}" == "true" ]; then
+                echo "Checking ClusterType='${ClusterType}'..."
+                if [ "${ClusterType}" == "service" ]; then
                   echo "Enabling docker-mirror..."
                   cp /usr/local/share/docker-mirror.conf /etc/init/
                 else
@@ -638,28 +652,26 @@ Resources:
       ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
 
 Outputs:
-  ECSCluster:
+  ClusterName:
     Description: A reference to the ECS cluster
     Value: !Ref 'ECSCluster'
     Export:
-      Name: !Sub '${AWS::StackName}-ECSCluster'
-  ECSAutoScalingGroupName:
+      Name: !Sub '${AWS::StackName}-ClusterName'
+  AutoScalingGroupName:
     Description: A reference to ECS AutoScaling Group Name
     Value: !Ref 'ECSAutoScalingGroup'
     Export:
-      Name: !Sub '${AWS::StackName}-ECSAutoScalingGroupName'
-  ECSServiceAutoScalingRole:
+      Name: !Sub '${AWS::StackName}-AutoScalingGroupName'
+  ServiceAutoScalingRole:
     Description: A reference to ECS service auto scaling role
     Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'
     Export:
-      Name: !Sub '${AWS::StackName}-ECSServiceAutoScalingRole'
-  ECSServiceSchedulerRole:
+      Name: !Sub '${AWS::StackName}-ServiceAutoScalingRole'
+  ServiceSchedulerRole:
     Description: A reference to ECS service load balancing role
     Value: !GetAtt 'EcsServiceSchedulerRole.Arn'
     Export:
-      Name: !Sub '${AWS::StackName}-ECSServiceSchedulerRole'
-
-  # A ECS Service level stack can attach Listener Rules to this Listener to get load balancing
+      Name: !Sub '${AWS::StackName}-ServiceSchedulerRole'
   Listener:
     Description: The ARN of the load balancer's listener
     Value: !Ref 'Listener'
@@ -685,3 +697,13 @@ Outputs:
     Value: !GetAtt [LoadBalancer, LoadBalancerFullName]
     Export:
       Name: !Sub '${AWS::StackName}-LoadBalancerFullName'
+  VpcId:
+    Description: "Cluster's VPC Id"
+    Value: !Ref 'VPCId'
+    Export:
+      Name: !Sub '${AWS::StackName}-VpcId'
+  ServiceRole:
+    Description: The ARN of the ECS service role
+    Value: !GetAtt [EcsServiceRole, Arn]
+    Export:
+      Name: !Sub '${AWS::StackName}-EcsServiceRole'
