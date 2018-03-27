@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+prg=$0
+
+function usage() {
+    echo "Usage:"
+    echo "    $prg <stack name> [dev|sandbox|prod] [components|kafka]"
+}
+
+stack_name=$1
+if [[ -z ${stack_name} ]]; then
+    echo "ERROR: Please specify the stack name"
+    usage
+    exit 1
+fi
+
+env=$2
+if [[ -z ${env} ]]; then
+    env=dev
+fi
+
+cluster_type=$3
+if [[ -z ${cluster_type} ]]; then
+    cluster_type=components
+fi
+
+aws cloudformation create-stack --capabilities CAPABILITY_IAM \
+    --stack-name ${stack_name} --template-body file://ecs.yaml \
+    --parameters file://../kafka-infra-config/ecs-cluster-${cluster_type}/${env}.json
+
+echo "Stack created. Please see CloudFormation for status on your stack"
+
