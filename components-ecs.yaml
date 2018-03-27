@@ -1,0 +1,687 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates an ECS cluster
+
+Parameters:
+  # Networking
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
+    Type: AWS::EC2::KeyPair::KeyName
+  VPCId:
+    Description: Choose which VPC this ECS cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  VPCCidrBlock:
+    Description: VPC CIDR Block
+    Type: String
+  Subnets:
+    Description: Choose which subnets this ECS cluster should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+  InstanceType:
+    Description: Which instance type should we use to build the ECS cluster?
+    Type: String
+    AllowedValues: [r4.xlarge]
+
+  # Storage
+  EFSFileSystemId:
+    Description: File system id to be mounted in the container instances
+    Type: String
+  EFSMountPath:
+    Description: Path at which to create the volume mount for EFS
+    Type: String
+
+  # ASG
+  ASGEventsTopic:
+    Description: SNS topic to notify of ASG events
+    Type: String
+  ASGMinSize:
+    Description: Minimum size of ECS Auto Scaling Group
+    Type: Number
+  ASGMaxSize:
+    Description: Maximum size of ECS Auto Scaling Group
+    Type: Number
+  ASGDesiredCapacity:
+    Description: Desired Capacity of the ECS Auto Scaling Group
+    Type: Number
+  RollingUpdateMinInService:
+    Description: Minimum instance in service during rolling update
+    Type: Number
+
+  # ELB
+  CertificateArn:
+    Type: String
+    Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
+  LoadBalancerType:
+    Type: String
+    Description: ECS ALB type
+    Default: internal
+    AllowedValues: [internet-facing, internal]
+  LoadBalancerSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet in which to create load balancer instances
+
+  # Features
+  EnableDockerMirror:
+    Type: String
+    Description: This will run docker-mirror on the container host instances
+    AllowedValues: [true, false]
+    Default: false
+    ConstraintDescription: Must be either 'true' or 'false'
+
+  # Tags
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
+
+Mappings:
+  # These are the latest ECS optimized AMIs as of March 2018:
+  #
+  #   amzn-ami-2017.09.j-amazon-ecs-optimized
+  #   ECS agent:    1.17.2
+  #   Docker:       17.12.0-ce
+  #   ecs-init:     1.17.2-1
+  #
+  # You can find the latest available on this page of our documentation:
+  # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
+  # (note the AMI identifier is region specific)
+  AWSRegionToAMI:
+    us-east-1:
+      AMI: ami-cad827b7
+    ca-central-1:
+      AMI: ami-db48cfbf
+
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref 'AWS::StackName'
+
+  # This IAM Role is attached to all of the ECS hosts. It is based on the default role published here:
+  # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
+  #
+  # You can add other IAM policy statements here to allow access from your ECS hosts
+  # to other AWS services. Please note that this role will be used by ALL containers
+  # running on the ECS host.
+  ECSInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action: 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+      ManagedPolicyArns: [
+        'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role',
+        'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+      ]
+      Policies:
+      - PolicyName: ECS-Service
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action: [
+              'cloudwatch:PutMetricData',
+              'ds:CreateComputer',
+              'ds:DescribeDirectories',
+              'ec2:DescribeInstanceStatus',
+              'ec2messages:AcknowledgeMessage',
+              'ec2messages:DeleteMessage',
+              'ec2messages:FailMessage',
+              'ec2messages:GetEndpoint',
+              'ec2messages:GetMessages',
+              'ec2messages:SendReply',
+              'ecs:Describe*',
+              'logs:CreateLogGroup',
+              'logs:DescribeLogGroups',
+              'logs:DescribeLogStreams',
+              'route53:GetHostedZone',
+              'route53:ListHostedZones',
+              'route53:ChangeResourceRecordSets',
+              'route53:ListResourceRecordSets',
+              'route53:ListHostedZonesByName',
+              's3:PutObject',
+              's3:AbortMultipartUpload',
+              'ssm:DescribeAssociation',
+              'ssm:GetDeployablePatchSnapshotForInstance',
+              'ssm:GetDocument',
+              'ssm:GetManifest',
+              'ssm:GetParameters',
+              'ssm:ListAssociations',
+              'ssm:ListInstanceAssociations',
+              'ssm:PutInventory',
+              'ssm:PutComplianceItems',
+              'ssm:PutConfigurePackageResult',
+              'ssm:UpdateAssociationStatus',
+              'ssm:UpdateInstanceAssociationStatus',
+              'ssm:UpdateInstanceInformation'
+            ]
+            Effect: Allow
+            Resource: '*'
+
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'ECSInstanceRole'
+
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref 'VPCId'
+      GroupDescription: Allow connections from vpc
+      SecurityGroupIngress:
+      - CidrIp: !Ref 'VPCCidrBlock'
+        IpProtocol: -1
+      Tags:
+      - Key: Name
+        Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
+      - Key: Project
+        Value: !Ref 'Project'
+      - Key: Team
+        Value: !Ref 'Team'
+      - Key: Environment
+        Value: !Ref 'Environment'
+      - Key: Component
+        Value: ecs
+
+  # Application Load Balancer
+  # All services in this cluster should use this ALB
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for load balancers which need to route traffic to container instances
+      VpcId: !Ref 'VPCId'
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+      Tags:
+      - Key: Name
+        Value: !Sub 'ECS Load Balancer SG - ${AWS::StackName}'
+      - Key: Project
+        Value: !Ref 'Project'
+      - Key: Team
+        Value: !Ref 'Team'
+      - Key: Environment
+        Value: !Ref 'Environment'
+      - Key: Component
+        Value: ecs
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: !Ref 'LoadBalancerType'
+      Subnets: !Ref 'LoadBalancerSubnetIds'
+      SecurityGroups: [!Ref 'LoadBalancerSecurityGroup']
+      Tags:
+        - Key: Name
+          Value: !Sub 'ECS ALB - ${AWS::StackName}'
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: ecs
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+      - CertificateArn: !Ref 'CertificateArn'
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref 'DefaultTargetGroup'
+      LoadBalancerArn: !Ref 'LoadBalancer'
+      Port: '443'
+      Protocol: HTTPS
+
+  # Must have a Target group under our listener's DefaultAction
+  # This target group is not used, each service should create its own target group
+  DefaultTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}-default'
+      VpcId: !Ref 'VPCId'
+      Port: 80
+      Protocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+
+
+  ECSLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: false
+      IamInstanceProfile: !Ref 'ECSInstanceProfile'
+      ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'KeyName'
+      SecurityGroups:
+        - !Ref 'ECSSecurityGroup'
+      UserData:
+        'Fn::Base64': !Sub |
+          #!/bin/bash
+
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+          yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+          yum install -y aws-cfn-bootstrap
+
+          echo "Initializing ASG..."
+          /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+
+          echo "Signalling ASG..."
+          /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              awslogs: []
+              jq: []
+              nfs-utils: []
+          commands:
+            01_add_instance_to_cluster:
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+            02_install_efs:
+              command: '/usr/local/share/setup-efs'
+            03_docker_mirror:
+              command: '/usr/local/share/setup-docker-mirror'
+          files:
+            '/etc/cfn/cfn-hup.conf':
+              mode: 000400
+              owner: root
+              group: root
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+            '/etc/cfn/hooks.d/cfn-auto-reloader.conf':
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+            '/etc/awslogs/awscli.conf':
+              content: !Sub |
+                [plugins]
+                cwlogs = cwlogs
+                [default]
+                region = ${AWS::Region}
+            '/etc/awslogs/awslogs.conf':
+              content: !Sub |
+                [general]
+                state_file = /var/lib/awslogs/agent-state
+
+                [/var/log/dmesg]
+                file = /var/log/dmesg
+                log_group_name = /var/log/dmesg
+                log_stream_name = {cluster}/{container_instance_id}
+
+                [/var/log/messages]
+                file = /var/log/messages
+                log_group_name = /var/log/messages
+                log_stream_name = {cluster}/{container_instance_id}
+                datetime_format = %b %d %H:%M:%S
+
+                [/var/log/docker]
+                file = /var/log/docker
+                log_group_name = /var/log/docker
+                log_stream_name = {cluster}/{container_instance_id}
+                datetime_format = %Y-%m-%dT%H:%M:%S.%f
+
+                [/var/log/ecs/ecs-init.log]
+                file = /var/log/ecs/ecs-init.log.*
+                log_group_name = /var/log/ecs/ecs-init.log
+                log_stream_name = {cluster}/{container_instance_id}
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/ecs/ecs-agent.log]
+                file = /var/log/ecs/ecs-agent.log.*
+                log_group_name = /var/log/ecs/ecs-agent.log
+                log_stream_name = {cluster}/{container_instance_id}
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/ecs/audit.log]
+                file = /var/log/ecs/audit.log.*
+                log_group_name = /var/log/ecs/audit.log
+                log_stream_name = {cluster}/{container_instance_id}
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/cloud-init.log]
+                file = /var/log/cloud-init.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/cloud-init.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/cloud-init-output.log]
+                file = /var/log/cloud-init-output.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/cloud-init-output.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/cfn-init.log]
+                file = /var/log/cfn-init.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/cfn-init.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/cfn-init-cmd.log]
+                file = /var/log/cfn-init-cmd.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/cfn-init-cmd.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/user-data.log]
+                file = /var/log/user-data.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/user-data.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+            '/etc/init/awslogs.conf':
+              content: |
+                #upstart-job
+                description "Configure and start CloudWatch Logs agent on Amazon ECS container instance"
+                author "Amazon Web Services"
+                start on started ecs
+
+                script
+                  exec > >(tee /var/log/user-data.log|logger -t cloudwatch-logs -s 2>/dev/console) 2>&1
+
+                  set -x
+
+                  until curl -s http://localhost:51678/v1/metadata
+                  do
+                      sleep 1
+                  done
+
+                  cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
+                  sed -i -e "s/{cluster}/$cluster/g" /etc/awslogs/awslogs.conf
+
+                  instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+                  sed -i -e "s/{instance_id}/$instance_id/g" /etc/awslogs/awslogs.conf
+
+                  container_instance_id=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $2}')
+                  sed -i -e "s/{container_instance_id}/$container_instance_id/g" /etc/awslogs/awslogs.conf
+
+                  region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
+                  sed -i -e "s/region = us-east-1/region = $region/g" /etc/awslogs/awscli.conf
+
+                  service awslogs start
+                  chkconfig awslogs on
+                end script
+            '/usr/local/share/docker-mirror.conf':
+              mode: 000644
+              owner: root
+              group: root
+              content: |
+                #upstart-job
+                description "Retrieve instances's private ip to store in /etc/hostip and start docker mirror container"
+                author "LoyaltyOne"
+                start on started ecs
+
+                script
+                  exec 2>>/var/log/docker-mirror.log
+                  set -x
+
+                  until curl -s http://169.254.169.254/latest/meta-data
+                  do
+                      sleep 1
+                  done
+
+                  # Grab the ip of this instance
+                  ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+                  echo $ip > /etc/hostip
+
+                  # Start docker mirror
+                  docker run -d \
+                    --name docker-mirror \
+                    -p 9001:9000 \
+                    --restart always \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    -v /etc/hostip:/etc/hostip \
+                    loyaltyone/docker-mirror:0.1.2
+                end script
+              '/usr/local/share/setup-efs':
+                mode: 000644
+                owner: root
+                group: root
+                content: !Sub |
+                  #!/bin/bash -e
+
+                  exec > >(tee /var/log/user-data.log|logger -t install-efs -s 2>/dev/console) 2>&1
+
+                  # Include EFS config
+                  EFS_FILE_SYSTEM_ID=${EFSFileSystemId}
+                  EFS_MOUNT_POINT=${EFSMountPath}
+
+                  EC2_AVAIL_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
+                  EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+
+                  mkdir -p $EFS_MOUNT_POINT
+
+                  DIR_SRC=$EC2_AVAIL_ZONE.$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com
+                  DIR_TGT=$EFS_MOUNT_POINT
+
+                  echo "$DIR_SRC:/ $DIR_TGT nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+                  echo "Added mount entry to fstab:"
+                  tail -n 1 /etc/fstab
+
+                  mount -a -t nfs4
+                  echo "Mounted EFS: $EFS_FILE_SYSTEM_ID"
+
+                  # Create the EFS group and assign it as the group for the entire EFS volume
+                  EFS_GID=555
+                  groupadd -g $EFS_GID efs
+              '/usr/local/share/setup-docker-mirror':
+                mode: 000644
+                owner: root
+                group: root
+                content: !Sub |
+                  #!/bin/bash -e
+
+                  exec > >(tee /var/log/user-data.log|logger -t docker-mirror -s 2>/dev/console) 2>&1
+
+                  echo "Checking EnableDockerMirror='${EnableDockerMirror}'..."
+                  if [ "${EnableDockerMirror}" == "true" ]; then
+                    echo "Enabling docker-mirror..."
+                    cp /usr/local/share/docker-mirror.conf /etc/init/
+                  else
+                    echo "Disabled docker-mirror..."
+                  fi
+
+                  service docker restart
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: true
+                ensureRunning: true
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref 'Subnets'
+      LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
+      MinSize: !Ref 'ASGMinSize'
+      MaxSize: !Ref 'ASGMaxSize'
+      DesiredCapacity: !Ref 'ASGDesiredCapacity'
+      NotificationConfigurations:
+        - TopicARN: !Ref 'ASGEventsTopic'
+          NotificationTypes:
+          - autoscaling:EC2_INSTANCE_TERMINATE
+      Tags:
+        - Key: Name
+          Value: !Sub 'ECS Container Instance - ${AWS::StackName}'
+          PropagateAtLaunch: true
+        - Key: Project
+          Value: !Ref 'Project'
+          PropagateAtLaunch: true
+        - Key: Team
+          Value: !Ref 'Team'
+          PropagateAtLaunch: true
+        - Key: Environment
+          Value: !Ref 'Environment'
+          PropagateAtLaunch: true
+        - Key: Component
+          Value: ecs
+          PropagateAtLaunch: true
+        - Key: Scheduler
+          Value: false
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref 'RollingUpdateMinInService'
+        MaxBatchSize: 1
+        PauseTime: PT15M
+        SuspendProcesses:
+          - HealthCheck
+          - ReplaceUnhealthy
+          - AZRebalance
+          - AlarmNotification
+          - ScheduledActions
+        WaitOnResourceSignals: true
+
+  ECSAutoScalingNotificationAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: autoscaling.amazonaws.com
+      ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AutoScalingNotificationAccessRole']
+
+  ECSAutoScalingGroupLifecycleHook:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_TERMINATING'
+      NotificationTargetARN: !Ref 'ASGEventsTopic'
+      RoleARN: !GetAtt 'ECSAutoScalingNotificationAccessRole.Arn'
+      DefaultResult: 'ABANDON'
+      HeartbeatTimeout: '300'
+
+  # unused but exported by
+  # awslabs/ecs-refarch-cloudformation/master/infrastructure/ecs-cluster.yaml
+  ECSServiceAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service: application-autoscaling.amazonaws.com
+      Policies:
+      - PolicyName: ecs-service-autoscaling
+        PolicyDocument:
+          Statement:
+            Action:
+            - application-autoscaling:*
+            - cloudwatch:DescribeAlarms
+            - cloudwatch:PutMetricAlarm
+            - ecs:DescribeServices
+            - ecs:UpdateService
+            Effect: Allow
+            Resource: '*'
+
+  # unused but exported by, not sure if we need this since we don't use LBs?
+  # LoyaltyOne/apollo-platform/blob/master/common/ecs/Cluster-with-ALB-CPU-Scaling.yml
+  # The Amazon ECS service scheduler makes calls to the Amazon EC2 and Elastic Load Balancing APIs on your behalf
+  # to register and deregister container instances with your load balancers. Before you can attach a load balancer
+  # to an Amazon ECS service, you must create an IAM role for your services to use before you start them.
+  # This requirement applies to any Amazon ECS service that you plan to use with a load balancer.
+  EcsServiceSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action: 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service: ecs.amazonaws.com
+      ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
+
+Outputs:
+  ECSCluster:
+    Description: A reference to the ECS cluster
+    Value: !Ref 'ECSCluster'
+    Export:
+      Name: !Sub '${AWS::StackName}-ECSCluster'
+  ECSAutoScalingGroupName:
+    Description: A reference to ECS AutoScaling Group Name
+    Value: !Ref 'ECSAutoScalingGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-ECSAutoScalingGroupName'
+  ECSServiceAutoScalingRole:
+    Description: A reference to ECS service auto scaling role
+    Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'
+    Export:
+      Name: !Sub '${AWS::StackName}-ECSServiceAutoScalingRole'
+  ECSServiceSchedulerRole:
+    Description: A reference to ECS service load balancing role
+    Value: !GetAtt 'EcsServiceSchedulerRole.Arn'
+    Export:
+      Name: !Sub '${AWS::StackName}-ECSServiceSchedulerRole'
+
+  # A ECS Service level stack can attach Listener Rules to this Listener to get load balancing
+  Listener:
+    Description: The ARN of the load balancer's listener
+    Value: !Ref 'Listener'
+    Export:
+      Name: !Sub '${AWS::StackName}-Listener'
+  LoadBalancerDNS:
+    Description: The dns name of the app load balancer for the service
+    Value: !GetAtt [LoadBalancer, DNSName]
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerDNSName'
+  LoadBalancerCanonicalHostedZoneID:
+    Description: The hosted zone id of the app load balancer for the service
+    Value: !GetAtt [LoadBalancer, CanonicalHostedZoneID]
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerCanonicalHostedZoneID'
+  InstanceSecurityGroup:
+    Description: The ID of the ecs container instance security group created
+    Value: !GetAtt [ECSSecurityGroup, GroupId]
+    Export:
+      Name: !Sub '${AWS::StackName}-ECSSecurityGroupId'
+  LoadBalancerFullName:
+    Description: The full name of the app load balancer
+    Value: !GetAtt [LoadBalancer, LoadBalancerFullName]
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerFullName'
