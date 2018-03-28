@@ -47,26 +47,15 @@ Parameters:
     Description: Minimum instance in service during rolling update
     Type: Number
 
-  # ELB
-  CertificateArn:
-    Type: String
-    Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
-  LoadBalancerType:
-    Type: String
-    Description: ECS ALB type
-    Default: internal
-    AllowedValues: [internet-facing, internal]
-  LoadBalancerSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Subnet in which to create load balancer instances
-
   # Features
   ClusterType:
     Type: String
     Description: This will configure the ECS cluster for either running servics or kafka
     AllowedValues: [service,kafka]
     Default: service
-    ConstraintDescription: Must be either 'service' or 'kafka'
+    ConstraintDescription: |
+      Must be either 'service' (schema registry, kafka connect, rest proxy, prometheus, etc)
+      or 'kafka' (zookeeper and brokers)
 
   # Tags
   Project:
@@ -99,6 +88,9 @@ Mappings:
       AMI: ami-cad827b7
     ca-central-1:
       AMI: ami-db48cfbf
+
+Conditions:
+  IsClusterTypeService: !Equals [!Ref 'ClusterType', 'service']
 
 Resources:
   ECSCluster:
@@ -179,6 +171,7 @@ Resources:
         - !Ref 'ECSInstanceRole'
 
   EcsServiceRole:
+    Condition: IsClusterTypeService
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -212,77 +205,7 @@ Resources:
       - Key: Component
         Value: ecs
 
-  # Application Load Balancer
-  # All services in this cluster should use this ALB
-  LoadBalancerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security Group for load balancers which need to route traffic to container instances
-      VpcId: !Ref 'VPCId'
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
-        CidrIp: 0.0.0.0/0
-      Tags:
-      - Key: Name
-        Value: !Sub 'ECS Load Balancer SG - ${AWS::StackName}'
-      - Key: Project
-        Value: !Ref 'Project'
-      - Key: Team
-        Value: !Ref 'Team'
-      - Key: Environment
-        Value: !Ref 'Environment'
-      - Key: Component
-        Value: ecs
 
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Scheme: !Ref 'LoadBalancerType'
-      Subnets: !Ref 'LoadBalancerSubnetIds'
-      SecurityGroups: [!Ref 'LoadBalancerSecurityGroup']
-      Tags:
-        - Key: Name
-          Value: !Sub 'ECS ALB - ${AWS::StackName}'
-        - Key: Project
-          Value: !Ref 'Project'
-        - Key: Team
-          Value: !Ref 'Team'
-        - Key: Environment
-          Value: !Ref 'Environment'
-        - Key: Component
-          Value: ecs
-
-  Listener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      Certificates:
-      - CertificateArn: !Ref 'CertificateArn'
-      DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref 'DefaultTargetGroup'
-      LoadBalancerArn: !Ref 'LoadBalancer'
-      Port: '443'
-      Protocol: HTTPS
-
-  # Must have a Target group under our listener's DefaultAction
-  # This target group is not used, each service should create its own target group
-  DefaultTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub '${AWS::StackName}-default'
-      VpcId: !Ref 'VPCId'
-      Port: 80
-      Protocol: HTTP
-      HealthCheckIntervalSeconds: 30
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 4
 
 
   ECSLaunchConfiguration:
@@ -655,55 +578,22 @@ Outputs:
   ClusterName:
     Description: A reference to the ECS cluster
     Value: !Ref 'ECSCluster'
-    Export:
-      Name: !Sub '${AWS::StackName}-ClusterName'
   AutoScalingGroupName:
     Description: A reference to ECS AutoScaling Group Name
     Value: !Ref 'ECSAutoScalingGroup'
-    Export:
-      Name: !Sub '${AWS::StackName}-AutoScalingGroupName'
   ServiceAutoScalingRole:
     Description: A reference to ECS service auto scaling role
     Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceAutoScalingRole'
   ServiceSchedulerRole:
     Description: A reference to ECS service load balancing role
     Value: !GetAtt 'EcsServiceSchedulerRole.Arn'
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceSchedulerRole'
-  Listener:
-    Description: The ARN of the load balancer's listener
-    Value: !Ref 'Listener'
-    Export:
-      Name: !Sub '${AWS::StackName}-Listener'
-  LoadBalancerDNS:
-    Description: The dns name of the app load balancer for the service
-    Value: !GetAtt [LoadBalancer, DNSName]
-    Export:
-      Name: !Sub '${AWS::StackName}-LoadBalancerDNSName'
-  LoadBalancerCanonicalHostedZoneID:
-    Description: The hosted zone id of the app load balancer for the service
-    Value: !GetAtt [LoadBalancer, CanonicalHostedZoneID]
-    Export:
-      Name: !Sub '${AWS::StackName}-LoadBalancerCanonicalHostedZoneID'
   InstanceSecurityGroup:
     Description: The ID of the ecs container instance security group created
     Value: !GetAtt [ECSSecurityGroup, GroupId]
-    Export:
-      Name: !Sub '${AWS::StackName}-ECSSecurityGroupId'
-  LoadBalancerFullName:
-    Description: The full name of the app load balancer
-    Value: !GetAtt [LoadBalancer, LoadBalancerFullName]
-    Export:
-      Name: !Sub '${AWS::StackName}-LoadBalancerFullName'
   VpcId:
     Description: "Cluster's VPC Id"
     Value: !Ref 'VPCId'
-    Export:
-      Name: !Sub '${AWS::StackName}-VpcId'
   ServiceRole:
+    Condition: IsClusterTypeService
     Description: The ARN of the ECS service role
     Value: !GetAtt [EcsServiceRole, Arn]
-    Export:
-      Name: !Sub '${AWS::StackName}-EcsServiceRole'
