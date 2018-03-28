@@ -25,10 +25,7 @@ Parameters:
     Description: ECS ALB type
     Default: internal
     AllowedValues: [internet-facing, internal]
-  LoadBalancerSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Subnet in which to create load balancer instances
-  Subnets:
+  PrivateSubnets:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
   InstanceType:
@@ -65,6 +62,20 @@ Parameters:
     MinLength: 1
     MaxLength: 24
     ConstraintDescription: Must be a unique prefix up to 24 characters to identify target groups for the cluster.
+    Description: The prefix to use for target groups.
+  InternalCidr0:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+  InternalCidr1:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+  InternalCidr2:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+
   Project:
     Description: Project tag
     Type: String
@@ -89,13 +100,16 @@ Resources:
       TemplateURL: ./elb.yaml
       Parameters:
         VPCId: !Ref 'VPCId'
-        LoadBalancerSubnets: !Join [",", [!Select [0, !Ref 'LoadBalancerSubnets'], !Select [1, !Ref 'LoadBalancerSubnets'], !Select [2, !Ref 'LoadBalancerSubnets']]]
+        LoadBalancerSubnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
         LoadBalancerType: !Ref 'LoadBalancerType'
         CertificateArn: !Ref 'CertificateArn'
         TargetGroupPrefix: !Ref 'TargetGroupPrefix'
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
+        Cidr0: !Ref 'InternalCidr0'
+        Cidr1: !Ref 'InternalCidr1'
+        Cidr2: !Ref 'InternalCidr2'
   ECS:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -104,7 +118,7 @@ Resources:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         VPCCidrBlock: !Ref 'VPCCidrBlock'
-        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
         InstanceType: !Ref 'InstanceType'
         EFSFileSystemId: !ImportValue
           'Fn::Sub': '${EfsStackName}-FileSystemId'

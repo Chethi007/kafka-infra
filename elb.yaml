@@ -24,6 +24,19 @@ Parameters:
     MinLength: 1
     MaxLength: 24
     ConstraintDescription: Must be a unique prefix up to 24 characters to identify target groups for the cluster.
+    Description: The prefix to use for target groups.
+  Cidr0:
+    Type: String
+    Description: CIDR range to allow access
+    Default: ''
+  Cidr1:
+    Type: String
+    Description: CIDR range to allow access
+    Default: ''
+  Cidr2:
+    Type: String
+    Description: CIDR range to allow access
+    Default: ''
 
   # Tags
   Project:
@@ -40,6 +53,11 @@ Parameters:
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
 
+Conditions:
+  EnableCidr0: !Not [!Equals [!Ref 'Cidr0', '']]
+  EnableCidr1: !Not [!Equals [!Ref 'Cidr1', '']]
+  EnableCidr2: !Not [!Equals [!Ref 'Cidr2', '']]
+
 Resources:
   # Application Load Balancer
   # All services in this cluster should use this ALB
@@ -48,15 +66,6 @@ Resources:
     Properties:
       GroupDescription: Security Group for load balancers which need to route traffic to container instances
       VpcId: !Ref 'VPCId'
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
-        CidrIp: 0.0.0.0/0
       Tags:
       - Key: Name
         Value: !Sub 'ECS Load Balancer SG - ${AWS::StackName}'
@@ -68,6 +77,60 @@ Resources:
         Value: !Ref 'Environment'
       - Key: Component
         Value: ecs
+  LoadBalancerSecurityGroupIngressHttp0:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr0
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: !Ref Cidr0
+  LoadBalancerSecurityGroupIngressHttp1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr1
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: !Ref Cidr1
+  LoadBalancerSecurityGroupIngressHttp2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr2
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: !Ref Cidr2
+  LoadBalancerSecurityGroupIngressHttps0:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr0
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: !Ref Cidr0
+  LoadBalancerSecurityGroupIngressHttps1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr1
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: !Ref Cidr1
+  LoadBalancerSecurityGroupIngressHttps2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr2
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: !Ref Cidr2
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
