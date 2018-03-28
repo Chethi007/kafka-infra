@@ -65,6 +65,13 @@ Parameters:
     Description: The JMX port to use for metric collection
     Type: Number
     Default: 9404
+  MonitoringCidr:
+    Type: String
+    Description: CIDR range to allow access for monitoring
+    Default: ''
+
+Conditions:
+  AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
 
 Resources:
   ZKNodesLogGroup:
@@ -87,21 +94,6 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: zookeeper
-  MonitoringZKSG:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupName: !Sub '${AWS::StackName}-monitoring-zk-sg'
-      GroupDescription: Allows Monitoring Access to Zookeeper Nodes
-      VpcId: !Ref 'VPCId'
-      Tags:
-        - Key: Project
-          Value: !Ref 'Project'
-        - Key: Team
-          Value: !Ref 'Team'
-        - Key: Environment
-          Value: !Ref 'Environment'
-        - Key: Component
-          Value: zookeeper
   InternalZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -112,10 +104,6 @@ Resources:
           IpProtocol: tcp
           FromPort: !Ref 'ClientPort'
           ToPort: !Ref 'ClientPort'
-        - SourceSecurityGroupId: !Ref 'MonitoringZKSG'
-          IpProtocol: tcp
-          FromPort: !Ref 'PrometheusJmxExporterPort'
-          ToPort: !Ref 'PrometheusJmxExporterPort'
       VpcId: !Ref 'VPCId'
       Tags:
         - Key: Project
@@ -145,6 +133,16 @@ Resources:
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalZKSG'
     DependsOn: 'InternalZKSG'
+  InternalZKSGIngressPrometheusExporterRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Condition: AllowMonitoringCidr
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PrometheusJmxExporterPort'
+      ToPort: !Ref 'PrometheusJmxExporterPort'
+      GroupId: !Ref 'InternalZKSG'
+      CidrIp: !Ref 'MonitoringCidr'
+
   ZookeeperNode1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -215,8 +213,3 @@ Outputs:
     Value: !Ref 'ClientZKSG'
     Export:
       Name: !Sub '${StackName}-ClientZKSG'
-  MonitoringZKSG:
-    Description: Allows Monitoring Access to Zookeeper Nodes
-    Value: !Ref 'MonitoringZKSG'
-    Export:
-      Name: !Sub '${StackName}-MonitoringZKSG'

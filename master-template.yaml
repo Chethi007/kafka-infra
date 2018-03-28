@@ -54,6 +54,10 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
+  MonitoringCidr:
+    Type: String
+    Description: CIDR range to allow access for monitoring
+    Default: ''
   Project:
     Description: Project tag
     Type: String
@@ -112,6 +116,7 @@ Resources:
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
         DomainName: !Ref 'DomainName'
+        MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'ECS'
 
 Outputs:

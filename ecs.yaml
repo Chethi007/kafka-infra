@@ -205,9 +205,6 @@ Resources:
       - Key: Component
         Value: ecs
 
-
-
-
   ECSLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
