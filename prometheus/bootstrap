@@ -15,9 +15,11 @@ for job in $PROM_STATIC_CONFIGS; do
     echo "$job" > /tmp/jobs.txt
     IFS='#' read job_name targets < /tmp/jobs.txt
 
+    targets_array=$(echo "['${targets}']" | sed -e "s/,/','/g")
+
     echo "  - job_name: '${job_name}'" >> /tmp/partial-config.yml
     echo "    static_configs:" >> /tmp/partial-config.yml
-    echo "      - targets: ['${targets/,/','}']" >> /tmp/partial-config.yml
+    echo "      - targets: ${targets_array}" >> /tmp/partial-config.yml
 done
 IFS=$OLD_IFS
 
