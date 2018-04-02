@@ -1,0 +1,63 @@
+startDelaySeconds: 0
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+rules:
+  - pattern: 'kafka.connect<type=([\w\d-]+), client-id=([\w\d-]+), node-id=([\w\d-]+)><>(.+): (.+)'
+    name: '$1_$4'
+    value: $5
+    labels:
+      client_id: '$2'
+      node_id: '$3'
+    help: '$1_$4'
+    type: GAUGE
+    attrNameSnakeCase: false
+  - pattern: 'kafka.connect<type=([\w\d-]+), client-id=([\w\d-]+)><>(.+): (.+)'
+    name: '$1_$3'
+    value: $4
+    labels:
+      client_id: '$2'
+    help: '$1_$3'
+    type: GAUGE
+    attrNameSnakeCase: false
+  - pattern: 'kafka.connect<type=([\w\d-]+), connector=([\w\d-]+), task=(\d+)><>(.+): (.+)'
+    name: '$1_$4'
+    value: $5
+    labels:
+      connector: '$2'
+      task: '$3'
+    help: '$1_$4'
+    type: GAUGE
+    attrNameSnakeCase: false
+  - pattern: 'kafka.connect<type=([\w\d-]+)><>(.+): (.+)'
+    name: '$1_$2'
+    value: $3
+    labels: {}
+    help: '$1_$2'
+    type: GAUGE
+    attrNameSnakeCase: false
+  - pattern: 'kafka.consumer<type=([\w\d-]+), client-id=([\w\d-]+), node-id=([\w\d-]+)><>(.+): (.+)'
+    name: '$1_$4'
+    value: $5
+    labels:
+      client_id: '$2'
+      node_id: '$3'
+    help: '$1_$4'
+    type: GAUGE
+    attrNameSnakeCase: false
+  - pattern: 'kafka.producer<type=([\w\d-]+), client-id=([\w\d-]+), node-id=([\w\d-]+)><>(.+): (.+)'
+    name: '$1_$4'
+    value: $5
+    labels:
+      client_id: '$2'
+      node_id: '$3'
+    help: '$1_$4'
+    type: GAUGE
+    attrNameSnakeCase: false
+  - pattern: 'cluster(\d+)-metrics<name=([\w\d-]+)><>(.+): (.+)'
+    name: 'cluster_$2_$3'
+    value: $4
+    labels:
+      cluster: 'cluster$1'
+    help: 'cluster_$2_$3'
+    type: GAUGE
+    attrNameSnakeCase: false

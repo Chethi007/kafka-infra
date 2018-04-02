@@ -42,7 +42,7 @@ services:
 
   # Multiple Kafka REST Proxies will not work properly for consuming
   kafka-rest-1:
-    image: loyaltyone/kafka-rest:test
+    build: .
     container_name: kafka-rest-1
     depends_on:
       - kafka
@@ -56,4 +56,13 @@ services:
       KAFKA_REST_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
       KAFKA_REST_ID: 'rest-a'
+      KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-connect-metrics.yml'
+#     KAFKA_REST_JMX_PORT: 8989
 
+  prometheus:
+    build: ../prometheus
+    container_name: prometheus
+    depends_on:
+      - kafka-rest-1
+    ports:
+      - '9090:9090'

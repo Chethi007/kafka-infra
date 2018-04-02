@@ -1,0 +1,21 @@
+{
+  "name": "cassandra-sink-connector-simple",
+  "connector.class": "com.datamountaineer.streamreactor.connect.cassandra.sink.CassandraSinkConnector",
+  "tasks.max": "10",
+  "topics": "test-simple",
+  "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "key.converter.schemas.enable": "false",
+  "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.schemas.enable": "false",
+  "connect.cassandra.contact.points": "cassandra",
+  "connect.cassandra.port": "9042",
+  "connect.cassandra.key.space": "TestKeySpace",
+  "connect.cassandra.username": "cassandra",
+  "connect.cassandra.password": "cassandra",
+  "connect.cassandra.ssl.enabled": "true",
+  "connect.cassandra.trust.store.path": "/root/certs/cassandra.truststore",
+  "connect.cassandra.trust.store.password": "cassandra",
+  "connect.cassandra.kcql": "INSERT INTO SimpleTable SELECT * FROM test-simple",
+  "connect.cassandra.consistency.level": "ONE",
+  "connect.progress.enabled": "true"
+}

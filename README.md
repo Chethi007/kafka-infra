@@ -314,6 +314,30 @@ Change the host name based on your hosted zone:
 KAFKA_REST_URL=https://cp-kafka-rest.change_me
 ```
 
+## Monitoring REST Proxy
+
+The Prometheus JMX Exporter agent is used to expose metrics via HTTP on
+port 9404. The metrics will need to be scraped by a Prometheus server.
+
+To see the metrics using the exporter:
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:9404
+```
+
+If you access an endpoint like this:
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:8082/brokers
+```
+
+You should be able to see all metrics related to this endpoint:
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:9404 | grep 'brokers.list'
+```
+
+You can also search for the metrics in Prometheus server by visiting
+`http://localhost:9090/`. For example, type in
+`jersey_metrics_brokers_list_request_rate` and click __Execute__.
+
 ### JSON Messages
 
 #### Produce
@@ -409,4 +433,45 @@ curl -X GET \
 curl -X DELETE \
     -H "Content-Type: application/vnd.kafka.v2+json" \
     $KAFKA_REST_URL/consumers/my_avro_consumer/instances/my_consumer_instance
+```
+
+# Monitoring
+
+## Prometheus Local
+
+```bash
+cd prometheus
+docker-compose up -d
+```
+
+Kafka REST
+```bash
+docker exec -it kafka-rest-1 curl http://localhost:9404/metrics
+```
+
+Schema Registry
+```bash
+docker exec -it schema-registry curl http://localhost:9404/metrics
+```
+
+You can visit `http://localhost:9090` and search for metrics. Some
+examples are:
+- jersey_metrics_brokers_list_request_rate
+- jersey_metrics_subjects_list_request_rate
+
+## JMXTRANS Local
+
+```bash
+cd jmxtrans
+docker-compose up -d
+```
+
+Zookeeper metrics:
+```bash
+docker exec -it jmxtrans /bin/bash -c 'tail -f /tmp/zookeeper*'
+```
+
+Kafka metrics:
+```bash
+docker exec -it jmxtrans /bin/bash -c 'tail -f /tmp/kafka*'
 ```

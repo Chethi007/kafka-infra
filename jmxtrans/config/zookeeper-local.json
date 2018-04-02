@@ -1,0 +1,95 @@
+{
+  "servers": [
+    {
+      "alias": "HOSTNAME",
+      "host": "HOSTNAME",
+      "port": "HOSTPORT",
+      "numQueryThreads" : 2,
+      "queries": [
+        {
+          "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*",
+          "resultAlias": "Zookeeper_Server",
+          "attr": ["QuorumSize"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.server.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*",
+          "resultAlias": "Zookeeper_Clients",
+          "attr": [
+            "MaxClientCnxnsPerHost",
+            "MaxRequestLatency",
+            "AvgRequestLatency",
+            "MinRequestLatency",
+            "MaxSessionTimeout",
+            "MinSessionTimeout",
+            "OutstandingRequests",
+            "PacketsReceived",
+            "PacketsSent",
+            "PendingRevalidationCount",
+            "TickTime",
+            "NumAliveConnections"
+          ],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.clients.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*,name3=InMemoryDataTree",
+          "resultAlias": "Zookeeper_InMemoryDataTree",
+          "attr": ["NodeCount", "WatchCount"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.in-memory-data-tree.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "java.lang:type=Memory",
+          "resultAlias": "JVM_Memory",
+          "attr": ["HeapMemoryUsage", "NonHeapMemoryUsage"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.jvm-memory.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "java.lang:type=Threading",
+          "resultAlias": "JVM_Threading",
+          "attr": ["ThreadCount"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/zookeeper.jvm-threading.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

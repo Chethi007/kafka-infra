@@ -51,6 +51,10 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
+  PrometheusJmxExporterPort:
+    Description: The JMX port to use for metric collection
+    Type: Number
+    Default: 9404
 
 Resources:
   ZkNodeTaskDefinition:
@@ -59,7 +63,7 @@ Resources:
       NetworkMode: awsvpc
       ContainerDefinitions:
       - Name: zookeeper
-        Image: confluentinc/cp-zookeeper:4.0.0-3
+        Image: loyaltyone/cp-zookeeper:0.1-beta
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
         MemoryReservation: !Ref 'Memory'
@@ -79,6 +83,8 @@ Resources:
             Value: 5
           - Name: ZOOKEEPER_SYNC_LIMIT
             Value: 2
+          - Name: KAFKA_JMX_OPTS
+            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/zookeeper-metrics.yml'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
@@ -86,6 +92,8 @@ Resources:
             HostPort: !Ref 'PeerPortOne'
           - ContainerPort: !Ref 'PeerPortTwo'
             HostPort: !Ref 'PeerPortTwo'
+          - ContainerPort: !Ref 'PrometheusJmxExporterPort'
+            HostPort: !Ref 'PrometheusJmxExporterPort'
         MountPoints:
           - SourceVolume: data
             ContainerPath: /var/lib/zookeeper/data

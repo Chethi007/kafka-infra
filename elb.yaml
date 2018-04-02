@@ -1,0 +1,191 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates resources for Kafka-related services cluster
+
+Parameters:
+  # ELB
+  VPCId:
+    Description: Choose which VPC this ECS cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  CertificateArn:
+    Type: String
+    Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
+  LoadBalancerType:
+    Type: String
+    Description: ECS ALB type
+    Default: internal
+    AllowedValues: [internet-facing, internal]
+  LoadBalancerSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet in which to create load balancer instances
+  TargetGroupPrefix:
+    Type: String
+    MinLength: 1
+    MaxLength: 24
+    ConstraintDescription: Must be a unique prefix up to 24 characters to identify target groups for the cluster.
+    Description: The prefix to use for target groups.
+  Cidr0:
+    Type: String
+    Description: CIDR range to allow access
+    Default: ''
+  Cidr1:
+    Type: String
+    Description: CIDR range to allow access
+    Default: ''
+  Cidr2:
+    Type: String
+    Description: CIDR range to allow access
+    Default: ''
+
+  # Tags
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
+
+Conditions:
+  EnableCidr0: !Not [!Equals [!Ref 'Cidr0', '']]
+  EnableCidr1: !Not [!Equals [!Ref 'Cidr1', '']]
+  EnableCidr2: !Not [!Equals [!Ref 'Cidr2', '']]
+
+Resources:
+  # Application Load Balancer
+  # All services in this cluster should use this ALB
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for load balancers which need to route traffic to container instances
+      VpcId: !Ref 'VPCId'
+      Tags:
+      - Key: Name
+        Value: !Sub 'ECS Load Balancer SG - ${AWS::StackName}'
+      - Key: Project
+        Value: !Ref 'Project'
+      - Key: Team
+        Value: !Ref 'Team'
+      - Key: Environment
+        Value: !Ref 'Environment'
+      - Key: Component
+        Value: ecs
+  LoadBalancerSecurityGroupIngressHttp0:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr0
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: !Ref Cidr0
+  LoadBalancerSecurityGroupIngressHttp1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr1
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: !Ref Cidr1
+  LoadBalancerSecurityGroupIngressHttp2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr2
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: !Ref Cidr2
+  LoadBalancerSecurityGroupIngressHttps0:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr0
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: !Ref Cidr0
+  LoadBalancerSecurityGroupIngressHttps1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr1
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: !Ref Cidr1
+  LoadBalancerSecurityGroupIngressHttps2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: EnableCidr2
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: !Ref Cidr2
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: !Ref 'LoadBalancerType'
+      Subnets: !Ref 'LoadBalancerSubnets'
+      SecurityGroups: [!Ref 'LoadBalancerSecurityGroup']
+      Tags:
+        - Key: Name
+          Value: !Sub 'ECS ALB - ${AWS::StackName}'
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: ecs
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+      - CertificateArn: !Ref 'CertificateArn'
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref 'DefaultTargetGroup'
+      LoadBalancerArn: !Ref 'LoadBalancer'
+      Port: '443'
+      Protocol: HTTPS
+
+  # Must have a Target group under our listener's DefaultAction
+  # This target group is not used, each service should create its own target group
+  DefaultTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${TargetGroupPrefix}-default'
+      VpcId: !Ref 'VPCId'
+      Port: 80
+      Protocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+
+Outputs:
+  Listener:
+    Description: The ARN of the load balancer's listener
+    Value: !Ref 'Listener'
+  LoadBalancerDNS:
+    Description: The dns name of the app load balancer for the service
+    Value: !GetAtt [LoadBalancer, DNSName]
+  LoadBalancerCanonicalHostedZoneID:
+    Description: The hosted zone id of the app load balancer for the service
+    Value: !GetAtt [LoadBalancer, CanonicalHostedZoneID]
+  LoadBalancerFullName:
+    Description: The full name of the app load balancer
+    Value: !GetAtt [LoadBalancer, LoadBalancerFullName]

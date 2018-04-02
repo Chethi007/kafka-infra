@@ -45,7 +45,6 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
 
   connect-1:
-    image: loyaltyone/kafka-connect:test
     build: .
     container_name: connect-1
     depends_on:
