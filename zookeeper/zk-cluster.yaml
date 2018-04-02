@@ -59,8 +59,6 @@ Parameters:
   DomainName:
     Description: The domain name for Zookeeper hosts
     Type: String
-    AllowedPattern: '(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
-    ConstraintDescription: Must be a valid domain name
   PrometheusJmxExporterPort:
     Description: The JMX port to use for metric collection
     Type: Number

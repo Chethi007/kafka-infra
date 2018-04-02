@@ -5,13 +5,10 @@
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
 readonly CFNS=$(grep \
-    --exclude=deploy_master_stack \
+    --exclude=deploy_stack \
     --exclude=deploy_services_stack \
-    --exclude=services-tepmlate.yaml \
-    --exclude=master.yaml \
-    --exclude=services.yaml \
-    --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,jmxtrans} \
-    -rnwl . -e 'AWSTemplateFormatVersion')
+    --exclude=deploy_master_stack \
+    --exclude-dir={kafka-connect,kafka-rest,schema-registry,cassandra} -rnwl . -e 'AWSTemplateFormatVersion')
 
 for cfn in ${CFNS}; do
     echo "Validating template ${cfn}"
@@ -31,9 +28,7 @@ aws cloudformation package --template-file master-template.yaml \
     --output-template-file master.yaml
 
 echo "Deploying master template"
-params=$(jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' ../kafka-infra-config/dev-master-params.json | tr '\n' ' ')
-aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM \
-    --parameter-overrides $params
+aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM    
 
 #aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
 
