@@ -61,7 +61,7 @@ services:
 
   prometheus:
     build: ../prometheus
-    container_name: pometheus
+    container_name: prometheus
     depends_on:
       - kafka-rest-1
     ports:
