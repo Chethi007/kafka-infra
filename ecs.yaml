@@ -29,6 +29,9 @@ Parameters:
   EFSMountPath:
     Description: Path at which to create the volume mount for EFS
     Type: String
+  EFSAccessSecurityGroup:
+    Description: The Security Group that allows access to EFS
+    Type: String
 
   # ASG
   ASGEventsTopic:
@@ -215,6 +218,7 @@ Resources:
       KeyName: !Ref 'KeyName'
       SecurityGroups:
         - !Ref 'ECSSecurityGroup'
+        - !Ref 'EFSAccessSecurityGroup'
       UserData:
         'Fn::Base64': !Sub |
           #!/bin/bash
