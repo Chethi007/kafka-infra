@@ -5,8 +5,7 @@
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
 readonly CFNS=$(grep \
-    --exclude=deploy_master_stack \
-    --exclude=deploy_services_stack \
+    --include="*.yaml" \
     --exclude=master-template.yaml \
     --exclude=master.yaml \
     --exclude=services.yaml \

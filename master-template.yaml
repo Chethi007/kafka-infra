@@ -13,6 +13,9 @@ Parameters:
   EfsStackName:
     Description: CloudFormation Stack Name for EFS
     Type: String
+  HostedZoneStackName:
+    Description: The Stack Name of the hosted zone in which to register services
+    Type: String  
   KeyName:
     Description: Key Pair name for SSH access
     Type: AWS::EC2::KeyPair::KeyName
@@ -35,9 +38,6 @@ Parameters:
     Description: Path at which to create the volume mount for EFS
     Type: String
     Default: /mnt/efs
-  EFSAccessSecurityGroup:
-    Description: The Security Group that allows access to EFS
-    Type: String
   ASGMinSize:
     Description: Minimum size of ECS Auto Scaling Group
     Type: Number
@@ -77,11 +77,6 @@ Parameters:
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
-  DomainName:
-    Description: The domain name for Zookeeper hosts
-    Type: String
-    AllowedPattern: '(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
-    ConstraintDescription: Must be a valid domain name
 
 Resources:
   ECS:
@@ -97,7 +92,8 @@ Resources:
         EFSFileSystemId: !ImportValue
           'Fn::Sub': '${EfsStackName}-FileSystemId'
         EFSMountPath: !Ref 'EFSMountPath'
-        EFSAccessSecurityGroup: !Ref 'EFSAccessSecurityGroup'
+        EFSAccessSecurityGroup: !ImportValue
+          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
@@ -106,6 +102,8 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
+        HostedZoneId: !ImportValue
+          'Fn::Sub': "${HostedZoneStackName}-ZoneId"        
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -119,7 +117,8 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
-        DomainName: !Ref 'DomainName'
+        DomainName: !ImportValue
+          'Fn::Sub': "${HostedZoneStackName}-ZoneName"        
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'ECS'
 

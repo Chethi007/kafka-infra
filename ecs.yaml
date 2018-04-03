@@ -59,6 +59,9 @@ Parameters:
     ConstraintDescription: |
       Must be either 'service' (schema registry, kafka connect, rest proxy, prometheus, etc)
       or 'kafka' (zookeeper and brokers)
+  HostedZoneId:
+    Description: The ID of the Hosted Zone in which to register services for service discovery
+    Type: String   
 
   # Tags
   Project:
@@ -228,26 +231,33 @@ Resources:
           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           yum install -y aws-cfn-bootstrap
 
-          echo "Initializing ASG..."
-          /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
-
+          echo "Initializing Instance"
+          config_set="general"
+          
+          if [ "${ClusterType}" == "service" ]; then
+            echo "Enabling docker-mirror..."
+            config_set="services"
+          fi
+                          
+          /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets $config_set
+          exit_code=$?
+          
           echo "Signalling ASG..."
-          /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+          /opt/aws/bin/cfn-signal -e $exit_code --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
     Metadata:
       AWS::CloudFormation::Init:
-        config:
-          packages:
-            yum:
-              awslogs: []
-              jq: []
-              nfs-utils: []
-          commands:
-            01_add_instance_to_cluster:
-              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-            02_install_efs:
-              command: '/usr/local/share/setup-efs'
-            03_docker_mirror:
-              command: '/usr/local/share/setup-docker-mirror'
+        configSets:
+          general:
+          - install_cfn_hooks
+          - install_logging
+          - install_ecs
+          - install_efs
+          - install_service_discovery
+          services:
+          - ConfigSet: general
+          - install_docker_mirror
+              
+        install_cfn_hooks:
           files:
             '/etc/cfn/cfn-hup.conf':
               mode: '000400'
@@ -262,7 +272,22 @@ Resources:
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets general
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: true
+                ensureRunning: true
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+        # Configure and install aws logs agent                              
+        install_logging:
+          packages:
+            yum:
+              awslogs: []
+              jq: []
+          files:
             '/etc/awslogs/awscli.conf':
               content: !Sub |
                 [plugins]
@@ -358,9 +383,6 @@ Resources:
                   cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
                   sed -i -e "s/{cluster}/$cluster/g" /etc/awslogs/awslogs.conf
 
-                  instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-                  sed -i -e "s/{instance_id}/$instance_id/g" /etc/awslogs/awslogs.conf
-
                   container_instance_id=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $2}')
                   sed -i -e "s/{container_instance_id}/$container_instance_id/g" /etc/awslogs/awslogs.conf
 
@@ -370,38 +392,23 @@ Resources:
                   service awslogs start
                   chkconfig awslogs on
                 end script
-            '/usr/local/share/docker-mirror.conf':
-              mode: '000644'
-              owner: root
-              group: root
-              content: |
-                #upstart-job
-                description "Retrieve instances's private ip to store in /etc/hostip and start docker mirror container"
-                author "LoyaltyOne"
-                start on started ecs
-
-                script
-                  exec 2>>/var/log/docker-mirror.log
-                  set -x
-
-                  until curl -s http://169.254.169.254/latest/meta-data
-                  do
-                      sleep 1
-                  done
-
-                  # Grab the ip of this instance
-                  ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-                  echo $ip > /etc/hostip
-
-                  # Start docker mirror
-                  docker run -d \
-                    --name docker-mirror \
-                    -p 9001:9000 \
-                    --restart always \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v /etc/hostip:/etc/hostip \
-                    loyaltyone/docker-mirror:0.1.2
-                end script
+                
+        # Let ecs agent know which cluster to join
+        install_ecs:
+          commands:
+            01_add_instance_to_cluster:
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+        # Mount EFS file system in via NFS                            
+        install_efs:          
+          packages:
+            yum:
+              nfs-utils: []
+          commands:
+            01_setup_efs:
+              command: '/usr/local/share/setup-efs'
+            02_restart_docker:
+              command: service docker restart              
+          files:    
             '/usr/local/share/setup-efs':
               mode: '000744'
               owner: root
@@ -432,34 +439,73 @@ Resources:
 
                 # Create the EFS group and assign it as the group for the entire EFS volume
                 EFS_GID=555
-                groupadd -g $EFS_GID efs
-            '/usr/local/share/setup-docker-mirror':
-              mode: '000744'
+                groupadd -g $EFS_GID efs                              
+        install_service_discovery:
+          files:
+            "/etc/init/service_discovery.conf":
+              mode: 000644
               owner: root
               group: root
               content: !Sub |
-                #!/bin/bash -e
+                #upstart-job
+                description "Run service discovery agent after ecs is ready"
+                author "LoyaltyOne"
+                start on started ecs
 
-                exec > >(tee /var/log/user-data.log|logger -t docker-mirror -s 2>/dev/console) 2>&1
+                script
+                  exec 2>>/var/log/user-data.log
+                  set -x
+                  
+                  cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
+                  region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
+                  
+                  # Start service discovery agent
+                  docker run -d \
+                    --name service-discovery-agent \
+                    --restart always \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    --add-host host:$(ifconfig docker0 | grep -oP 'inet addr:\K\S+') \
+                    --log-driver=awslogs \
+                    --log-opt awslogs-region=$region \
+                    --log-opt awslogs-group=$cluster \
+                    --log-opt awslogs-stream-prefix="service-discovery" \
+                    loyaltyone/service-discovery-agent-route53:latest --hostedZoneId=${HostedZoneId}
+                  
+                end script
+        install_docker_mirror:
+          files:
+            '/etc/init/docker_mirror.conf':
+              mode: '000644'
+              owner: root
+              group: root
+              content: |
+                #upstart-job
+                description "Retrieve instances's private ip to store in /etc/hostip and start docker mirror container"
+                author "LoyaltyOne"
+                start on started ecs
 
-                echo "Checking ClusterType='${ClusterType}'..."
-                if [ "${ClusterType}" == "service" ]; then
-                  echo "Enabling docker-mirror..."
-                  cp /usr/local/share/docker-mirror.conf /etc/init/
-                else
-                  echo "Disabled docker-mirror..."
-                fi
+                script
+                  exec 2>>/var/log/user-data.log
+                  set -x
 
-                service docker restart
-          services:
-            sysvinit:
-              cfn-hup:
-                enabled: true
-                ensureRunning: true
-                files:
-                  - /etc/cfn/cfn-hup.conf
-                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+                  until curl -s http://169.254.169.254/latest/meta-data
+                  do
+                      sleep 1
+                  done
 
+                  # Grab the ip of this instance
+                  ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+                  echo $ip > /etc/hostip
+
+                  # Start docker mirror
+                  docker run -d \
+                    --name docker-mirror \
+                    -p 9001:9000 \
+                    --restart always \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    -v /etc/hostip:/etc/hostip \
+                    loyaltyone/docker-mirror:0.1.2
+                end script
   ECSAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
