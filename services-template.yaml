@@ -123,6 +123,8 @@ Resources:
         EFSFileSystemId: !ImportValue
           'Fn::Sub': '${EfsStackName}-FileSystemId'
         EFSMountPath: !Ref 'EFSMountPath'
+        EFSAccessSecurityGroup: !ImportValue
+          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
