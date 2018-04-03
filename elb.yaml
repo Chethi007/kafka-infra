@@ -77,6 +77,9 @@ Resources:
         Value: !Ref 'Environment'
       - Key: Component
         Value: ecs
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
   LoadBalancerSecurityGroupIngressHttp0:
     Type: AWS::EC2::SecurityGroupIngress
     Condition: EnableCidr0
