@@ -44,15 +44,32 @@ Parameters:
     Description: Project tag
     Type: String
     MinLength: 1
+    ConstraintDescription: Must be a non-empty string
   Team:
     Description: Team tag
     Type: String
     MinLength: 1
+    ConstraintDescription: Must be a non-empty string
   Environment:
     Description: Environment (dev|sandbox|prod)
     Type: String
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
+    ConstraintDescription: Must be one of dev|sandbox|prod.
+  DomainName:
+    Description: The domain name for Zookeeper hosts
+    Type: String
+  PrometheusJmxExporterPort:
+    Description: The JMX port to use for metric collection
+    Type: Number
+    Default: 9404
+  MonitoringCidr:
+    Type: String
+    Description: CIDR range to allow access for monitoring
+    Default: ''
+
+Conditions:
+  AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
 
 Resources:
   ZKNodesLogGroup:
@@ -60,11 +77,11 @@ Resources:
     Properties:
       LogGroupName: !Sub '${StackName}/zk'
       RetentionInDays: 1
-  ExternalZKSG:
+  ClientZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: ExternalZKSG
-      GroupDescription: Allows External Access to ZK Nodes
+      GroupName: !Sub '${AWS::StackName}-client-zk-sg'
+      GroupDescription: Allows Client Access to Zookeeper Nodes
       VpcId: !Ref 'VPCId'
       Tags:
         - Key: Project
@@ -78,10 +95,10 @@ Resources:
   InternalZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: InternalZKSG
-      GroupDescription: Allows External Access to ZK Nodes
+      GroupName: !Sub '${AWS::StackName}-internal-zk-sg'
+      GroupDescription: Allows Internal Access to Zookeeper Nodes
       SecurityGroupIngress:
-        - SourceSecurityGroupId: !Ref 'ExternalZKSG'
+        - SourceSecurityGroupId: !Ref 'ClientZKSG'
           IpProtocol: tcp
           FromPort: !Ref 'ClientPort'
           ToPort: !Ref 'ClientPort'
@@ -95,7 +112,7 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: zookeeper
-    DependsOn: 'ExternalZKSG'
+    DependsOn: 'ClientZKSG'
   InternalZKSGIngressPeerOneRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
@@ -114,6 +131,16 @@ Resources:
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalZKSG'
     DependsOn: 'InternalZKSG'
+  InternalZKSGIngressPrometheusExporterRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Condition: AllowMonitoringCidr
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PrometheusJmxExporterPort'
+      ToPort: !Ref 'PrometheusJmxExporterPort'
+      GroupId: !Ref 'InternalZKSG'
+      CidrIp: !Ref 'MonitoringCidr'
+
   ZookeeperNode1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -126,13 +153,14 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 1
         ServerName: !Sub '${StackName}-zk1'
-        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo}'
+        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
         ClientPort: !Ref 'ClientPort'
         PeerPortOne: !Ref 'PeerPortOne'
         PeerPortTwo: !Ref 'PeerPortTwo'
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZookeeperNode2:
     Type: 'AWS::CloudFormation::Stack'
@@ -146,13 +174,14 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 2
         ServerName: !Sub '${StackName}-zk2'
-        ServerNames: !Sub '${StackName}-zk1.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo}'
+        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
         ClientPort: !Ref 'ClientPort'
         PeerPortOne: !Ref 'PeerPortOne'
         PeerPortTwo: !Ref 'PeerPortTwo'
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZookeeperNode3:
     Type: 'AWS::CloudFormation::Stack'
@@ -166,18 +195,19 @@ Resources:
         EFSMountPath: !Ref 'EFSMountPath'
         ServerId: 3
         ServerName: !Sub '${StackName}-zk3'
-        ServerNames: !Sub '${StackName}-zk1.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.internal.loyalty.com:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
+        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
         ClientPort: !Ref 'ClientPort'
         PeerPortOne: !Ref 'PeerPortOne'
         PeerPortTwo: !Ref 'PeerPortTwo'
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
 
 Outputs:
-  ExternalZKSG:
-    Description: Allows External Access to ZK Nodes
-    Value: !Ref 'ExternalZKSG'
+  ClientZKSG:
+    Description: Allows Client Access to Zookeeper Nodes
+    Value: !Ref 'ClientZKSG'
     Export:
-      Name: !Sub '${StackName}-ExternalZKSG'
+      Name: !Sub '${StackName}-ClientZKSG'

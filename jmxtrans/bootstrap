@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -e
+
+# Handle default environment options
+if [ -z "$JMXTRANS_ENV" ]; then
+    JMXTRANS_ENV=local
+fi
+echo "JMXTRANS_ENV='$JMXTRANS_ENV'"
+
+if [ -z "$JMXTRANS_HOSTS" ]; then
+    JMXTRANS_HOSTS=zookeeper
+fi
+echo "JMXTRANS_HOSTS='$JMXTRANS_HOSTS'"
+
+echo ""
+
+# JMXTRANS_HOSTS=type1#host1:port1,host2:port2,host3:port3..|type2#host4:port4,host5:port5,...|...
+# type=zookeeper|kafka|schema-registry|kafka-connect|kafka-rest
+
+# Retrieve individual host groups
+IFS='|' read -r -a host_groups <<< "$JMXTRANS_HOSTS"
+echo "host_groups='${host_groups[@]}'"
+
+# Process each group
+for i in ${!host_groups[@]}; do
+    # Retrieve the type and list of hosts
+    unset hosts
+    IFS='#' read -r -a hosts <<< "${host_groups[$i]}"
+    host_type=${hosts[0]}
+    host_list=${hosts[1]}
+
+    echo "* host_type='${host_type}'"
+    echo "  host_list='${host_list}'"
+
+    # Figure out the config template based on type and environment
+    src_config=/usr/local/share/config/${host_type}-${JMXTRANS_ENV}.json
+    echo "  src_config='${src_config}'"
+
+    # Retrieve an array of host names with port
+    unset host_array
+    IFS=',' read -r -a host_array <<< "${host_list}"
+
+    # Setup config for each host
+    for j in ${!host_array[@]};
+    do
+        # Retrieve the host name and port
+        unset host
+        IFS=':' read -r -a host <<< "${host_array[$j]}"
+        host_name=${host[0]}
+        host_port=${host[1]}
+
+        # Figure out the destination path based on type and host name
+        dest_config=/var/lib/jmxtrans/${host_type}-${host_name}.json
+
+        echo "  - host_name='${host_name}'"
+        echo "    host_port='${host_port}'"
+        echo "    dest_config='${dest_config}'"
+
+        # Copy the template
+        cp ${src_config} ${dest_config}
+
+        # Replace the HOSTNAME placeholder in destination config
+        sed -i \
+            -e "s/HOSTNAME/${host_name}/g" \
+            -e "s/HOSTPORT/${host_port}/g" \
+            ${dest_config}
+    done;
+done;
+
+exec "$@"

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+result=
+while [[ ${result} != 0 ]]; do
+  echo "Waiting for kafka-connect..."
+  sleep 5
+  curl -XGET http://localhost:8083/connectors >> /dev/null 2>&1
+  result=$?
+done
+
+curl -XPUT -H "Content-Type: application/json" -d @/usr/local/share/data/cassandra-sink-connector-simple.json \
+    http://localhost:8083/connectors/cassandra-sink-connector-simple/config
+echo ""
+
+curl -XPUT -H "Content-Type: application/json" -d @/usr/local/share/data/cassandra-sink-connector-avro.json \
+    http://localhost:8083/connectors/cassandra-sink-connector-avro/config
+echo ""
+
+exec "$@"

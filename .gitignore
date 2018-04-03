@@ -40,6 +40,7 @@ cmake-build-debug/
 
 *.iml
 master.yaml
+services.yaml
 
 ## Plugin-specific files:
 
