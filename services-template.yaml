@@ -38,9 +38,6 @@ Parameters:
     Description: Path at which to create the volume mount for EFS
     Type: String
     Default: /mnt/efs
-  EFSAccessSecurityGroup:
-    Description: The Security Group that allows access to EFS
-    Type: String
   ASGMinSize:
     Description: Minimum size of ECS Auto Scaling Group
     Type: Number
@@ -126,7 +123,8 @@ Resources:
         EFSFileSystemId: !ImportValue
           'Fn::Sub': '${EfsStackName}-FileSystemId'
         EFSMountPath: !Ref 'EFSMountPath'
-        EFSAccessSecurityGroup: !Ref 'EFSAccessSecurityGroup'
+        EFSAccessSecurityGroup: !ImportValue
+          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
