@@ -13,11 +13,11 @@ phases:
   pre_build:
     commands:
       - |
-        CFNS=$(grep --exclude=deploy_stack --exclude=buildspec.yml --exclude-dir={kafka-connect,kafka-rest,schema-registry} -rnwl . -e 'AWSTemplateFormatVersion')
+        CFNS=$(grep --include="*.yaml" --exclude=master.yaml --exclude=services.yaml --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
             ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
-            cfn_nag_scan --input-path ${cfn}
+            # cfn_nag_scan --input-path ${cfn}
             if [ "${ERRORS}" != "null" ]; then
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
