@@ -7,10 +7,10 @@ env:
 phases:
   install:
     commands:
-       - gem install cfn-nag
-       - apt-get update -y
-       - apt-get install -y jq
-  pre_build:
+      - gem install cfn-nag
+      - apt-get update -y
+      - apt-get install -y jq
+  build:
     commands:
       - |
         CFNS=$(grep --include="*.yaml" --exclude=master.yaml --exclude=services.yaml --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
@@ -22,10 +22,6 @@ phases:
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
         done
-  build:
-    commands:
-      - echo "No actual build happens"
-
   post_build:
     commands:
       - echo "Packaging master template"
