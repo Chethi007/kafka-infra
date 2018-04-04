@@ -17,18 +17,14 @@ phases:
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
             ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
-            # cfn_nag_scan --input-path ${cfn}
+            cfn_nag_scan --input-path ${cfn}
             if [ "${ERRORS}" != "null" ]; then
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
         done
   build:
     commands:
-      - echo "Copying child stack templates to S3"
-      - |
-        for child_template in $CHILD_TEMPLATES; do
-          aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$child_template"
-        done
+      - echo "No actual build happens"
 
   post_build:
     commands:
