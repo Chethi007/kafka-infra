@@ -17,7 +17,8 @@ phases:
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
             ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
-            cfn_nag_scan --input-path ${cfn}
+            SCAN_ERRORS=`expr $SCAN_ERRORS + `$(cfn_nag_scan --input-path ${cfn} | jq .[0].file_results.failure_count)`
+            SCAN_SUM=`expr $SCAN_SUM + SCAN_ERRORS`
             if [ "${ERRORS}" != "null" ]; then
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
