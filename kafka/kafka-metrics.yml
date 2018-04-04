@@ -2,3 +2,37 @@ startDelaySeconds: 0
 lowercaseOutputName: false
 lowercaseOutputLabelNames: false
 rules:
+  - pattern: 'kafka.cluster<type=(.+), name=(.+), topic=(.+), partition=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.log<type=Log, name=(.+), topic=(.+), partition=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.controller<type=(.+), name=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.network<type=(.+), name=(.+)PerSec, request=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.network<type=(.+), name=(\w+), networkProcessor=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.network<type=(.+), name=(\w+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.network<type=(.+), name=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.server<type=(.+), name=(.+)PerSec\w*, topic=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.server<type=(.+), name=(.+)PerSec\w*><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.server<type=(.+), name=(.+), topic=(.+), partition=(.*)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.server<type=(.+), name=(.+), topic=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.server<type=(.+), name=(.+), clientId=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.server<type=(.+), name=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.(\w+)<type=(.+), name=(.+), topic=(.+), partition=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.(\w+)<type=(.+), name=(.+), topic=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.(\w+)<type=(.+), name=(.+), (\w+)=(.+)><>(\w+)'
+    attrNameSnakeCase: false
+  - pattern: 'kafka.(\w+)<type=(.+), name=(.+)><>(\w+)'
+    attrNameSnakeCase: false
