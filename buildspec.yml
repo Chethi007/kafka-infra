@@ -10,25 +10,30 @@ phases:
       - gem install cfn-nag
       - apt-get update -y
       - apt-get install -y jq
+
   build:
     commands:
       - |
         CFNS=$(grep --include="*.yaml" --exclude=master.yaml --exclude=services.yaml --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
-            ERRORS=$(aws cloudformation validate-template --template-body file://${cfn} | jq .Error)
-            SCAN_ERRORS=`expr $SCAN_ERRORS + `$(cfn_nag_scan --input-path ${cfn} | jq .[0].file_results.failure_count)`
-            SCAN_SUM=`expr $SCAN_SUM + SCAN_ERRORS`
+            ERRORS=$(aws cloudformation validate-template --template-body file://${cfn}  | jq .Error)
             if [ "${ERRORS}" != "null" ]; then
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
         done
+        for cfn in ${CFNS}; do
+            echo "Running CFN_NAG scan for ${cfn}"
+            cfn_nag_scan --input-path ${cfn}
+        done
+
   post_build:
     commands:
       - echo "Packaging master template"
       - aws cloudformation package --template-file master-template.yaml
         --s3-bucket $TEMPLATE_BUCKET --s3-prefix kafka --force-upload
         --output-template-file master.yaml
+        
 artifacts:
   files:
     - ./master.yaml
