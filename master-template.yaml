@@ -107,7 +107,7 @@ Resources:
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./zookeeper/zk-cluster.yaml
+      TemplateURL: ./zookeeper/cluster.yaml
       Parameters:
         Cluster: !GetAtt 'ECS.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
@@ -121,7 +121,26 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"        
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'ECS'
-
+  Kafka:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./kafka/cluster.yaml
+      Parameters:
+        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        StackName: !Ref 'AWS::StackName'
+        VPCId: !Ref 'VPCId'
+        EFSMountPath: !Ref 'EFSMountPath'
+        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
+        ZookeeperSecurityGroup: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        DomainName: !ImportValue
+          'Fn::Sub': "${HostedZoneStackName}-ZoneName"        
+        MonitoringCidr: !Ref 'MonitoringCidr'
+    DependsOn: 'Zookeeper'
+  
 Outputs:
   ClusterName:
     Description: A reference to the ECS cluster
