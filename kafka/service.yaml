@@ -98,10 +98,10 @@ Resources:
       Volumes:
         - Name: data
           Host:
-            SourcePath: !Sub '${EFSMountPath}/${StackName}/kafka/${BrokerId}/data'
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/broker/${BrokerId}/data'
         - Name: secrets
           Host:
-            SourcePath: !Sub '${EFSMountPath}/${StackName}/kafka/${BrokerId}/secrets'
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/broker/${BrokerId}/secrets'
       Family: !Sub '${StackName}-broker-${BrokerId}'
   BrokerNodeService:
     Type: 'AWS::ECS::Service'
