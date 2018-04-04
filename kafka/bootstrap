@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+# Specifying KAFKA_JMX_HOSTNAME in ECS causes problems because service discovery isn't available yet.
+# If the JMX port is specified but the host name isn't, use the container's IP bound to the ENI
+# Note: This is specifically for containers running in ECS in vpc networking mode.
+if [ -n "${KAFKA_JMX_PORT}" ];
+then
+    export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -I | cut -d" " -f2)}
+    echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
+fi
+
+if [ -z "${KAFKA_BROKER_RACK}" ];
+then
+    # Assume AWS environment and use the AZ as the rack name. This will help with spreading replicas of the same
+    # partition across different AZs.
+    export KAFKA_BROKER_RACK=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
+fi
+echo "KAFKA_BROKER_RACK: ${KAFKA_BROKER_RACK}"
+
+exec "$@"
