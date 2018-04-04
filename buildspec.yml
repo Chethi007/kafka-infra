@@ -22,6 +22,7 @@ phases:
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
         done
+      - |  
         for cfn in ${CFNS}; do
             echo "Running CFN_NAG scan for ${cfn}"
             cfn_nag_scan --input-path ${cfn}
@@ -33,7 +34,7 @@ phases:
       - aws cloudformation package --template-file master-template.yaml
         --s3-bucket $TEMPLATE_BUCKET --s3-prefix kafka --force-upload
         --output-template-file master.yaml
-        
+
 artifacts:
   files:
     - ./master.yaml
