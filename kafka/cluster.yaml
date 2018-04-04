@@ -70,7 +70,7 @@ Conditions:
   AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
 
 Resources:
-  KafkaBrokersLogGroup:
+  BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
     Properties:
       LogGroupName: !Sub '${StackName}/kafka'
@@ -145,11 +145,11 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        LogGroup: !Ref 'KafkaBrokersLogGroup'
+        LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['KafkaBrokersLogGroup', 'InternalKafkaSG']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker2:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -166,11 +166,11 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        LogGroup: !Ref 'KafkaBrokersLogGroup'
+        LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['KafkaBrokersLogGroup', 'InternalKafkaSG']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -187,11 +187,11 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        LogGroup: !Ref 'KafkaBrokersLogGroup'
+        LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['KafkaBrokersLogGroup', 'InternalKafkaSG']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
 
 Outputs:
   ClientKafkaSG:

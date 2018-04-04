@@ -121,7 +121,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"        
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'ECS'
-  Kafka:
+  Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./kafka/cluster.yaml
@@ -137,7 +137,7 @@ Resources:
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneName"        
+          'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'Zookeeper'
   

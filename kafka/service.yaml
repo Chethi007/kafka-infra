@@ -55,7 +55,7 @@ Parameters:
     Default: 9404
 
 Resources:
-  KafkaNodeTaskDefinition:
+  BrokerNodeTaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'
     Properties:
       NetworkMode: awsvpc
@@ -74,11 +74,11 @@ Resources:
           - Name: KAFKA_ZOOKEEPER_CONNECT
             Value: !Ref 'ZookeeperConnectionString'
           - Name: KAFKA_ADVERTISED_LISTENERS
-            Value: !Sub 'PLAINTEXT://${BrokerName}-${BrokerId}.${DomainName}:${ClientPort}'
+            Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
-#          - Name: KAFKA_JMX_OPTS
-#            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/kafka-metrics.yml'
+          - Name: KAFKA_JMX_OPTS
+            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/kafka-metrics.yml'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
@@ -102,14 +102,14 @@ Resources:
         - Name: secrets
           Host:
             SourcePath: !Sub '${EFSMountPath}/${StackName}/kafka/${BrokerId}/secrets'
-      Family: !Sub '${StackName}-kafka-${BrokerId}'
-  KafkaNodeService:
+      Family: !Sub '${StackName}-broker-${BrokerId}'
+  BrokerNodeService:
     Type: 'AWS::ECS::Service'
     Properties:
       ServiceName: !Sub '${StackName}-broker-${BrokerId}'
       Cluster: !Ref 'Cluster'
       DesiredCount: 1
-      TaskDefinition: !Ref 'KafkaNodeTaskDefinition'
+      TaskDefinition: !Ref 'BrokerNodeTaskDefinition'
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
@@ -121,4 +121,4 @@ Resources:
 Outputs:
   ConnectionString:
     Description: The connection string for this broker
-    Value: !Sub '${BrokerName}-${BrokerId}.${DomainName}:${ClientPort}'
+    Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
