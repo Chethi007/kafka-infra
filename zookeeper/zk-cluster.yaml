@@ -211,3 +211,8 @@ Outputs:
     Value: !Ref 'ClientZKSG'
     Export:
       Name: !Sub '${StackName}-ClientZKSG'
+  ConnectionString:
+    Description: Comma delimited list of zookeeper node addresses
+    Value: !Sub '${StackName}-zk1.${DomainName}:${ClientPort},${StackName}-zk2.${DomainName}:${ClientPort},${StackName}-zk3.${DomainName}:${ClientPort}'
+    Export:
+      Name: !Sub '${StackName}-ConnectionString'
