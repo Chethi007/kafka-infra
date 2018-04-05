@@ -289,7 +289,11 @@
             "Field": "instanceId",
             "Type": "spread"
           }
-        ]
+        ],
+        "DeploymentConfiguration": {
+          "MaximumPercent": "100",
+          "MinimumHealthyPercent": "0"
+        }
       }
     },
     "LogGroup": {

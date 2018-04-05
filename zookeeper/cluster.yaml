@@ -182,7 +182,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode1']
   ZookeeperNode3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -203,7 +203,8 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+        DomainName: !Ref 'DomainName'
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode2']
 
 Outputs:
   ClientZKSG:
@@ -213,6 +214,10 @@ Outputs:
       Name: !Sub '${StackName}-ClientZKSG'
   ConnectionString:
     Description: Comma delimited list of zookeeper node addresses
-    Value: !Sub '${StackName}-zk1.${DomainName}:${ClientPort},${StackName}-zk2.${DomainName}:${ClientPort},${StackName}-zk3.${DomainName}:${ClientPort}'
-    Export:
+    Value: !Sub
+      - '${Server1},${Server2},${Server3}'
+      - Server1: !GetAtt 'ZookeeperNode1.Outputs.ConnectionString'
+        Server2: !GetAtt 'ZookeeperNode2.Outputs.ConnectionString'
+        Server3: !GetAtt 'ZookeeperNode3.Outputs.ConnectionString'
+     Export:
       Name: !Sub '${StackName}-ZK-ConnectionString'

@@ -170,7 +170,7 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker1']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -191,7 +191,7 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker2']
 
 Outputs:
   ClientKafkaSG:
