@@ -15,7 +15,7 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: 'zk1:22888:23888;zk2:32888:33888;zk3:42888:43888'
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
 
   zk2:
     build: ../zookeeper
@@ -31,7 +31,7 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: 'zk1:22888:23888;zk2:32888:33888;zk3:42888:43888'
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
 
   zk3:
     build: ../zookeeper
@@ -47,7 +47,7 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: 'zk1:22888:23888;zk2:32888:33888;zk3:42888:43888'
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
 
   broker1:
     build: ../kafka
@@ -111,7 +111,7 @@ services:
     environment:
       APP_HOST: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zk1:22181,zk2:32181,zk3:42181'
-      SCHEMA_REGISTRY_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/schema-registry-metrics.yml'
+      #SCHEMA_REGISTRY_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/schema-registry-metrics.yml'
 
   # Load connector manually
   # docker exec -it connect-1 /usr/local/share/data/setup-connectors
@@ -140,7 +140,7 @@ services:
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-connect-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-connect-metrics.yml'
 
   # Multiple Kafka REST Proxies will not work properly for consuming
   kafka-rest-1:
@@ -158,7 +158,7 @@ services:
       KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
       KAFKA_REST_ID: 'rest-a'
       KAFKA_REST_HOST_NAME: 'kafka-rest-1'
-      KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-rest-metrics.yml'
+      #KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-rest-metrics.yml'
 
   prometheus:
     build: .
