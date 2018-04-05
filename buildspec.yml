@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    TEMPLATE_BUCKET: "dev-kafka-artifacts"
+    TEMPLATE_BUCKET: "kafka-artifacts"
 
 phases:
   install:
@@ -21,7 +21,7 @@ phases:
             if [ "${ERRORS}" != "null" ]; then
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
-            
+
             echo "Running CFN_NAG scan for ${cfn}"
             cfn_nag_scan --input-path ${cfn}
             SCAN_ERRORS=$(cfn_nag_scan --input-path ${cfn} --output-format json | jq .[0].file_results.failure_count)
