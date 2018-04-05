@@ -135,8 +135,8 @@ Resources:
           Subnets:
              - !Ref 'SubnetId'
       DeploymentConfiguration:
-        - MaximumPercent: 100
-        - MinimumHealthyPercent: 0
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
 Outputs:
   ConnectionString:
     Description: The connection string for this Zookeeper node

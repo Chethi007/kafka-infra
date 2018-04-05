@@ -161,6 +161,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
+        DomainName: !Ref 'DomainName'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZookeeperNode2:
     Type: 'AWS::CloudFormation::Stack'
@@ -182,6 +183,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
+        DomainName: !Ref 'DomainName'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode1']
   ZookeeperNode3:
     Type: 'AWS::CloudFormation::Stack'
@@ -219,5 +221,5 @@ Outputs:
       - Server1: !GetAtt 'ZookeeperNode1.Outputs.ConnectionString'
         Server2: !GetAtt 'ZookeeperNode2.Outputs.ConnectionString'
         Server3: !GetAtt 'ZookeeperNode3.Outputs.ConnectionString'
-     Export:
+    Export:
       Name: !Sub '${StackName}-ZK-ConnectionString'

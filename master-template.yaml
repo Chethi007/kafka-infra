@@ -3,11 +3,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Description: >
   This template deploys a highly available ECS cluster using an AutoScaling Group, with
-  ECS hosts distributed across multiple Availability Zones.
-
-  It then deploys a Zookeeper cluster from containers published in Docker Hub.
-
-  TODO: move containers to ECR?
+  ECS hosts distributed across multiple Availability Zones. It then deploys a Zookeeper
+  cluster from containers published in Docker Hub.
 
 Parameters:
   EfsStackName:
