@@ -21,11 +21,13 @@ phases:
             if [ "${ERRORS}" != "null" ]; then
                 echo "${cfn} has errors: ${ERRORS}" && exit 1
             fi
-        done
-      - |  
-        for cfn in ${CFNS}; do
+            
             echo "Running CFN_NAG scan for ${cfn}"
             cfn_nag_scan --input-path ${cfn}
+            SCAN_ERRORS=$(cfn_nag_scan --input-path ${cfn} --output-format json | jq .[0].file_results.failure_count)
+            if [ ${SCAN_ERRORS} != 0 ]; then
+              echo "${cfn} has failures - exiting build" && exit 1
+            fi
         done
 
   post_build:
