@@ -12,7 +12,7 @@
       "name": "VAR_PROMETHEUS_JOB_NAME",
       "type": "constant",
       "label": "Prometheus Job",
-      "value": "zookeeper",
+      "value": "",
       "description": ""
     }
   ],
@@ -1005,8 +1005,8 @@
     ]
   },
   "time": {
-    "from": "2018-04-05T12:52:00.708Z",
-    "to": "2018-04-05T14:52:00.708Z"
+    "from": "now-1h",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -1035,6 +1035,5 @@
   },
   "timezone": "",
   "title": "Zookeeper ECS",
-  "uid": "nHbKv_kmk",
   "version": 9
 }
