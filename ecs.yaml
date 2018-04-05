@@ -600,7 +600,16 @@ Resources:
         PolicyDocument:
           Statement:
             Action:
-            - application-autoscaling:*
+            - application-autoscaling:DeleteScalingPolicy
+            - application-autoscaling:DeleteScheduledAction
+            - application-autoscaling:DeregisterScalableTarget
+            - application-autoscaling:DescribeScalableTargets
+            - application-autoscaling:DescribeScalingActivities
+            - application-autoscaling:DescribeScalingPolicies
+            - application-autoscaling:DescribeScheduledActions
+            - application-autoscaling:PutScalingPolicy
+            - application-autoscaling:PutScheduledAction
+            - application-autoscaling:RegisterScalableTarget
             - cloudwatch:DescribeAlarms
             - cloudwatch:PutMetricAlarm
             - ecs:DescribeServices
