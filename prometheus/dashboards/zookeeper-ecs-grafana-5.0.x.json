@@ -7,6 +7,13 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "VAR_PROMETHEUS_JOB_NAME",
+      "type": "constant",
+      "label": "Prometheus Job",
+      "value": "zookeeper",
+      "description": ""
     }
   ],
   "__requires": [
@@ -46,7 +53,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1522939200856,
+  "iteration": 1522939976741,
   "links": [],
   "panels": [
     {
@@ -99,7 +106,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "QuorumSize{job=\"zookeeper\"}",
+          "expr": "QuorumSize{job=\"$prometheus_job_name\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -180,7 +187,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "  NodeCount{job=\"zookeeper\", instance=~\"$instance\"}",
+          "expr": "NodeCount{job=\"$prometheus_job_name\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -261,7 +268,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "  WatchCount{job=\"zookeeper\", instance=~\"$instance\"}",
+          "expr": "WatchCount{job=\"$prometheus_job_name\", instance=~\"$instance\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}} - {{memberType}}",
@@ -341,7 +348,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(OutstandingRequests{job=\"zookeeper\"}) by (instance)",
+          "expr": "sum(OutstandingRequests{job=\"$prometheus_job_name\"}) by (instance)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -422,7 +429,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "AvgRequestLatency{job=\"zookeeper\"}",
+          "expr": "AvgRequestLatency{job=\"$prometheus_job_name\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -516,7 +523,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(MaxClientCnxnsPerHost{job=\"zookeeper\", instance=~\"$instance\"}) by (instance)",
+          "expr": "sum(MaxClientCnxnsPerHost{job=\"$prometheus_job_name\", instance=~\"$instance\"}) by (instance)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -597,7 +604,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(NumAliveConnections{job=\"zookeeper\", instance=~\"$instance\"}) by (instance)",
+          "expr": "sum(NumAliveConnections{job=\"$prometheus_job_name\", instance=~\"$instance\"}) by (instance)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -678,7 +685,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(MaxSessionTimeout{job=\"zookeeper\", instance=~\"$instance\"}) by (instance)",
+          "expr": "sum(MaxSessionTimeout{job=\"$prometheus_job_name\", instance=~\"$instance\"}) by (instance)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -775,7 +782,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jvm_memory_bytes_init{job=\"zookeeper\", area=\"heap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_init{job=\"$prometheus_job_name\", area=\"heap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -783,7 +790,7 @@
           "refId": "A"
         },
         {
-          "expr": "jvm_memory_bytes_max{job=\"zookeeper\", area=\"heap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_max{job=\"$prometheus_job_name\", area=\"heap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -791,7 +798,7 @@
           "refId": "B"
         },
         {
-          "expr": "jvm_memory_bytes_committed{job=\"zookeeper\", area=\"heap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_committed{job=\"$prometheus_job_name\", area=\"heap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -799,7 +806,7 @@
           "refId": "C"
         },
         {
-          "expr": "jvm_memory_bytes_used{job=\"zookeeper\", area=\"heap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_used{job=\"$prometheus_job_name\", area=\"heap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -883,7 +890,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jvm_memory_bytes_init{job=\"zookeeper\", area=\"nonheap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_init{job=\"$prometheus_job_name\", area=\"nonheap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -891,7 +898,7 @@
           "refId": "A"
         },
         {
-          "expr": "jvm_memory_bytes_max{job=\"zookeeper\", area=\"nonheap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_max{job=\"$prometheus_job_name\", area=\"nonheap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -899,7 +906,7 @@
           "refId": "B"
         },
         {
-          "expr": "jvm_memory_bytes_committed{job=\"zookeeper\", area=\"nonheap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_committed{job=\"$prometheus_job_name\", area=\"nonheap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -907,7 +914,7 @@
           "refId": "C"
         },
         {
-          "expr": "jvm_memory_bytes_used{job=\"zookeeper\", area=\"nonheap\", instance=~\"$instance\"}",
+          "expr": "jvm_memory_bytes_used{job=\"$prometheus_job_name\", area=\"nonheap\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -952,19 +959,36 @@
       ]
     }
   ],
-  "refresh": "5s",
+  "refresh": false,
   "schemaVersion": 16,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
+        "current": {
+          "value": "${VAR_PROMETHEUS_JOB_NAME}",
+          "text": "${VAR_PROMETHEUS_JOB_NAME}"
+        },
+        "hide": 2,
+        "label": "Prometheus Job",
+        "name": "prometheus_job_name",
+        "options": [
+          {
+            "value": "${VAR_PROMETHEUS_JOB_NAME}",
+            "text": "${VAR_PROMETHEUS_JOB_NAME}"
+          }
+        ],
+        "query": "${VAR_PROMETHEUS_JOB_NAME}",
+        "type": "constant"
+      },
+      {
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "hide": 0,
         "includeAll": true,
-        "label": null,
+        "label": "Zookeeper Nodes",
         "multi": true,
         "name": "instance",
         "options": [],
@@ -981,8 +1005,8 @@
     ]
   },
   "time": {
-    "from": "now-1h",
-    "to": "now"
+    "from": "2018-04-05T12:52:00.708Z",
+    "to": "2018-04-05T14:52:00.708Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -1012,5 +1036,5 @@
   "timezone": "",
   "title": "Zookeeper ECS",
   "uid": "nHbKv_kmk",
-  "version": 22
+  "version": 9
 }
