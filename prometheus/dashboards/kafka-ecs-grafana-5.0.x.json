@@ -61,11 +61,11 @@
       }
     ]
   },
-  "editable": true,
+  "editable": false,
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1522960849661,
+  "iteration": 1522962644641,
   "links": [],
   "panels": [
     {
@@ -1653,5 +1653,5 @@
   },
   "timezone": "",
   "title": "Kafka ECS",
-  "version": 21
+  "version": 25
 }

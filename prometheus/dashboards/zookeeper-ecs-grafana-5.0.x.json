@@ -49,11 +49,11 @@
       }
     ]
   },
-  "editable": true,
+  "editable": false,
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1522939976741,
+  "iteration": 1522962500941,
   "links": [],
   "panels": [
     {
@@ -106,7 +106,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "QuorumSize{job=\"$prometheus_job_name\"}",
+          "expr": "QuorumSize{job=\"$prometheus_job_name\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -348,7 +348,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(OutstandingRequests{job=\"$prometheus_job_name\"}) by (instance)",
+          "expr": "sum(OutstandingRequests{job=\"$prometheus_job_name\", instance=~\"$instance\"}) by (instance)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -429,7 +429,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "AvgRequestLatency{job=\"$prometheus_job_name\"}",
+          "expr": "AvgRequestLatency{job=\"$prometheus_job_name\", instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1035,5 +1035,6 @@
   },
   "timezone": "",
   "title": "Zookeeper ECS",
-  "version": 9
+  "uid": "",
+  "version": 23
 }
