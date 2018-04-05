@@ -79,6 +79,8 @@ Resources:
             Value: 2
           - Name: KAFKA_JMX_OPTS
             Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/kafka-metrics.yml'
+          - Name: KAFKA_LOG4J_LOGGERS
+            Value: 'kafka.controller=WARN,state.change.logger=WARN'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
