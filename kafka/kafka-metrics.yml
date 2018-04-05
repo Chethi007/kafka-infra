@@ -6,6 +6,8 @@ rules:
     attrNameSnakeCase: false
   - pattern: 'kafka.log<type=Log, name=(.+), topic=(.+), partition=(.+)><>(\w+)'
     attrNameSnakeCase: false
+  - pattern: 'kafka.log<type=Log, name=(.+)><>(\w+)'
+    attrNameSnakeCase: false
   - pattern: 'kafka.controller<type=(.+), name=(.+)><>(\w+)'
     attrNameSnakeCase: false
   - pattern: 'kafka.network<type=(.+), name=(.+)PerSec, request=(.+)><>(\w+)'
