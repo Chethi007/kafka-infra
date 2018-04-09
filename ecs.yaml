@@ -233,7 +233,11 @@ Resources:
           #!/bin/bash
 
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-
+          
+          # increment to force rolling deploy
+          version=1
+          echo $version
+          
           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           yum install -y aws-cfn-bootstrap
 
