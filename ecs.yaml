@@ -61,7 +61,7 @@ Parameters:
       or 'kafka' (zookeeper and brokers)
   HostedZoneId:
     Description: The ID of the Hosted Zone in which to register services for service discovery
-    Type: String   
+    Type: String
 
   # Tags
   Project:
@@ -141,7 +141,11 @@ Resources:
               'ec2messages:GetEndpoint',
               'ec2messages:GetMessages',
               'ec2messages:SendReply',
-              'ecs:Describe*',
+              'ecs:DescribeClusters',
+              'ecs:DescribeContainerInstances',
+              'ecs:DescribeServices',
+              'ecs:DescribeTaskDefinition',
+              'ecs:DescribeTasks',
               'logs:CreateLogGroup',
               'logs:DescribeLogGroups',
               'logs:DescribeLogStreams',
@@ -210,7 +214,9 @@ Resources:
         Value: !Ref 'Environment'
       - Key: Component
         Value: ecs
-
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
   ECSLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -233,15 +239,15 @@ Resources:
 
           echo "Initializing Instance"
           config_set="general"
-          
+
           if [ "${ClusterType}" == "service" ]; then
             echo "Enabling docker-mirror..."
             config_set="services"
           fi
-                          
+
           /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets $config_set
           exit_code=$?
-          
+
           echo "Signalling ASG..."
           /opt/aws/bin/cfn-signal -e $exit_code --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
     Metadata:
@@ -256,7 +262,7 @@ Resources:
           services:
           - ConfigSet: general
           - install_docker_mirror
-              
+
         install_cfn_hooks:
           files:
             '/etc/cfn/cfn-hup.conf':
@@ -281,7 +287,7 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
-        # Configure and install aws logs agent                              
+        # Configure and install aws logs agent
         install_logging:
           packages:
             yum:
@@ -392,14 +398,14 @@ Resources:
                   service awslogs start
                   chkconfig awslogs on
                 end script
-                
+
         # Let ecs agent know which cluster to join
         install_ecs:
           commands:
             01_add_instance_to_cluster:
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-        # Mount EFS file system in via NFS                            
-        install_efs:          
+        # Mount EFS file system in via NFS
+        install_efs:
           packages:
             yum:
               nfs-utils: []
@@ -407,8 +413,8 @@ Resources:
             01_setup_efs:
               command: '/usr/local/share/setup-efs'
             02_restart_docker:
-              command: service docker restart              
-          files:    
+              command: service docker restart
+          files:
             '/usr/local/share/setup-efs':
               mode: '000744'
               owner: root
@@ -439,7 +445,7 @@ Resources:
 
                 # Create the EFS group and assign it as the group for the entire EFS volume
                 EFS_GID=555
-                groupadd -g $EFS_GID efs                              
+                groupadd -g $EFS_GID efs
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -455,10 +461,10 @@ Resources:
                 script
                   exec 2>>/var/log/user-data.log
                   set -x
-                  
+
                   cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
                   region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
-                  
+
                   # Start service discovery agent
                   docker run -d \
                     --name service-discovery-agent \
@@ -470,7 +476,7 @@ Resources:
                     --log-opt awslogs-group=$cluster \
                     --log-opt awslogs-stream-prefix="service-discovery" \
                     loyaltyone/service-discovery-agent-route53:latest --hostedZoneId=${HostedZoneId}
-                  
+
                 end script
         install_docker_mirror:
           files:
@@ -594,7 +600,16 @@ Resources:
         PolicyDocument:
           Statement:
             Action:
-            - application-autoscaling:*
+            - application-autoscaling:DeleteScalingPolicy
+            - application-autoscaling:DeleteScheduledAction
+            - application-autoscaling:DeregisterScalableTarget
+            - application-autoscaling:DescribeScalableTargets
+            - application-autoscaling:DescribeScalingActivities
+            - application-autoscaling:DescribeScalingPolicies
+            - application-autoscaling:DescribeScheduledActions
+            - application-autoscaling:PutScalingPolicy
+            - application-autoscaling:PutScheduledAction
+            - application-autoscaling:RegisterScalableTarget
             - cloudwatch:DescribeAlarms
             - cloudwatch:PutMetricAlarm
             - ecs:DescribeServices

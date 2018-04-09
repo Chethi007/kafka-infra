@@ -41,6 +41,9 @@ Resources:
     Properties:
       VpcId: !Ref 'VPCId'
       GroupDescription: Security group for EFS access
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: -1
   MountTargetSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -51,6 +54,9 @@ Resources:
         FromPort: '2049'
         ToPort: '2049'
         SourceSecurityGroupId: !Ref 'FileSystemAccessSecurityGroup'
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: -1
   FileSystem:
     Type: AWS::EFS::FileSystem
     Properties:

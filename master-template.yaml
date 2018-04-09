@@ -15,7 +15,7 @@ Parameters:
     Type: String
   HostedZoneStackName:
     Description: The Stack Name of the hosted zone in which to register services
-    Type: String  
+    Type: String
   KeyName:
     Description: Key Pair name for SSH access
     Type: AWS::EC2::KeyPair::KeyName
@@ -102,8 +102,9 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
+        ClusterType: kafka
         HostedZoneId: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneId"        
+          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -118,43 +119,6 @@ Resources:
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneName"        
+          'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'ECS'
-
-Outputs:
-  ClusterName:
-    Description: A reference to the ECS cluster
-    Value: !GetAtt 'ECS.Outputs.ClusterName'
-    Export:
-      Name: !Sub '${AWS::StackName}-ClusterName'
-  AutoScalingGroupName:
-    Description: A reference to ECS AutoScaling Group Name
-    Value: !GetAtt 'ECS.Outputs.AutoScalingGroupName'
-    Export:
-      Name: !Sub '${AWS::StackName}-AutoScalingGroupName'
-  ServiceAutoScalingRole:
-    Description: A reference to ECS service auto scaling role
-    Value: !GetAtt 'ECS.Outputs.ServiceAutoScalingRole'
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceAutoScalingRole'
-  ServiceSchedulerRole:
-    Description: A reference to ECS service load balancing role
-    Value: !GetAtt 'ECS.Outputs.ServiceSchedulerRole'
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceSchedulerRole'
-  InstanceSecurityGroup:
-    Description: The ID of the ecs container instance security group created
-    Value: !GetAtt 'ECS.Outputs.InstanceSecurityGroup'
-    Export:
-      Name: !Sub '${AWS::StackName}-ECSSecurityGroupId'
-  ServiceRole:
-    Description: The ARN of the ECS service role
-    Value: !GetAtt 'ECS.Outputs.ServiceRole'
-    Export:
-      Name: !Sub '${AWS::StackName}-EcsServiceRole'
-  VpcId:
-    Description: "Cluster's VPC Id"
-    Value: !Ref 'VPCId'
-    Export:
-      Name: !Sub '${AWS::StackName}-VpcId'
