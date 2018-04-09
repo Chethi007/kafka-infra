@@ -218,8 +218,6 @@ Outputs:
   ClientZKSG:
     Description: Allows Client Access to Zookeeper Nodes
     Value: !Ref 'ClientZKSG'
-    Export:
-      Name: !Sub '${AWS::StackName}-ClientSG'
   ConnectionString:
     Description: Comma delimited list of zookeeper node addresses
     Value: !Sub
@@ -227,5 +225,3 @@ Outputs:
       - Server1: !GetAtt 'ZookeeperNode1.Outputs.ConnectionString'
         Server2: !GetAtt 'ZookeeperNode2.Outputs.ConnectionString'
         Server3: !GetAtt 'ZookeeperNode3.Outputs.ConnectionString'
-    Export:
-      Name: !Sub '${AWS::StackName}-ConnectionString'

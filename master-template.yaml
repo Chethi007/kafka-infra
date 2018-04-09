@@ -149,6 +149,11 @@ Outputs:
     Value: !GetAtt 'Brokers.Outputs.ClientKafkaSG'
     Export:
       Name: !Sub '${AWS::StackName}-ClientKafkaSG'
+  ClientZookeeperSG:
+    Description: Allows Client Access to Zookeeper Nodes
+    Value: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
+    Export:
+      Name: !Sub '${AWS::StackName}-ClientZookeeperSG'
   ZookeeperConnectionString:
     Description: 'Comma delimited list of Zookeeper node addresses'
     Value: !GetAtt 'Zookeeper.Outputs.ConnectionString'
