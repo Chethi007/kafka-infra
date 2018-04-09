@@ -29,7 +29,7 @@ Parameters:
     Type: String
   ZookeeperSecurityGroup:
     Description: Security Group to allow access to ZK
-    Type: String    
+    Type: String
   Cpu:
     Description: Amount of CPU to reserve
     Type: Number
@@ -90,6 +90,9 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: kafka
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
   InternalKafkaSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -110,6 +113,9 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: zookeeper
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
     DependsOn: 'ClientKafkaSG'
   InternalKafkaSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
@@ -161,7 +167,7 @@ Resources:
         Memory: !Ref 'Memory'
         EFSMountPath: !Ref 'EFSMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
-        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'        
+        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
         BrokerId: 2
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
@@ -182,7 +188,7 @@ Resources:
         Memory: !Ref 'Memory'
         EFSMountPath: !Ref 'EFSMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
-        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'        
+        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
         BrokerId: 3
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
