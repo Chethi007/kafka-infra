@@ -103,7 +103,7 @@ Resources:
     Type: 'AWS::Logs::LogGroup'
     Properties:
       LogGroupName: !Ref 'AWS::StackName'
-      RetentionInDays: 2
+      RetentionInDays: 3
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
