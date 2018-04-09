@@ -227,6 +227,8 @@
             "Command": [
               "--config.file=/etc/prometheus/prometheus.yml",
               "--storage.tsdb.path=/usr/local/share/data",
+              "--storage.tsdb.min-block-duration=30m",
+              "--storage.tsdb.max-block-duration=1d",
               "--web.console.libraries=/usr/share/prometheus/console_libraries",
               "--web.console.templates=/usr/share/prometheus/consoles"
             ]
@@ -289,7 +291,11 @@
             "Field": "instanceId",
             "Type": "spread"
           }
-        ]
+        ],
+        "DeploymentConfiguration": {
+          "MaximumPercent": "100",
+          "MinimumHealthyPercent": "0"
+        }
       }
     },
     "LogGroup": {

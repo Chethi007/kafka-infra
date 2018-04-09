@@ -1,0 +1,227 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Zookeeper Cluster
+
+Parameters:
+  Cluster:
+    Description: ECS Cluster
+    Type: String
+  StackName:
+    Description: The Parent Stack Name
+    Type: String
+  VPCId:
+    Description: Choose which VPC this cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  EFSMountPath:
+    Description: Path at which to create the volume mount for EFS
+    Type: String
+    Default: /mnt/efs
+  Subnets:
+    Description: Choose three private subnets this cluster should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+  ClientPort:
+    Description: Zookeeper client port
+    Type: Number
+    Default: 2181
+  PeerPortOne:
+    Description: Zookeeper first peer port
+    Type: Number
+    Default: 2888
+  PeerPortTwo:
+    Description: Zookeeper second peer port
+    Type: Number
+    Default: 3888
+  Cpu:
+    Description: Amount of CPU to reserve
+    Type: Number
+    Default: 1024
+  Memory:
+    Description: Amount of Memory to reserve
+    Type: Number
+    Default: 4096
+  Project:
+    Description: Project tag
+    Type: String
+    MinLength: 1
+    ConstraintDescription: Must be a non-empty string
+  Team:
+    Description: Team tag
+    Type: String
+    MinLength: 1
+    ConstraintDescription: Must be a non-empty string
+  Environment:
+    Description: Environment (dev|sandbox|prod)
+    Type: String
+    AllowedValues: ['dev','sandbox','prod']
+    Default: dev
+    ConstraintDescription: Must be one of dev|sandbox|prod.
+  DomainName:
+    Description: The domain name for Zookeeper hosts
+    Type: String
+  PrometheusJmxExporterPort:
+    Description: The JMX port to use for metric collection
+    Type: Number
+    Default: 9404
+  MonitoringCidr:
+    Type: String
+    Description: CIDR range to allow access for monitoring
+    Default: ''
+
+Conditions:
+  AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
+
+Resources:
+  ZKNodesLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '${StackName}/zk'
+      RetentionInDays: 1
+  ClientZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-client-zk-sg'
+      GroupDescription: Allows Client Access to Zookeeper Nodes
+      VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
+  InternalZKSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-internal-zk-sg'
+      GroupDescription: Allows Internal Access to Zookeeper Nodes
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref 'ClientZKSG'
+          IpProtocol: tcp
+          FromPort: !Ref 'ClientPort'
+          ToPort: !Ref 'ClientPort'
+      VpcId: !Ref 'VPCId'
+      Tags:
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: zookeeper
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
+    DependsOn: 'ClientZKSG'
+  InternalZKSGIngressPeerOneRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PeerPortOne'
+      ToPort: !Ref 'PeerPortOne'
+      GroupId: !Ref 'InternalZKSG'
+      SourceSecurityGroupId: !Ref 'InternalZKSG'
+    DependsOn: 'InternalZKSG'
+  InternalZKSGIngressPeerTwoRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PeerPortTwo'
+      ToPort: !Ref 'PeerPortTwo'
+      GroupId: !Ref 'InternalZKSG'
+      SourceSecurityGroupId: !Ref 'InternalZKSG'
+    DependsOn: 'InternalZKSG'
+  InternalZKSGIngressPrometheusExporterRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Condition: AllowMonitoringCidr
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'PrometheusJmxExporterPort'
+      ToPort: !Ref 'PrometheusJmxExporterPort'
+      GroupId: !Ref 'InternalZKSG'
+      CidrIp: !Ref 'MonitoringCidr'
+
+  ZookeeperNode1:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        StackName: !Ref 'StackName'
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ServerId: 1
+        ServerName: !Sub '${StackName}-zk1'
+        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
+        ClientPort: !Ref 'ClientPort'
+        PeerPortOne: !Ref 'PeerPortOne'
+        PeerPortTwo: !Ref 'PeerPortTwo'
+        LogGroup: !Ref 'ZKNodesLogGroup'
+        SecurityGroup: !Ref 'InternalZKSG'
+        SubnetId: !Select [ 0, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
+        DomainName: !Ref 'DomainName'
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+  ZookeeperNode2:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        StackName: !Ref 'StackName'
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ServerId: 2
+        ServerName: !Sub '${StackName}-zk2'
+        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
+        ClientPort: !Ref 'ClientPort'
+        PeerPortOne: !Ref 'PeerPortOne'
+        PeerPortTwo: !Ref 'PeerPortTwo'
+        LogGroup: !Ref 'ZKNodesLogGroup'
+        SecurityGroup: !Ref 'InternalZKSG'
+        SubnetId: !Select [ 1, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
+        DomainName: !Ref 'DomainName'
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode1']
+  ZookeeperNode3:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        StackName: !Ref 'StackName'
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        EFSMountPath: !Ref 'EFSMountPath'
+        ServerId: 3
+        ServerName: !Sub '${StackName}-zk3'
+        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
+        ClientPort: !Ref 'ClientPort'
+        PeerPortOne: !Ref 'PeerPortOne'
+        PeerPortTwo: !Ref 'PeerPortTwo'
+        LogGroup: !Ref 'ZKNodesLogGroup'
+        SecurityGroup: !Ref 'InternalZKSG'
+        SubnetId: !Select [ 2, !Ref 'Subnets' ]
+        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
+        DomainName: !Ref 'DomainName'
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode2']
+
+Outputs:
+  ClientZKSG:
+    Description: Allows Client Access to Zookeeper Nodes
+    Value: !Ref 'ClientZKSG'
+  ConnectionString:
+    Description: Comma delimited list of zookeeper node addresses
+    Value: !Sub
+      - '${Server1},${Server2},${Server3}'
+      - Server1: !GetAtt 'ZookeeperNode1.Outputs.ConnectionString'
+        Server2: !GetAtt 'ZookeeperNode2.Outputs.ConnectionString'
+        Server3: !GetAtt 'ZookeeperNode3.Outputs.ConnectionString'

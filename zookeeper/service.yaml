@@ -55,7 +55,9 @@ Parameters:
     Description: The JMX port to use for metric collection
     Type: Number
     Default: 9404
-
+  DomainName:
+    Description: The domain name for Zookeeper hosts
+    Type: String
 Resources:
   ZkNodeTaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'
@@ -132,3 +134,10 @@ Resources:
              - !Ref 'SecurityGroup'
           Subnets:
              - !Ref 'SubnetId'
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+Outputs:
+  ConnectionString:
+    Description: The connection string for this Zookeeper node
+    Value: !Sub '${ServerName}.${DomainName}:${ClientPort}'

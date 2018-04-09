@@ -15,7 +15,7 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: 'zk1:22888:23888;zk2:32888:33888;zk3:42888:43888'
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
 
   zk2:
     build: ../zookeeper
@@ -31,7 +31,7 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: 'zk1:22888:23888;zk2:32888:33888;zk3:42888:43888'
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
 
   zk3:
     build: ../zookeeper
@@ -47,23 +47,49 @@ services:
       ZOOKEEPER_INIT_LIMIT: 5
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_SERVERS: 'zk1:22888:23888;zk2:32888:33888;zk3:42888:43888'
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/zookeeper-metrics.yml'
 
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka
+  broker1:
+    build: ../kafka
+    container_name: broker1
     depends_on: [zk1,zk2,zk3]
     ports:
-      # On OSX, edit /etc/hosts and add 'kafka' to 127.0.0.1
-      # This is because the way broker is advertising and won't listen
-      # if the host machine uses 'localhost:9092'. From the host machine
-      # Use 'kafka:9092' to bootstrap.
-      - '9092:9092'
+      - '29092:29092'
     environment:
       KAFKA_BROKER_ID: 1
+      KAFKA_BROKER_RACK: rack-1
       KAFKA_ZOOKEEPER_CONNECT: 'zk1:22181,zk2:32181,zk3:42181'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker1:29092'
+      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-metrics.yml'
+
+  broker2:
+    build: ../kafka
+    container_name: broker2
+    depends_on: [zk1,zk2,zk3]
+    ports:
+      - '39092:39092'
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_BROKER_RACK: rack-2
+      KAFKA_ZOOKEEPER_CONNECT: 'zk1:22181,zk2:32181,zk3:42181'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker2:39092'
+      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-metrics.yml'
+
+  broker3:
+    build: ../kafka
+    container_name: broker3
+    depends_on: [zk1,zk2,zk3]
+    ports:
+      - '49092:49092'
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_BROKER_RACK: rack-3
+      KAFKA_ZOOKEEPER_CONNECT: 'zk1:22181,zk2:32181,zk3:42181'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker3:49092'
+      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-metrics.yml'
 
   cassandra:
     build: ../cassandra
@@ -77,7 +103,7 @@ services:
     build: ../schema-registry
     container_name: schema-registry
     hostname: schema-registry
-    depends_on: [zk1,zk2,zk3,kafka]
+    depends_on: [zk1,zk2,zk3,broker1,broker2,broker3]
     ports:
       - '8081:8081'
     volumes:
@@ -85,21 +111,21 @@ services:
     environment:
       APP_HOST: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zk1:22181,zk2:32181,zk3:42181'
-      SCHEMA_REGISTRY_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/schema-registry-metrics.yml'
+      #SCHEMA_REGISTRY_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/schema-registry-metrics.yml'
 
   # Load connector manually
   # docker exec -it connect-1 /usr/local/share/data/setup-connectors
   connect-1:
     build: ../kafka-connect # Because we need the data mounaineer plugin
     container_name: connect-1
-    depends_on: [zk1,zk2,zk3,kafka,schema-registry,cassandra]
+    depends_on: [zk1,zk2,zk3,broker1,broker2,broker3,schema-registry,cassandra]
     ports:
       - '8083:8083'
     volumes:
       - ./data:/usr/local/share/data
     environment:
       APP_HOST: connect-1
-      CONNECT_BOOTSTRAP_SERVERS: 'kafka:9092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:39092,broker3:49092'
       CONNECT_ZOOKEEPER_CONNECT: 'zk1:22181,zk2:32181,zk3:42181'
       CONNECT_GROUP_ID: kafka-connect-group
       CONNECT_PLUGIN_PATH: /usr/local/share/kafka/plugins
@@ -114,36 +140,36 @@ services:
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-connect-metrics.yml'
+      #KAFKA_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-connect-metrics.yml'
 
   # Multiple Kafka REST Proxies will not work properly for consuming
   kafka-rest-1:
     build: ../kafka-rest
     container_name: kafka-rest-1
-    depends_on: [zk1,zk2,zk3,kafka,schema-registry]
+    depends_on: [zk1,zk2,zk3,broker1,broker2,broker3,schema-registry]
     ports:
       - '8082:8082'
     volumes:
       - ./data:/usr/local/share/data
     environment:
       APP_HOST: kafka-rest-1
-      KAFKA_REST_BOOTSTRAP_SERVERS: 'kafka:9092'
+      KAFKA_REST_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:39092,broker3:49092'
       KAFKA_REST_ZOOKEEPER_CONNECT: 'zk1:22181,zk2:32181,zk3:42181'
       KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
       KAFKA_REST_ID: 'rest-a'
       KAFKA_REST_HOST_NAME: 'kafka-rest-1'
-      KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-rest-metrics.yml'
+      #KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-rest-metrics.yml'
 
   prometheus:
     build: .
     container_name: prometheus
-    depends_on: [zk1,zk2,zk3,kafka,schema-registry,kafka-rest-1]
+    depends_on: [zk1,zk2,zk3,broker1,broker2,broker3,schema-registry,kafka-rest-1]
     ports:
       - '9090:9090'
     volumes:
       - ./db:/usr/local/share/data
     environment:
-      PROM_STATIC_CONFIGS: 'kafka-rest#kafka-rest-1:9404|schema-registry#schema-registry:9404|kafka-connect#connect-1:9404|zookeeper#zk1:9404,zk2:9404,zk3:9404'
+      PROM_STATIC_CONFIGS: 'kafka-rest#kafka-rest-1:9404|schema-registry#schema-registry:9404|kafka-connect#connect-1:9404|zookeeper#zk1:9404,zk2:9404,zk3:9404|kafka#broker1:9404,broker2:9404,broker3:9404'
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/usr/local/share/data'

@@ -1,0 +1,129 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates an ECS Kafka Service and Task
+
+Parameters:
+  Cluster:
+    Description: ECS Cluster
+    Type: String
+  StackName:
+    Description: The Parent Stack Name
+    Type: String
+  Cpu:
+    Description: CPU (1024 = 1 core)
+    Type: Number
+    Default: 1024
+  Memory:
+    Description: Memory
+    Type: Number
+    Default: 4096
+  EFSMountPath:
+    Description: Path to EFS Directory
+    Type: String
+  BrokerId:
+    Description: Broker Id
+    Type: Number
+  BrokerName:
+    Description: The name of the broker. Used to register a dns entry in route53
+    Type: String
+  DomainName:
+    Description: The domain under which the broker will register its advertised address. (HostedZoneName)
+    Type: String 
+  ZookeeperConnectionString:
+    Description: Connection string for Zookeeper Cluster
+    Type: String
+  ZookeeperSecurityGroup:
+    Description: Security Group to allow access to ZK
+    Type: String  
+  ClientPort:
+    Description: Kafka client port
+    Type: Number
+    Default: 9092
+  LogGroup:
+    Description: Log Group
+    Type: String
+  SecurityGroup:
+    Description: Security Group
+    Type: AWS::EC2::SecurityGroup::Id
+  SubnetId:
+    Description: SubnetId
+    Type: AWS::EC2::Subnet::Id
+  PrometheusJmxExporterPort:
+    Description: The JMX port to use for metric collection
+    Type: Number
+    Default: 9404
+
+Resources:
+  BrokerNodeTaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      NetworkMode: awsvpc
+      ContainerDefinitions:
+      - Name: broker
+        Image: loyaltyone/cp-kafka:0.1-beta
+        Cpu: !Ref 'Cpu'
+        Memory: !Ref 'Memory'
+        MemoryReservation: !Ref 'Memory'
+        User: root
+        DockerLabels:
+          'discovery.service.name': !Sub '${BrokerName}${BrokerId}'
+        Environment:
+          - Name: KAFKA_BROKER_ID
+            Value: !Ref 'BrokerId'
+          - Name: KAFKA_ZOOKEEPER_CONNECT
+            Value: !Ref 'ZookeeperConnectionString'
+          - Name: KAFKA_ADVERTISED_LISTENERS
+            Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+          - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+            Value: 2
+          - Name: KAFKA_JMX_OPTS
+            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/kafka-metrics.yml'
+          - Name: KAFKA_LOG4J_LOGGERS
+            Value: 'kafka.controller=WARN,state.change.logger=WARN'
+        PortMappings:
+          - ContainerPort: !Ref 'ClientPort'
+            HostPort: !Ref 'ClientPort'
+          - ContainerPort: !Ref 'PrometheusJmxExporterPort'
+            HostPort: !Ref 'PrometheusJmxExporterPort'
+        MountPoints:
+          - SourceVolume: data
+            ContainerPath: /var/lib/kafka/data
+          - SourceVolume: secrets
+            ContainerPath: /etc/kafka/secrets
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Sub 'kafka${BrokerId}'
+      Volumes:
+        - Name: data
+          Host:
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/broker/${BrokerId}/data'
+        - Name: secrets
+          Host:
+            SourcePath: !Sub '${EFSMountPath}/${StackName}/broker/${BrokerId}/secrets'
+      Family: !Sub '${StackName}-broker-${BrokerId}'
+  BrokerNodeService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      ServiceName: !Sub '${StackName}-broker-${BrokerId}'
+      Cluster: !Ref 'Cluster'
+      DesiredCount: 1
+      TaskDefinition: !Ref 'BrokerNodeTaskDefinition'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+             - !Ref 'SecurityGroup'
+             - !Ref 'ZookeeperSecurityGroup'
+          Subnets:
+             - !Ref 'SubnetId'
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+Outputs:
+  ConnectionString:
+    Description: The connection string for this broker
+    Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'

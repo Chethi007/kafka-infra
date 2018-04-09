@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Zookeeper Cluster
+Description: Kafka Cluster
 
 Parameters:
   Cluster:
@@ -21,17 +21,15 @@ Parameters:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
   ClientPort:
-    Description: Zookeeper client port
+    Description: Kafka client port
     Type: Number
-    Default: 2181
-  PeerPortOne:
-    Description: Zookeeper first peer port
-    Type: Number
-    Default: 2888
-  PeerPortTwo:
-    Description: Zookeeper second peer port
-    Type: Number
-    Default: 3888
+    Default: 9092
+  ZookeeperConnectionString:
+    Description: Connection string for Zookeeper Cluster
+    Type: String
+  ZookeeperSecurityGroup:
+    Description: Security Group to allow access to ZK
+    Type: String
   Cpu:
     Description: Amount of CPU to reserve
     Type: Number
@@ -57,7 +55,7 @@ Parameters:
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
   DomainName:
-    Description: The domain name for Zookeeper hosts
+    Description: The domain name for Kafka brokers
     Type: String
   PrometheusJmxExporterPort:
     Description: The JMX port to use for metric collection
@@ -72,16 +70,16 @@ Conditions:
   AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
 
 Resources:
-  ZKNodesLogGroup:
+  BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
     Properties:
-      LogGroupName: !Sub '${StackName}/zk'
+      LogGroupName: !Sub '${StackName}/kafka'
       RetentionInDays: 1
-  ClientZKSG:
+  ClientKafkaSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: !Sub '${AWS::StackName}-client-zk-sg'
-      GroupDescription: Allows Client Access to Zookeeper Nodes
+      GroupName: !Sub '${AWS::StackName}-client-kafka-sg'
+      GroupDescription: Allows Client Access to Kafka Brokers
       VpcId: !Ref 'VPCId'
       Tags:
         - Key: Project
@@ -91,17 +89,17 @@ Resources:
         - Key: Environment
           Value: !Ref 'Environment'
         - Key: Component
-          Value: zookeeper
+          Value: kafka
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
-  InternalZKSG:
+  InternalKafkaSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: !Sub '${AWS::StackName}-internal-zk-sg'
+      GroupName: !Sub '${AWS::StackName}-internal-kafka-sg'
       GroupDescription: Allows Internal Access to Zookeeper Nodes
       SecurityGroupIngress:
-        - SourceSecurityGroupId: !Ref 'ClientZKSG'
+        - SourceSecurityGroupId: !Ref 'ClientKafkaSG'
           IpProtocol: tcp
           FromPort: !Ref 'ClientPort'
           ToPort: !Ref 'ClientPort'
@@ -118,102 +116,97 @@ Resources:
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
-    DependsOn: 'ClientZKSG'
-  InternalZKSGIngressPeerOneRule:
+    DependsOn: 'ClientKafkaSG'
+  InternalKafkaSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'PeerPortOne'
-      ToPort: !Ref 'PeerPortOne'
-      GroupId: !Ref 'InternalZKSG'
-      SourceSecurityGroupId: !Ref 'InternalZKSG'
-    DependsOn: 'InternalZKSG'
-  InternalZKSGIngressPeerTwoRule:
-    Type: 'AWS::EC2::SecurityGroupIngress'
-    Properties:
-      IpProtocol: tcp
-      FromPort: !Ref 'PeerPortTwo'
-      ToPort: !Ref 'PeerPortTwo'
-      GroupId: !Ref 'InternalZKSG'
-      SourceSecurityGroupId: !Ref 'InternalZKSG'
-    DependsOn: 'InternalZKSG'
-  InternalZKSGIngressPrometheusExporterRule:
+      FromPort: !Ref 'ClientPort'
+      ToPort: !Ref 'ClientPort'
+      GroupId: !Ref 'InternalKafkaSG'
+      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
+    DependsOn: 'InternalKafkaSG'
+  InternalKafkaSGIngressPrometheusExporterRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Condition: AllowMonitoringCidr
     Properties:
       IpProtocol: tcp
       FromPort: !Ref 'PrometheusJmxExporterPort'
       ToPort: !Ref 'PrometheusJmxExporterPort'
-      GroupId: !Ref 'InternalZKSG'
+      GroupId: !Ref 'InternalKafkaSG'
       CidrIp: !Ref 'MonitoringCidr'
-
-  ZookeeperNode1:
+  Broker1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./zk-service.yaml
+      TemplateURL: ./service.yaml
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
         EFSMountPath: !Ref 'EFSMountPath'
-        ServerId: 1
-        ServerName: !Sub '${StackName}-zk1'
-        ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
+        BrokerId: 1
+        BrokerName: !Sub '${StackName}-broker'
+        DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        PeerPortOne: !Ref 'PeerPortOne'
-        PeerPortTwo: !Ref 'PeerPortTwo'
-        LogGroup: !Ref 'ZKNodesLogGroup'
-        SecurityGroup: !Ref 'InternalZKSG'
+        LogGroup: !Ref 'BrokersLogGroup'
+        SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
-  ZookeeperNode2:
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
+  Broker2:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./zk-service.yaml
+      TemplateURL: ./service.yaml
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
         EFSMountPath: !Ref 'EFSMountPath'
-        ServerId: 2
-        ServerName: !Sub '${StackName}-zk2'
-        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
+        BrokerId: 2
+        BrokerName: !Sub '${StackName}-broker'
+        DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        PeerPortOne: !Ref 'PeerPortOne'
-        PeerPortTwo: !Ref 'PeerPortTwo'
-        LogGroup: !Ref 'ZKNodesLogGroup'
-        SecurityGroup: !Ref 'InternalZKSG'
+        LogGroup: !Ref 'BrokersLogGroup'
+        SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
-  ZookeeperNode3:
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker1']
+  Broker3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./zk-service.yaml
+      TemplateURL: ./service.yaml
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
         EFSMountPath: !Ref 'EFSMountPath'
-        ServerId: 3
-        ServerName: !Sub '${StackName}-zk3'
-        ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
+        BrokerId: 3
+        BrokerName: !Sub '${StackName}-broker'
+        DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        PeerPortOne: !Ref 'PeerPortOne'
-        PeerPortTwo: !Ref 'PeerPortTwo'
-        LogGroup: !Ref 'ZKNodesLogGroup'
-        SecurityGroup: !Ref 'InternalZKSG'
+        LogGroup: !Ref 'BrokersLogGroup'
+        SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker2']
 
 Outputs:
-  ClientZKSG:
-    Description: Allows Client Access to Zookeeper Nodes
-    Value: !Ref 'ClientZKSG'
-    Export:
-      Name: !Sub '${StackName}-ClientZKSG'
+  ClientKafkaSG:
+    Description: Allows Client Access to Kafka Brokers
+    Value: !Ref 'ClientKafkaSG'
+  ConnectionString:
+    Description: Connection string to connect to kafka brokers
+    Value: !Sub
+      - '${Broker1},${Broker2},${Broker3}'
+      - Broker1: !GetAtt 'Broker1.Outputs.ConnectionString'
+        Broker2: !GetAtt 'Broker2.Outputs.ConnectionString'
+        Broker3: !GetAtt 'Broker3.Outputs.ConnectionString'
