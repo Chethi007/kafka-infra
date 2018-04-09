@@ -92,6 +92,9 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: zookeeper
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
   InternalZKSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -112,6 +115,9 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: zookeeper
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
     DependsOn: 'ClientZKSG'
   InternalZKSGIngressPeerOneRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
