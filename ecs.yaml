@@ -461,6 +461,11 @@ Resources:
                 script
                   exec 2>>/var/log/user-data.log
                   set -x
+                  
+                  until curl -s http://localhost:51678/v1/metadata
+                  do
+                      sleep 1
+                  done                  
 
                   cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
                   region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
@@ -472,8 +477,8 @@ Resources:
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     --add-host host:$(ifconfig docker0 | grep -oP 'inet addr:\K\S+') \
                     --log-driver=awslogs \
-                    --log-opt awslogs-region=$region \
                     --log-opt awslogs-group=$cluster \
+                    --log-opt awslogs-region=$region \
                     --log-opt awslogs-stream-prefix="service-discovery" \
                     loyaltyone/service-discovery-agent-route53:latest --hostedZoneId=${HostedZoneId}
 
