@@ -204,7 +204,7 @@ Outputs:
     Description: Allows Client Access to Kafka Brokers
     Value: !Ref 'ClientKafkaSG'
     Export:
-      Name: !Sub '${StackName}-ClientKafkaSG'
+      Name: !Sub '${AWS::StackName}-ClientSG'
   ConnectionString:
     Description: Connection string to connect to kafka brokers
     Value: !Sub
@@ -213,4 +213,4 @@ Outputs:
         Broker2: !GetAtt 'Broker2.Outputs.ConnectionString'
         Broker3: !GetAtt 'Broker3.Outputs.ConnectionString'
     Export:
-      Name: !Sub '${StackName}-kafka-ConnectionString'
+      Name: !Sub '${AWS::StackName}-ConnectionString'

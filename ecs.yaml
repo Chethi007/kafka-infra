@@ -99,6 +99,11 @@ Conditions:
   IsClusterTypeService: !Equals [!Ref 'ClusterType', 'service']
 
 Resources:
+  ECSLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Ref 'AWS::StackName'
+      RetentionInDays: 2
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -522,6 +527,7 @@ Resources:
                     loyaltyone/docker-mirror:0.1.2
                 end script
   ECSAutoScalingGroup:
+    DependsOn: 'ECSLogGroup'    
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: !Ref 'Subnets'
