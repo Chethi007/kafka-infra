@@ -28,7 +28,7 @@ aws cloudformation package --template-file master-template.yaml \
     --output-template-file master.yaml
 
 echo "Deploying master template"
-params=$(jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' ../kafka-infra-config/dev-master-params.json | tr '\n' ' ')
+params=$(jq -r '.Parameters | to_entries | map("\(.key)=\(.value|tostring)")|.[]' ../kafka-infra-config/dev-master-params.json | tr '\n' ' ')
 aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM     
 #    --parameter-overrides $params
 
