@@ -65,7 +65,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1523390806052,
+  "iteration": 1523391738781,
   "links": [],
   "panels": [
     {
@@ -829,10 +829,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "max(kafka_controller_KafkaController_Value{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"ActiveControllerCount\"})",
+          "expr": "sum(kafka_controller_KafkaController_Value{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"ActiveControllerCount\"})",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
@@ -1815,5 +1815,5 @@
   },
   "timezone": "",
   "title": "Kafka ECS",
-  "version": 35
+  "version": 37
 }
