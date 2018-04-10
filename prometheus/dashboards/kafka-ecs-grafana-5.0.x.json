@@ -65,7 +65,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1523388248913,
+  "iteration": 1523390806052,
   "links": [],
   "panels": [
     {
@@ -118,7 +118,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"MessagesInPerSec\"}) by (topic)",
+          "expr": "sum without(instance)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"MessagesInPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -199,7 +199,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"MessagesInPerSec\"}) by (instance)",
+          "expr": "sum without(topic)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"MessagesInPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -293,7 +293,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"BytesInPerSec\"}) by (topic)",
+          "expr": "sum without(instance)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"BytesInPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -374,7 +374,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"FailedFetchRequestsPerSec\"}) by (topic)",
+          "expr": "sum without(instance)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"FailedFetchRequestsPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -549,7 +549,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"BytesInPerSec\"}) by (instance)",
+          "expr": "sum without(topic)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"BytesInPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -630,7 +630,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"FailedFetchRequestsPerSec\"}) by (instance)",
+          "expr": "sum without(topic)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",topic=~\"$topic\",name=\"FailedFetchRequestsPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -711,7 +711,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"BytesOutPerSec\"}) by (instance)",
+          "expr": "sum without(topic)(rate(kafka_server_BrokerTopicMetrics_Count{job=\"$prometheus_job_name\",instance=~\"$instance\",name=\"BytesOutPerSec\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1048,7 +1048,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_controller_ControllerStats_Count{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"LeaderElectionRateAndTimeMs\"}",
+          "expr": "rate(kafka_controller_ControllerStats_Count{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"LeaderElectionRateAndTimeMs\"}[1m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1283,7 +1283,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_server_ReplicaManager_Count{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"IsrShrinksPerSec\"}",
+          "expr": "rate(kafka_server_ReplicaManager_Count{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"IsrShrinksPerSec\"}[1m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1364,7 +1364,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_server_ReplicaManager_Count{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"IsrExpandsPerSec\"}",
+          "expr": "rate(kafka_server_ReplicaManager_Count{job=\"$prometheus_job_name\", instance=~\"$instance\", name=\"IsrExpandsPerSec\"}[1m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1815,5 +1815,5 @@
   },
   "timezone": "",
   "title": "Kafka ECS",
-  "version": 30
+  "version": 35
 }
