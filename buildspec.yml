@@ -39,7 +39,7 @@ phases:
       - |
         TEMPLATES=$(aws s3api list-objects --bucket $TEMPLATE_BUCKET --prefix kafka/ | jq .Contents[].Key)
         for template in ${TEMPLATES}; do
-        	aws s3api put-object-acl --bucket $TEMPLATE_BUCKET --key $template --acl bucket-owner-full-control
+        	aws s3api put-object-acl --bucket $TEMPLATE_BUCKET --key ${template} --acl bucket-owner-full-control
         done
 
 artifacts:
