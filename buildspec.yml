@@ -36,6 +36,12 @@ phases:
       - aws cloudformation package --template-file master-template.yaml
         --s3-bucket $TEMPLATE_BUCKET --s3-prefix kafka --force-upload
         --output-template-file master.yaml
+      - |
+        TEMPLATES=$(aws s3api list-objects-v2 --start-after kafka/ --bucket $TEMPLATE_BUCKET --prefix kafka/ | jq -r .Contents[].Key)
+        for template in ${TEMPLATES}; do
+          echo ${template}
+          aws s3api put-object-acl --bucket ${TEMPLATE_BUCKET} --key ${template} --acl bucket-owner-full-control
+        done
 
 artifacts:
   files:
