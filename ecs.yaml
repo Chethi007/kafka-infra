@@ -26,7 +26,7 @@ Parameters:
 #  EFSFileSystemId:
 #    Description: File system id to be mounted in the container instances
 #    Type: String
-  EFSMountPath:
+  EBSMountPath:
     Description: Path at which to create the volume mount for EFS
     Type: String
 #  EFSAccessSecurityGroup:
@@ -227,7 +227,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: false
       BlockDeviceMappings:
-        - DeviceName: !Ref 'EFSMountPath'
+        - DeviceName: !Ref 'EBSMountPath'
           Ebs:
             VolumeSize: "500"
             DeleteOnTermination: "true"
