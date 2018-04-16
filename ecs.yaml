@@ -226,6 +226,12 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
+      BlockDeviceMappings:
+        - DeviceName: !Ref 'EFSMountPath'
+          Ebs:
+            VolumeSize: "500"
+            DeleteOnTermination: "true"
+            Encrypted: "true"
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
@@ -238,11 +244,11 @@ Resources:
           #!/bin/bash
 
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-          
+
           # increment to force rolling deploy
           version=2
           echo $version
-          
+
           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           yum install -y aws-cfn-bootstrap
 
@@ -413,48 +419,48 @@ Resources:
           commands:
             01_add_instance_to_cluster:
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-        # Mount EFS file system in via NFS
-        install_efs:
-          packages:
-            yum:
-              nfs-utils: []
-          commands:
-            01_setup_efs:
-              command: '/usr/local/share/setup-efs'
-            02_restart_docker:
-              command: service docker restart
-          files:
-            '/usr/local/share/setup-efs':
-              mode: '000744'
-              owner: root
-              group: root
-              content: !Sub |
-                #!/bin/bash -e
-
-                exec > >(tee /var/log/user-data.log|logger -t install-efs -s 2>/dev/console) 2>&1
-
-                # Include EFS config
-                EFS_FILE_SYSTEM_ID=${EFSFileSystemId}
-                EFS_MOUNT_POINT=${EFSMountPath}
-
-                EC2_AVAIL_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
-                EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
-
-                mkdir -p $EFS_MOUNT_POINT
-
-                DIR_SRC=$EC2_AVAIL_ZONE.$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com
-                DIR_TGT=$EFS_MOUNT_POINT
-
-                echo "$DIR_SRC:/ $DIR_TGT nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-                echo "Added mount entry to fstab:"
-                tail -n 1 /etc/fstab
-
-                mount -a -t nfs4
-                echo "Mounted EFS: $EFS_FILE_SYSTEM_ID"
-
-                # Create the EFS group and assign it as the group for the entire EFS volume
-                EFS_GID=555
-                groupadd -g $EFS_GID efs
+#        # Mount EFS file system in via NFS
+#        install_efs:
+#          packages:
+#            yum:
+#              nfs-utils: []
+#          commands:
+#            01_setup_efs:
+#              command: '/usr/local/share/setup-efs'
+#            02_restart_docker:
+#              command: service docker restart
+#          files:
+#            '/usr/local/share/setup-efs':
+#              mode: '000744'
+#              owner: root
+#              group: root
+#              content: !Sub |
+#                #!/bin/bash -e
+#
+#                exec > >(tee /var/log/user-data.log|logger -t install-efs -s 2>/dev/console) 2>&1
+#
+#                # Include EFS config
+#                EFS_FILE_SYSTEM_ID=${EFSFileSystemId}
+#                EFS_MOUNT_POINT=${EFSMountPath}
+#
+#                EC2_AVAIL_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
+#                EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+#
+#                mkdir -p $EFS_MOUNT_POINT
+#
+#                DIR_SRC=$EC2_AVAIL_ZONE.$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com
+#                DIR_TGT=$EFS_MOUNT_POINT
+#
+#                echo "$DIR_SRC:/ $DIR_TGT nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+#                echo "Added mount entry to fstab:"
+#                tail -n 1 /etc/fstab
+#
+#                mount -a -t nfs4
+#                echo "Mounted EFS: $EFS_FILE_SYSTEM_ID"
+#
+#                # Create the EFS group and assign it as the group for the entire EFS volume
+#                EFS_GID=555
+#                groupadd -g $EFS_GID efs
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -470,11 +476,11 @@ Resources:
                 script
                   exec 2>>/var/log/user-data.log
                   set -x
-                  
+
                   until curl -s http://localhost:51678/v1/metadata
                   do
                       sleep 1
-                  done                  
+                  done
 
                   cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
                   region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
@@ -527,7 +533,7 @@ Resources:
                     loyaltyone/docker-mirror:0.1.2
                 end script
   ECSAutoScalingGroup:
-    DependsOn: 'ECSLogGroup'    
+    DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: !Ref 'Subnets'
