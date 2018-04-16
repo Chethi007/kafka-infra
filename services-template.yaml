@@ -116,7 +116,7 @@ Resources:
   ECS:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ecs.yaml
+      TemplateURL: ./ecs-with-efs.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'

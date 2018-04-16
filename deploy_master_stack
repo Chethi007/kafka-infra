@@ -4,10 +4,18 @@
 #set -o pipefail
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
+stack_suffix=$1
+if [[ -z "${stack_suffix}" ]]; then
+    echo "Please specify a suffix to use for the CF stack"
+    exit 1
+fi
+
 readonly CFNS=$(grep \
     --include="*.yaml" \
     --exclude=master.yaml \
     --exclude=services.yaml \
+    --exclude=efs.yaml \
+    --exclude=elb.yaml \
     --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
 
 for cfn in ${CFNS}; do
@@ -19,9 +27,6 @@ for cfn in ${CFNS}; do
     fi
 done
 
-echo "Create/Update EFS"
-aws cloudformation deploy --template-file efs.yaml --stack-name "${ENV:-dev}"-kafka-efs --capabilities CAPABILITY_IAM
-
 echo "Packaging master template"
 aws cloudformation package --template-file master-template.yaml \
     --s3-bucket loyaltyone-"${ENV:-dev}"-infra --s3-prefix kafka --force-upload \
@@ -29,10 +34,10 @@ aws cloudformation package --template-file master-template.yaml \
 
 echo "Deploying master template"
 params=$(jq -r '.Parameters | to_entries | map("\(.key)=\(.value|tostring)")|.[]' ../kafka-infra-config/dev-master-params.json | tr '\n' ' ')
-aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-kafka --capabilities CAPABILITY_IAM \
-    --parameter-overrides $params
+aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-${stack_suffix} \
+    --capabilities CAPABILITY_IAM --parameter-overrides $params
 
-# aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
+# aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-${stack_suffix} --output table
 
 echo "Cleaning up"
 rm -rf master.yaml

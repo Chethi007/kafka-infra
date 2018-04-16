@@ -21,11 +21,16 @@ Parameters:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
     AllowedValues: [r4.xlarge]
+    Default: r4.xlarge
+    ConstraintDescription: Must be one of [r4.xlarge]
 
   # Storage
   EBSMountPath:
-    Description: Path at which to create the volume mount for EBS
+    Description: Path at which to create the mount for the EBS data volume
     Type: String
+    Default: /mnt/data
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
   EBSVolumeSize:
     Description: Size of the volume to create for EBS
     Type: Number
@@ -225,11 +230,11 @@ Resources:
     Properties:
       AssociatePublicIpAddress: false
       BlockDeviceMappings:
-        - DeviceName: !Ref 'EBSMountPath'
+        - DeviceName: '/dev/xvdh'
           Ebs:
             VolumeSize: !Ref 'EBSVolumeSize'
-            DeleteOnTermination: "true"
-            Encrypted: "true"
+            DeleteOnTermination: 'true'
+            Encrypted: 'true'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
@@ -298,6 +303,7 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+
         # Configure and install aws logs agent
         install_logging:
           packages:
@@ -412,9 +418,31 @@ Resources:
 
         # Let ecs agent know which cluster to join
         install_ecs:
+          files:
+            '/usr/local/share/setup-data-volume':
+              mode: '000744'
+              owner: root
+              group: root
+              content: !Sub |
+                #!/bin/bash -e
+
+                exec > >(tee /var/log/user-data.log|logger -t setup-data-volume -s 2>/dev/console) 2>&1
+
+                echo "Creating XFS file system on /dev/xvdh..."
+                mkfs.xfs -f /dev/xvdh
+
+                echo "Setting up mount point for data volume on ${EBSMountPath}..."
+                mkdir -p ${EBSMountPath}
+                echo "/dev/xvdh  ${EBSMountPath}  xfs  defaults,inode64,nofail,context=system_u:object_r:var_t:s0  0 2" >> /etc/fstab
+
+                echo "Mounting file system..."
+                mount -v ${EBSMountPath}
           commands:
             01_add_instance_to_cluster:
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+            02_setup_ebs_volume:
+              command: '/usr/local/share/setup-data-volume'
+
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -450,7 +478,6 @@ Resources:
                     --log-opt awslogs-region=$region \
                     --log-opt tag='{{.Name}}/{{.ID}}' \
                     loyaltyone/service-discovery-agent-route53:latest --hostedZoneId=${HostedZoneId}
-
                 end script
         install_docker_mirror:
           files:
@@ -634,3 +661,6 @@ Outputs:
     Condition: IsClusterTypeService
     Description: The ARN of the ECS service role
     Value: !GetAtt [EcsServiceRole, Arn]
+  EBSMountPath:
+    Description: Path at which to create the mount for the EBS data volume
+    Value: !Ref 'EBSMountPath'

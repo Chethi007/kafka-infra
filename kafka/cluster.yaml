@@ -13,10 +13,11 @@ Parameters:
   VPCId:
     Description: Choose which VPC this cluster should be deployed to
     Type: AWS::EC2::VPC::Id
-  EFSMountPath:
-    Description: Path at which to create the volume mount for EFS
+  DataVolumeMountPath:
+    Description: Path to directory for mounting data
     Type: String
-    Default: /mnt/efs
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
   Subnets:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
@@ -144,7 +145,7 @@ Resources:
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
-        EFSMountPath: !Ref 'EFSMountPath'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
         BrokerId: 1
@@ -165,7 +166,7 @@ Resources:
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
-        EFSMountPath: !Ref 'EFSMountPath'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
         BrokerId: 2
@@ -186,7 +187,7 @@ Resources:
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
-        EFSMountPath: !Ref 'EFSMountPath'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
         BrokerId: 3
