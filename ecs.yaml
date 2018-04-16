@@ -23,15 +23,15 @@ Parameters:
     AllowedValues: [r4.xlarge]
 
   # Storage
-  EFSFileSystemId:
-    Description: File system id to be mounted in the container instances
-    Type: String
+#  EFSFileSystemId:
+#    Description: File system id to be mounted in the container instances
+#    Type: String
   EFSMountPath:
     Description: Path at which to create the volume mount for EFS
     Type: String
-  EFSAccessSecurityGroup:
-    Description: The Security Group that allows access to EFS
-    Type: String
+#  EFSAccessSecurityGroup:
+#    Description: The Security Group that allows access to EFS
+#    Type: String
 
   # ASG
   ASGEventsTopic:
@@ -238,7 +238,7 @@ Resources:
       KeyName: !Ref 'KeyName'
       SecurityGroups:
         - !Ref 'ECSSecurityGroup'
-        - !Ref 'EFSAccessSecurityGroup'
+#        - !Ref 'EFSAccessSecurityGroup'
       UserData:
         'Fn::Base64': !Sub |
           #!/bin/bash
