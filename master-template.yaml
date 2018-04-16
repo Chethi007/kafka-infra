@@ -23,11 +23,20 @@ Parameters:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
   InstanceType:
-    Description: Which instance type should we use to build the ECS cluster?
-    ConstraintDescription: Must be a valid EC2 instance type
+    Description: Which instance type should we use to build the ECS clusters
     Type: String
-    AllowedValues: [r4.xlarge]
-    Default: r4.xlarge
+    AllowedValues: [
+      m3.large, m3.xlarge, m3.2xlarge,
+      m4.large, m4.xlarge, m4.2xlarge,
+      m5.large, m5.xlarge, m5.2xlarge,
+      c3.large, c3.xlarge, c3.2xlarge,
+      c4.large, c4.xlarge, c4.2xlarge,
+      c5.large, c5.xlarge, c5.2xlarge,
+      r3.large, r3.xlarge, r3.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge,
+    ]
+    Default: m5.large
+    ConstraintDescription: Must be a valid EC2 instance type
   ASGMinSize:
     Description: Minimum size of ECS Auto Scaling Group
     Type: Number
@@ -51,6 +60,20 @@ Parameters:
     Type: String
     Description: CIDR range to allow access for monitoring
     Default: ''
+  ZookeeperDataVolumeSize:
+    Type: Number
+    Description: Data volume size in GB for Zookeeper nodes
+    MinValue: 25
+    MaxValue: 250
+    Default: 100
+    ConstraintDescription: Must be a value between 25 and 250
+  BrokerDataVolumeSize:
+    Type: Number
+    Description: Data volume size in GB for Kafka brokers
+    MinValue: 100
+    MaxValue: 2000
+    Default: 1000
+    ConstraintDescription: Must be a value between 100 and 2000
   Project:
     Description: Project tag
     Type: String
@@ -90,6 +113,7 @@ Resources:
         ClusterType: kafka
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+        EBSVolumeSize: !Ref 'BrokerDataVolumeSize'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -111,6 +135,7 @@ Resources:
         ClusterType: kafka
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+        EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -146,7 +171,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
-    DependsOn: 'Zookeeper'
+    DependsOn: ['ECSBrokers', 'Zookeeper']
 Outputs:
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers
