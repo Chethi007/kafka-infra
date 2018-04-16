@@ -69,7 +69,28 @@ Parameters:
     ConstraintDescription: Must be one of dev|sandbox|prod.
 
 Resources:
-  ECS:
+  ECSBrokers:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ecs.yaml
+      Parameters:
+        KeyName: !Ref 'KeyName'
+        VPCId: !Ref 'VPCId'
+        VPCCidrBlock: !Ref 'VPCCidrBlock'
+        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        InstanceType: !Ref 'InstanceType'
+        ASGMinSize: !Ref 'ASGMinSize'
+        ASGMaxSize: !Ref 'ASGMaxSize'
+        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
+        ASGEventsTopic: !Ref 'ASGEventsTopic'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        ClusterType: kafka
+        HostedZoneId: !ImportValue
+          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+  ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ecs.yaml
@@ -95,7 +116,7 @@ Resources:
     Properties:
       TemplateURL: ./zookeeper/cluster.yaml
       Parameters:
-        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
@@ -105,14 +126,14 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
-        DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
-    DependsOn: 'ECS'
+        DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
+    DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./kafka/cluster.yaml
       Parameters:
-        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        Cluster: !GetAtt 'ECSBrokers.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
@@ -124,14 +145,9 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
-        DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
+        DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
     DependsOn: 'Zookeeper'
 Outputs:
-  ClusterName:
-    Description: A reference to the ECS cluster
-    Value: !GetAtt 'ECS.Outputs.ClusterName'
-    Export:
-      Name: !Sub '${AWS::StackName}-ClusterName'
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers
     Value: !GetAtt 'Brokers.Outputs.ClientKafkaSG'
