@@ -165,16 +165,6 @@ Resources:
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'Zookeeper'
 Outputs:
-  ClusterNameZK:
-    Description: A reference to the ECS ZK cluster
-    Value: !GetAtt 'ECSZK.Outputs.ClusterName'
-    Export:
-      Name: !Sub '${AWS::StackName}-ClusterNameZK'
-  ClusterNameKafka:
-    Description: A reference to the ECS Kafka cluster
-    Value: !GetAtt 'ECSKafka.Outputs.ClusterName'
-    Export:
-      Name: !Sub '${AWS::StackName}-ClusterNameKafka'
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers
     Value: !GetAtt 'Brokers.Outputs.ClientKafkaSG'
