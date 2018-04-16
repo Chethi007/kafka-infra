@@ -76,7 +76,7 @@ Parameters:
     ConstraintDescription: Must be one of dev|sandbox|prod.
 
 Resources:
-  ECS:
+  ECSKafka:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ecs.yaml
@@ -102,12 +102,38 @@ Resources:
         ClusterType: kafka
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+  ECSZK:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ecs.yaml
+      Parameters:
+        KeyName: !Ref 'KeyName'
+        VPCId: !Ref 'VPCId'
+        VPCCidrBlock: !Ref 'VPCCidrBlock'
+        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        InstanceType: !Ref 'InstanceType'
+        EFSFileSystemId: !ImportValue
+          'Fn::Sub': '${EfsStackName}-FileSystemId'
+        EFSMountPath: !Ref 'EFSMountPath'
+        EFSAccessSecurityGroup: !ImportValue
+          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
+        ASGMinSize: !Ref 'ASGMinSize'
+        ASGMaxSize: !Ref 'ASGMaxSize'
+        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
+        ASGEventsTopic: !Ref 'ASGEventsTopic'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        ClusterType: kafka
+        HostedZoneId: !ImportValue
+          'Fn::Sub': "${HostedZoneStackName}-ZoneId"          
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./zookeeper/cluster.yaml
       Parameters:
-        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
         EFSMountPath: !Ref 'EFSMountPath'
@@ -118,13 +144,13 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
-    DependsOn: 'ECS'
+    DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./kafka/cluster.yaml
       Parameters:
-        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        Cluster: !GetAtt 'ECSKafka.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
         EFSMountPath: !Ref 'EFSMountPath'
@@ -139,11 +165,16 @@ Resources:
         MonitoringCidr: !Ref 'MonitoringCidr'
     DependsOn: 'Zookeeper'
 Outputs:
-  ClusterName:
-    Description: A reference to the ECS cluster
-    Value: !GetAtt 'ECS.Outputs.ClusterName'
+  ClusterNameZK:
+    Description: A reference to the ECS ZK cluster
+    Value: !GetAtt 'ECSZK.Outputs.ClusterName'
     Export:
-      Name: !Sub '${AWS::StackName}-ClusterName'
+      Name: !Sub '${AWS::StackName}-ClusterNameZK'
+  ClusterNameKafka:
+    Description: A reference to the ECS Kafka cluster
+    Value: !GetAtt 'ECSKafka.Outputs.ClusterName'
+    Export:
+      Name: !Sub '${AWS::StackName}-ClusterNameKafka'
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers
     Value: !GetAtt 'Brokers.Outputs.ClientKafkaSG'
