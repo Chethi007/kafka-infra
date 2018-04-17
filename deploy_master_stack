@@ -12,6 +12,7 @@ fi
 
 readonly CFNS=$(grep \
     --include="*.yaml" \
+    --exclude=services-template.yaml \
     --exclude=master.yaml \
     --exclude=services.yaml \
     --exclude=efs.yaml \

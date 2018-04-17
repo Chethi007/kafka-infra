@@ -63,6 +63,16 @@ Parameters:
     Description: The ID of the Hosted Zone in which to register services for service discovery
     Type: String
 
+  # Parameter to force a rolling deployment
+  RollingDeploymentVersion:
+    Type: Number
+    Description: >
+      Change this value to force a rolling deployment when there are no changes to
+      the launch configuration. Its best to just increment it from the previous value.
+    MinValue: 0
+    Default: 0
+    ConstraintDescription: Must be a non-negative number
+
   # Tags
   Project:
     Description: Project tag
@@ -239,8 +249,8 @@ Resources:
 
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
           
-          # increment to force rolling deploy
-          version=5
+          # Increment RollingDeploymentVersion parameter to force rolling deploy
+          version=${RollingDeploymentVersion}
           echo $version
           
           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm

@@ -5,6 +5,15 @@ Description: >
   This template deploys an ELB stack followed by a highly available ECS cluster using an AutoScaling Group, with
   ECS hosts distributed across multiple Availability Zones.
 Parameters:
+  # Parameter to force a rolling deployment
+  RollingDeploymentVersion:
+    Type: Number
+    Description: >
+      Change this value to force a rolling deployment when there are no changes to
+      the launch configuration. Its best to just increment it from the previous value.
+    MinValue: 0
+    Default: 0
+    ConstraintDescription: Must be a non-negative number
   EfsStackName:
     Description: CloudFormation Stack Name for EFS
     Type: String
@@ -138,7 +147,7 @@ Resources:
         Environment: !Ref 'Environment'
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
-
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
 Outputs:
   Listener:
     Description: The ARN of the load balancer's listener

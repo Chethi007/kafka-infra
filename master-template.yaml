@@ -7,6 +7,15 @@ Description: >
   cluster from containers published in Docker Hub.
 
 Parameters:
+  # Parameter to force a rolling deployment
+  RollingDeploymentVersion:
+    Type: Number
+    Description: >
+      Change this value to force a rolling deployment when there are no changes to
+      the launch configuration. Its best to just increment it from the previous value.
+    MinValue: 0
+    Default: 0
+    ConstraintDescription: Must be a non-negative number
   HostedZoneStackName:
     Description: The Stack Name of the hosted zone in which to register services
     Type: String
@@ -114,6 +123,7 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'BrokerDataVolumeSize'
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -136,6 +146,7 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
