@@ -13,10 +13,11 @@ Parameters:
   VPCId:
     Description: Choose which VPC this cluster should be deployed to
     Type: AWS::EC2::VPC::Id
-  EFSMountPath:
-    Description: Path at which to create the volume mount for EFS
+  DataVolumeMountPath:
+    Description: Path to directory for mounting data
     Type: String
-    Default: /mnt/efs
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
   Subnets:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
@@ -156,7 +157,7 @@ Resources:
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
-        EFSMountPath: !Ref 'EFSMountPath'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ServerId: 1
         ServerName: !Sub '${StackName}-zk1'
         ServerNames: !Sub '0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
@@ -178,7 +179,7 @@ Resources:
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
-        EFSMountPath: !Ref 'EFSMountPath'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ServerId: 2
         ServerName: !Sub '${StackName}-zk2'
         ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo};${StackName}-zk3.${DomainName}:${PeerPortOne}:${PeerPortTwo}'
@@ -200,7 +201,7 @@ Resources:
         StackName: !Ref 'StackName'
         Cpu: !Ref 'Cpu'
         Memory: !Ref 'Memory'
-        EFSMountPath: !Ref 'EFSMountPath'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ServerId: 3
         ServerName: !Sub '${StackName}-zk3'
         ServerNames: !Sub '${StackName}-zk1.${DomainName}:${PeerPortOne}:${PeerPortTwo};${StackName}-zk2.${DomainName}:${PeerPortOne}:${PeerPortTwo};0.0.0.0:${PeerPortOne}:${PeerPortTwo}'

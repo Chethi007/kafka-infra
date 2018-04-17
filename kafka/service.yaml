@@ -18,9 +18,11 @@ Parameters:
     Description: Memory
     Type: Number
     Default: 4096
-  EFSMountPath:
-    Description: Path to EFS Directory
+  DataVolumeMountPath:
+    Description: Path to directory for mounting data
     Type: String
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
   BrokerId:
     Description: Broker Id
     Type: Number
@@ -98,12 +100,14 @@ Resources:
             awslogs-region: !Ref 'AWS::Region'
             awslogs-stream-prefix: !Sub 'kafka${BrokerId}'
       Volumes:
+        # It's probably not a good idea to change these mounts and deploy against a live
+        # cluster in production.
         - Name: data
           Host:
-            SourcePath: !Sub '${EFSMountPath}/${StackName}/broker/${BrokerId}/data'
+            SourcePath: !Sub '${DataVolumeMountPath}/broker/${BrokerId}/data'
         - Name: secrets
           Host:
-            SourcePath: !Sub '${EFSMountPath}/${StackName}/broker/${BrokerId}/secrets'
+            SourcePath: !Sub '${DataVolumeMountPath}/broker/${BrokerId}/secrets'
       Family: !Sub '${StackName}-broker-${BrokerId}'
   BrokerNodeService:
     Type: 'AWS::ECS::Service'

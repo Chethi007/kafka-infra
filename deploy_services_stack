@@ -4,11 +4,19 @@
 #set -o pipefail
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
+stack_suffix=$1
+if [[ -z "${stack_suffix}" ]]; then
+    echo "No stack suffix provided."
+    stack_suffix=kafka-services
+fi
+echo "Using stack_suffix='${stack_suffix}'"
+
 readonly CFNS=$(grep \
     --include="*.yaml" \
     --exclude=master-template.yaml \
     --exclude=master.yaml \
     --exclude=services.yaml \
+    --exclude=ecs.yaml \
     --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,jmxtrans} \
     -rnwl . -e 'AWSTemplateFormatVersion')
 
@@ -28,10 +36,10 @@ aws cloudformation package --template-file services-template.yaml \
 
 echo "Deploying services template"
 params=$(jq -r '.Parameters | to_entries | map("\(.key)=\(.value|tostring)")|.[]' ../kafka-infra-config/dev-services-params.json | tr '\n' ' ')
-aws cloudformation deploy --template-file services.yaml --stack-name "${ENV:-dev}"-kafka-services --capabilities CAPABILITY_IAM \
-  --parameter-overrides $params
+aws cloudformation deploy --template-file services.yaml --stack-name "${ENV:-dev}"-${stack_suffix} \
+    --capabilities CAPABILITY_IAM --parameter-overrides $params
 
-# aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-kafka --output table
+# aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-${stack_suffix} --output table
 
 echo "Cleaning up"
 rm -rf services.yaml

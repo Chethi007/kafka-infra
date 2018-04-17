@@ -7,9 +7,15 @@ Description: >
   cluster from containers published in Docker Hub.
 
 Parameters:
-  EfsStackName:
-    Description: CloudFormation Stack Name for EFS
-    Type: String
+  # Parameter to force a rolling deployment
+  RollingDeploymentVersion:
+    Type: Number
+    Description: >
+      Change this value to force a rolling deployment when there are no changes to
+      the launch configuration. Its best to just increment it from the previous value.
+    MinValue: 0
+    Default: 0
+    ConstraintDescription: Must be a non-negative number
   HostedZoneStackName:
     Description: The Stack Name of the hosted zone in which to register services
     Type: String
@@ -26,15 +32,20 @@ Parameters:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
   InstanceType:
-    Description: Which instance type should we use to build the ECS cluster?
+    Description: Which instance type should we use to build the ECS clusters
+    Type: String
+    AllowedValues: [
+      m3.large, m3.xlarge, m3.2xlarge,
+      m4.large, m4.xlarge, m4.2xlarge,
+      m5.large, m5.xlarge, m5.2xlarge,
+      c3.large, c3.xlarge, c3.2xlarge,
+      c4.large, c4.xlarge, c4.2xlarge,
+      c5.large, c5.xlarge, c5.2xlarge,
+      r3.large, r3.xlarge, r3.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge,
+    ]
+    Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
-    Type: String
-    AllowedValues: [r4.xlarge]
-    Default: r4.xlarge
-  EFSMountPath:
-    Description: Path at which to create the volume mount for EFS
-    Type: String
-    Default: /mnt/efs
   ASGMinSize:
     Description: Minimum size of ECS Auto Scaling Group
     Type: Number
@@ -58,6 +69,20 @@ Parameters:
     Type: String
     Description: CIDR range to allow access for monitoring
     Default: ''
+  ZookeeperDataVolumeSize:
+    Type: Number
+    Description: Data volume size in GB for Zookeeper nodes
+    MinValue: 25
+    MaxValue: 250
+    Default: 100
+    ConstraintDescription: Must be a value between 25 and 250
+  BrokerDataVolumeSize:
+    Type: Number
+    Description: Data volume size in GB for Kafka brokers
+    MinValue: 100
+    MaxValue: 2000
+    Default: 1000
+    ConstraintDescription: Must be a value between 100 and 2000
   Project:
     Description: Project tag
     Type: String
@@ -76,7 +101,7 @@ Parameters:
     ConstraintDescription: Must be one of dev|sandbox|prod.
 
 Resources:
-  ECSKafka:
+  ECSBrokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ecs.yaml
@@ -86,11 +111,6 @@ Resources:
         VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
-        EFSFileSystemId: !ImportValue
-          'Fn::Sub': '${EfsStackName}-FileSystemId'
-        EFSMountPath: !Ref 'EFSMountPath'
-        EFSAccessSecurityGroup: !ImportValue
-          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
@@ -102,6 +122,8 @@ Resources:
         ClusterType: kafka
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+        EBSVolumeSize: !Ref 'BrokerDataVolumeSize'
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -112,11 +134,6 @@ Resources:
         VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
-        EFSFileSystemId: !ImportValue
-          'Fn::Sub': '${EfsStackName}-FileSystemId'
-        EFSMountPath: !Ref 'EFSMountPath'
-        EFSAccessSecurityGroup: !ImportValue
-          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
@@ -127,7 +144,9 @@ Resources:
         Environment: !Ref 'Environment'
         ClusterType: kafka
         HostedZoneId: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneId"          
+          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+        EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -136,7 +155,6 @@ Resources:
         Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
-        EFSMountPath: !Ref 'EFSMountPath'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         Project: !Ref 'Project'
         Team: !Ref 'Team'
@@ -144,16 +162,16 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
+        DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
     DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./kafka/cluster.yaml
       Parameters:
-        Cluster: !GetAtt 'ECSKafka.Outputs.ClusterName'
+        Cluster: !GetAtt 'ECSBrokers.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
-        EFSMountPath: !Ref 'EFSMountPath'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
         ZookeeperSecurityGroup: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
@@ -163,7 +181,8 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         MonitoringCidr: !Ref 'MonitoringCidr'
-    DependsOn: 'Zookeeper'
+        DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
+    DependsOn: ['ECSBrokers', 'Zookeeper']
 Outputs:
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers

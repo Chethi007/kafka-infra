@@ -20,33 +20,18 @@ Parameters:
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
-    AllowedValues: [
-      m3.large, m3.xlarge, m3.2xlarge,
-      m4.large, m4.xlarge, m4.2xlarge,
-      m5.large, m5.xlarge, m5.2xlarge,
-      c3.large, c3.xlarge, c3.2xlarge,
-      c4.large, c4.xlarge, c4.2xlarge,
-      c5.large, c5.xlarge, c5.2xlarge,
-      r3.large, r3.xlarge, r3.2xlarge,
-      r4.large, r4.xlarge, r4.2xlarge,
-    ]
-    Default: m5.large
-    ConstraintDescription: Must be a valid EC2 instance type
+    AllowedValues: [r4.xlarge]
 
   # Storage
-  EBSMountPath:
-    Description: Path at which to create the mount for the EBS data volume
+  EFSFileSystemId:
+    Description: File system id to be mounted in the container instances
     Type: String
-    Default: /mnt/data
-    MinLength: 1
-    ConstraintDescription: Must be a valid folder path
-  EBSVolumeSize:
-    Description: Data volume size in GB for ECS instances. These will be exposed via EBSMountPath to containers.
-    Type: Number
-    MinValue: 25
-    MaxValue: 2000
-    Default: 100
-    ConstraintDescription: Must be a value between 25 and 250
+  EFSMountPath:
+    Description: Path at which to create the volume mount for EFS
+    Type: String
+  EFSAccessSecurityGroup:
+    Description: The Security Group that allows access to EFS
+    Type: String
 
   # ASG
   ASGEventsTopic:
@@ -251,28 +236,23 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
-      BlockDeviceMappings:
-        - DeviceName: '/dev/xvdh'
-          Ebs:
-            VolumeSize: !Ref 'EBSVolumeSize'
-            DeleteOnTermination: 'true'
-            Encrypted: 'true'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
       KeyName: !Ref 'KeyName'
       SecurityGroups:
         - !Ref 'ECSSecurityGroup'
+        - !Ref 'EFSAccessSecurityGroup'
       UserData:
         'Fn::Base64': !Sub |
           #!/bin/bash
 
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-
+          
           # Increment RollingDeploymentVersion parameter to force rolling deploy
           version=${RollingDeploymentVersion}
           echo $version
-
+          
           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           yum install -y aws-cfn-bootstrap
 
@@ -296,6 +276,7 @@ Resources:
           - install_cfn_hooks
           - install_logging
           - install_ecs
+          - install_efs
           - install_service_discovery
           services:
           - ConfigSet: general
@@ -325,7 +306,6 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
-
         # Configure and install aws logs agent
         install_logging:
           packages:
@@ -440,31 +420,51 @@ Resources:
 
         # Let ecs agent know which cluster to join
         install_ecs:
+          commands:
+            01_add_instance_to_cluster:
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+        # Mount EFS file system in via NFS
+        install_efs:
+          packages:
+            yum:
+              nfs-utils: []
+          commands:
+            01_setup_efs:
+              command: '/usr/local/share/setup-efs'
+            02_restart_docker:
+              command: service docker restart
           files:
-            '/usr/local/share/setup-data-volume':
+            '/usr/local/share/setup-efs':
               mode: '000744'
               owner: root
               group: root
               content: !Sub |
                 #!/bin/bash -e
 
-                exec > >(tee /var/log/user-data.log|logger -t setup-data-volume -s 2>/dev/console) 2>&1
+                exec > >(tee /var/log/user-data.log|logger -t install-efs -s 2>/dev/console) 2>&1
 
-                echo "Creating XFS file system on /dev/xvdh..."
-                mkfs.xfs -f /dev/xvdh
+                # Include EFS config
+                EFS_FILE_SYSTEM_ID=${EFSFileSystemId}
+                EFS_MOUNT_POINT=${EFSMountPath}
 
-                echo "Setting up mount point for data volume on ${EBSMountPath}..."
-                mkdir -p ${EBSMountPath}
-                echo "/dev/xvdh  ${EBSMountPath}  xfs  defaults,inode64,nofail,context=system_u:object_r:var_t:s0  0 2" >> /etc/fstab
+                EC2_AVAIL_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
+                EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 
-                echo "Mounting file system..."
-                mount -v ${EBSMountPath}
-          commands:
-            01_add_instance_to_cluster:
-              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-            02_setup_ebs_volume:
-              command: '/usr/local/share/setup-data-volume'
+                mkdir -p $EFS_MOUNT_POINT
 
+                DIR_SRC=$EC2_AVAIL_ZONE.$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com
+                DIR_TGT=$EFS_MOUNT_POINT
+
+                echo "$DIR_SRC:/ $DIR_TGT nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+                echo "Added mount entry to fstab:"
+                tail -n 1 /etc/fstab
+
+                mount -a -t nfs4
+                echo "Mounted EFS: $EFS_FILE_SYSTEM_ID"
+
+                # Create the EFS group and assign it as the group for the entire EFS volume
+                EFS_GID=555
+                groupadd -g $EFS_GID efs
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -480,11 +480,11 @@ Resources:
                 script
                   exec 2>>/var/log/user-data.log
                   set -x
-
+                  
                   until curl -s http://localhost:51678/v1/metadata
                   do
                       sleep 1
-                  done
+                  done                  
 
                   cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
                   region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
@@ -500,6 +500,7 @@ Resources:
                     --log-opt awslogs-region=$region \
                     --log-opt tag='{{.Name}}/{{.ID}}' \
                     loyaltyone/service-discovery-agent-route53:latest --hostedZoneId=${HostedZoneId}
+
                 end script
         install_docker_mirror:
           files:
@@ -536,7 +537,7 @@ Resources:
                     loyaltyone/docker-mirror:0.1.2
                 end script
   ECSAutoScalingGroup:
-    DependsOn: 'ECSLogGroup'
+    DependsOn: 'ECSLogGroup'    
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: !Ref 'Subnets'
@@ -683,6 +684,3 @@ Outputs:
     Condition: IsClusterTypeService
     Description: The ARN of the ECS service role
     Value: !GetAtt [EcsServiceRole, Arn]
-  EBSMountPath:
-    Description: Path at which to create the mount for the EBS data volume
-    Value: !Ref 'EBSMountPath'
