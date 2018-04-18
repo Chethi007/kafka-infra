@@ -42,6 +42,10 @@ Parameters:
     Description: Kafka client port
     Type: Number
     Default: 9092
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989
   LogGroup:
     Description: Log Group
     Type: String
@@ -51,10 +55,6 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
-  PrometheusJmxExporterPort:
-    Description: The JMX port to use for metric collection
-    Type: Number
-    Default: 9404
 
 Resources:
   BrokerNodeTaskDefinition:
@@ -82,14 +82,14 @@ Resources:
           - Name: KAFKA_JMX_HOSTNAME
             Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
           - Name: KAFKA_JMX_PORT
-            Value: 8989
+            Value: !Ref 'JMXPort'
           - Name: KAFKA_LOG4J_LOGGERS
             Value: 'kafka.controller=WARN,state.change.logger=WARN'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
-          - ContainerPort: !Ref 'PrometheusJmxExporterPort'
-            HostPort: !Ref 'PrometheusJmxExporterPort'
+          - ContainerPort: !Ref 'JMXPort'
+            HostPort: !Ref 'JMXPort'
         MountPoints:
           - SourceVolume: data
             ContainerPath: /var/lib/kafka/data

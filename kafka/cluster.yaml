@@ -25,6 +25,10 @@ Parameters:
     Description: Kafka client port
     Type: Number
     Default: 9092
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989    
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
     Type: String
@@ -58,18 +62,7 @@ Parameters:
   DomainName:
     Description: The domain name for Kafka brokers
     Type: String
-  PrometheusJmxExporterPort:
-    Description: The JMX port to use for metric collection
-    Type: Number
-    Default: 9404
-  MonitoringCidr:
-    Type: String
-    Description: CIDR range to allow access for monitoring
-    Default: ''
-
-Conditions:
-  AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
-
+    
 Resources:
   BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -127,15 +120,14 @@ Resources:
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalKafkaSG'
     DependsOn: 'InternalKafkaSG'
-  InternalKafkaSGIngressPrometheusExporterRule:
+  InternalKafkaSGIngressJMXRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
-    Condition: AllowMonitoringCidr
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'PrometheusJmxExporterPort'
-      ToPort: !Ref 'PrometheusJmxExporterPort'
+      FromPort: !Ref 'JMXPort'
+      ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalKafkaSG'
-      CidrIp: !Ref 'MonitoringCidr'
+      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
   Broker1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -152,10 +144,10 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
+        JMXPort: !Ref 'JMXPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
-        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker2:
     Type: 'AWS::CloudFormation::Stack'
@@ -173,10 +165,10 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
+        JMXPort: !Ref 'JMXPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
-        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker1']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
@@ -194,10 +186,10 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
+        JMXPort: !Ref 'JMXPort'        
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
-        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker2']
 
 Outputs:

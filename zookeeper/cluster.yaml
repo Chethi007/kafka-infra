@@ -25,6 +25,10 @@ Parameters:
     Description: Zookeeper client port
     Type: Number
     Default: 2181
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989    
   PeerPortOne:
     Description: Zookeeper first peer port
     Type: Number
@@ -60,18 +64,7 @@ Parameters:
   DomainName:
     Description: The domain name for Zookeeper hosts
     Type: String
-  PrometheusJmxExporterPort:
-    Description: The JMX port to use for metric collection
-    Type: Number
-    Default: 9404
-  MonitoringCidr:
-    Type: String
-    Description: CIDR range to allow access for monitoring
-    Default: ''
-
-Conditions:
-  AllowMonitoringCidr: !Not [!Equals [!Ref 'MonitoringCidr', '']]
-
+    
 Resources:
   ZKNodesLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -138,16 +131,14 @@ Resources:
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalZKSG'
     DependsOn: 'InternalZKSG'
-  InternalZKSGIngressPrometheusExporterRule:
+  InternalZKSGIngressJMXRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
-    Condition: AllowMonitoringCidr
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'PrometheusJmxExporterPort'
-      ToPort: !Ref 'PrometheusJmxExporterPort'
+      FromPort: !Ref 'JMXPort'
+      ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalZKSG'
-      CidrIp: !Ref 'MonitoringCidr'
-
+      SourceSecurityGroupId: !Ref 'InternalZKSG'
   ZookeeperNode1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

@@ -36,6 +36,10 @@ Parameters:
     Description: Zookeeper client port
     Type: Number
     Default: 2181
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989    
   PeerPortOne:
     Description: Zookeeper first peer port
     Type: Number
@@ -90,7 +94,7 @@ Resources:
           - Name: KAFKA_JMX_HOSTNAME
             Value: !Sub '${ServerName}.${DomainName}'
           - Name: KAFKA_JMX_PORT
-            Value: 8989
+            Value: !Ref 'JMXPort'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
@@ -98,8 +102,8 @@ Resources:
             HostPort: !Ref 'PeerPortOne'
           - ContainerPort: !Ref 'PeerPortTwo'
             HostPort: !Ref 'PeerPortTwo'
-          - ContainerPort: !Ref 'PrometheusJmxExporterPort'
-            HostPort: !Ref 'PrometheusJmxExporterPort'
+          - ContainerPort: !Ref 'JMXPort'
+            HostPort: !Ref 'JMXPort'
         MountPoints:
           - SourceVolume: data
             ContainerPath: /var/lib/zookeeper/data
