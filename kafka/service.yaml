@@ -79,8 +79,8 @@ Resources:
             Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
-#          - Name: KAFKA_JMX_OPTS
-#            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/kafka-metrics.yml'
+          - Name: KAFKA_JMX_HOSTNAME
+            Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
           - Name: KAFKA_JMX_PORT
             Value: 8989
           - Name: KAFKA_LOG4J_LOGGERS
