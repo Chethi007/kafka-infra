@@ -7,8 +7,10 @@ set -e
 # Note: This is specifically for containers running in ECS in vpc networking mode.
 if [ -n "${KAFKA_JMX_PORT}" ];
 then
-    export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -I | cut -d" " -f2)}
-    echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
+    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+    export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -i | cut -d" " -f1)}
 fi
+echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
+echo "KAFKA_JMX_PORT: ${KAFKA_JMX_PORT}"
 
 exec "$@"

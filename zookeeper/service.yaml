@@ -87,8 +87,10 @@ Resources:
             Value: 5
           - Name: ZOOKEEPER_SYNC_LIMIT
             Value: 2
-          - Name: KAFKA_JMX_OPTS
-            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/zookeeper-metrics.yml'
+#         - Name: KAFKA_JMX_OPTS
+#           Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/zookeeper-metrics.yml'
+          - Name: KAFKA_JMX_PORT
+            Value: 8989
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
