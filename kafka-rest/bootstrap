@@ -23,4 +23,14 @@ export KAFKA_REST_ID=${uuid}
 
 echo "KAFKA_REST_HOST_NAME: ${KAFKA_REST_HOST_NAME}"
 echo "KAFKA_REST_LISTENERS: ${KAFKA_REST_LISTENERS}"
+
+if [ -n "${KAFKA_REST_JMX_PORT}" ] || [ -n "${KAFKA_REST_JMX_HOSTNAME}" ] || [ -n "${KAFKA_REST_JMX_OPTS}" ];
+then
+    # JMX agent complains about malformed URLs and is not able to resolve ECS container
+    # short hostnames. This will take care of the problem.
+    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+fi
+echo "KAFKA_REST_JMX_HOSTNAME: ${KAFKA_REST_JMX_HOSTNAME}"
+echo "KAFKA_REST_JMX_PORT: ${KAFKA_REST_JMX_PORT}"
+
 exec "$@"
