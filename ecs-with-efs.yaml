@@ -21,6 +21,12 @@ Parameters:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
     AllowedValues: [r4.xlarge]
+  EBSOptimizedInstance:
+    Description: Enable EBS optimized flag. This will only work for instances that support it.
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: true
+    ConstraintDescription: Must be either 'true' or 'false'
 
   # Storage
   EFSFileSystemId:
@@ -236,6 +242,7 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
+      EbsOptimized: !Ref 'EBSOptimizedInstance'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'

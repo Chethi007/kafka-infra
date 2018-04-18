@@ -32,6 +32,12 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
+  EBSOptimizedInstance:
+    Description: Enable EBS optimized flag. This will only work for instances that support it.
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: true
+    ConstraintDescription: Must be either 'true' or 'false'
 
   # Storage
   EBSMountPath:
@@ -251,6 +257,7 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
+      EbsOptimized: !Ref 'EBSOptimizedInstance'
       BlockDeviceMappings:
         - DeviceName: '/dev/xvdh'
           Ebs:
