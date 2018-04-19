@@ -158,7 +158,6 @@ Resources:
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
-        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
         DomainName: !Ref 'DomainName'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZookeeperNode2:
@@ -180,7 +179,6 @@ Resources:
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
-        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
         DomainName: !Ref 'DomainName'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode1']
   ZookeeperNode3:
@@ -202,7 +200,6 @@ Resources:
         LogGroup: !Ref 'ZKNodesLogGroup'
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
-        PrometheusJmxExporterPort: !Ref 'PrometheusJmxExporterPort'
         DomainName: !Ref 'DomainName'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode2']
 
