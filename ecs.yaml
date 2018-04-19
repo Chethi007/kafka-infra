@@ -264,6 +264,7 @@ Resources:
             VolumeSize: !Ref 'EBSVolumeSize'
             DeleteOnTermination: 'true'
             Encrypted: 'true'
+            VolumeType: 'gp2'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
