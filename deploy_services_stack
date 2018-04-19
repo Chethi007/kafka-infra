@@ -16,7 +16,6 @@ readonly CFNS=$(grep \
     --exclude=master-template.yaml \
     --exclude=master.yaml \
     --exclude=services.yaml \
-    --exclude=ecs.yaml \
     --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,jmxtrans} \
     -rnwl . -e 'AWSTemplateFormatVersion')
 
