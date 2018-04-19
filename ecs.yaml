@@ -305,7 +305,9 @@ Resources:
           general:
           - install_cfn_hooks
           - install_logging
+          - install_data_volume
           - install_ecs
+          - install_monitoring
           - install_service_discovery
           services:
           - ConfigSet: general
@@ -448,8 +450,7 @@ Resources:
                   chkconfig awslogs on
                 end script
 
-        # Let ecs agent know which cluster to join
-        install_ecs:
+        install_data_volume:
           files:
             '/usr/local/share/setup-data-volume':
               mode: '000744'
@@ -470,11 +471,15 @@ Resources:
                 echo "Mounting file system..."
                 mount -v ${EBSMountPath}
           commands:
-            01_add_instance_to_cluster:
-              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-            02_setup_ebs_volume:
+            01_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
 
+        # Let ecs agent know which cluster to join
+        install_ecs:
+          commands:
+            01_add_instance_to_cluster:
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+              
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -545,6 +550,36 @@ Resources:
                     -v /etc/hostip:/etc/hostip \
                     loyaltyone/docker-mirror:0.1.2
                 end script
+        install_monitoring:
+          commands:
+            01_install_disk_mem_monitoring:
+              command: |
+                #!/bin/bash
+                
+                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
+                
+                version=1.2.2
+                archive=CloudWatchMonitoringScripts-$version.zip
+                
+                mon_dir=/opt/monitoring
+                
+                mkdir -p $mon_dir
+                cd $mon_dir
+                curl http://aws-cloudwatch.s3.amazonaws.com/downloads/$archive -O
+                
+                unzip $archive
+                rm $archive
+          files:
+            "/etc/cron.d/metrics":
+              content: !Sub |
+                # Version: 1.1.2-rpm
+                PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+                
+                * * * * * root /opt/monitoring/aws-scripts-mon/mon-put-instance-data.pl --mem-used-incl-cache-buff --mem-avail --mem-util --mem-used --disk-space-units=bytes --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=${EBSMountPath} --auto-scaling --from-cron
+                 
+              mode: '000644'
+              owner: root
+              group: root                
   ECSAutoScalingGroup:
     DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup
