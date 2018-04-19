@@ -305,8 +305,9 @@ Resources:
           general:
           - install_cfn_hooks
           - install_logging
-          - install_monitoring
+          - install_data_volume
           - install_ecs
+          - install_monitoring
           - install_service_discovery
           services:
           - ConfigSet: general
@@ -449,8 +450,7 @@ Resources:
                   chkconfig awslogs on
                 end script
 
-        # Let ecs agent know which cluster to join
-        install_ecs:
+        install_data_volume:
           files:
             '/usr/local/share/setup-data-volume':
               mode: '000744'
@@ -471,11 +471,15 @@ Resources:
                 echo "Mounting file system..."
                 mount -v ${EBSMountPath}
           commands:
-            01_add_instance_to_cluster:
-              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-            02_setup_ebs_volume:
+            01_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
 
+        # Let ecs agent know which cluster to join
+        install_ecs:
+          commands:
+            01_add_instance_to_cluster:
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+              
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
