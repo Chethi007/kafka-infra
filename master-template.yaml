@@ -71,10 +71,6 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
-  MonitoringCidr:
-    Type: String
-    Description: CIDR range to allow access for monitoring
-    Default: ''
   ZookeeperDataVolumeSize:
     Type: Number
     Description: Data volume size in GB for Zookeeper nodes
@@ -169,7 +165,6 @@ Resources:
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
-        MonitoringCidr: !Ref 'MonitoringCidr'
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
     DependsOn: 'ECSZK'
   Brokers:
@@ -188,7 +183,6 @@ Resources:
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
-        MonitoringCidr: !Ref 'MonitoringCidr'
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 Outputs:
