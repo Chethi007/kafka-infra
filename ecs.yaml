@@ -305,6 +305,7 @@ Resources:
           general:
           - install_cfn_hooks
           - install_logging
+          - install_monitoring
           - install_ecs
           - install_service_discovery
           services:
@@ -545,6 +546,36 @@ Resources:
                     -v /etc/hostip:/etc/hostip \
                     loyaltyone/docker-mirror:0.1.2
                 end script
+        install_monitoring:
+          commands:
+            01_install_disk_mem_monitoring:
+              command: |
+                #!/bin/bash
+                
+                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
+                
+                version=1.2.2
+                archive=CloudWatchMonitoringScripts-$version.zip
+                
+                mon_dir=/opt/monitoring
+                
+                mkdir -p $mon_dir
+                cd $mon_dir
+                curl http://aws-cloudwatch.s3.amazonaws.com/downloads/$archive -O
+                
+                unzip $archive
+                rm $archive
+          files:
+            "/etc/cron.d/metrics":
+              content: !Sub |
+                # Version: 1.1.2-rpm
+                PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+                
+                * * * * * root /opt/monitoring/aws-scripts-mon/mon-put-instance-data.pl --mem-used-incl-cache-buff --mem-avail --mem-util --mem-used --disk-space-units=bytes --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=${EBSMountPath} --auto-scaling --from-cron
+                 
+              mode: '000644'
+              owner: root
+              group: root                
   ECSAutoScalingGroup:
     DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup
