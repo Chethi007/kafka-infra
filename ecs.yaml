@@ -537,7 +537,7 @@ Resources:
                 set -e
                 set -x
                 
-                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
+                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https perl-Digest-SHA.x86_64 -y
                 
                 version=1.2.2
                 archive=CloudWatchMonitoringScripts-$version.zip
