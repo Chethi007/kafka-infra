@@ -65,7 +65,6 @@ Resources:
       - Name: broker
         Image: loyaltyone/cp-kafka:0.1-beta
         Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
         MemoryReservation: !Ref 'Memory'
         User: root
         DockerLabels:
@@ -100,7 +99,7 @@ Resources:
           Options:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'kafka${BrokerId}'
+            awslogs-stream-prefix: !Sub 'node${BrokerId}'
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.
@@ -129,6 +128,20 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
+  JMXTrans:
+    DependsOn: 'BrokerNodeService'
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ../jmxtrans/service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        JMXPort: !Ref 'JMXPort'
+        JMXHost: !Sub '${BrokerName}${BrokerId}.${DomainName}'
+        ComponentName: 'kafka'
+        ServiceId: !Ref 'BrokerId'
+        LogGroup: !Ref 'LogGroup'
+        StackName: !Ref 'StackName'
+        
 Outputs:
   ConnectionString:
     Description: The connection string for this broker

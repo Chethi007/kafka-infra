@@ -35,6 +35,9 @@ Parameters:
   ZookeeperSecurityGroup:
     Description: Security Group to allow access to ZK
     Type: String
+  ECSInstanceSecurityGroup:
+    Description: Security Group ID of the ECS Instances to allow JMX ingress for this component
+    Type: String    
   Cpu:
     Description: Amount of CPU to reserve
     Type: Number
@@ -128,6 +131,14 @@ Resources:
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalKafkaSG'
+  ECSInstanceSGIngressJMXRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'JMXPort'
+      ToPort: !Ref 'JMXPort'
+      GroupId: !Ref 'InternalKafkaSG'
+      SourceSecurityGroupId: !Ref 'ECSInstanceSecurityGroup'
   Broker1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

@@ -45,6 +45,9 @@ Parameters:
     Description: Amount of Memory to reserve
     Type: Number
     Default: 4096
+  ECSInstanceSecurityGroup:
+    Description: Security Group ID of the ECS Instances to allow JMX ingress for this component
+    Type: String        
   Project:
     Description: Project tag
     Type: String
@@ -139,6 +142,14 @@ Resources:
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalZKSG'
+  ECSInstanceSGIngressJMXRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'JMXPort'
+      ToPort: !Ref 'JMXPort'
+      GroupId: !Ref 'InternalZKSG'
+      SourceSecurityGroupId: !Ref 'ECSInstanceSecurityGroup'      
   ZookeeperNode1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

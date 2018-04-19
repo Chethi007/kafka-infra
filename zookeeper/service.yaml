@@ -73,7 +73,6 @@ Resources:
       - Name: zookeeper
         Image: loyaltyone/cp-zookeeper:0.1-beta
         Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
         MemoryReservation: !Ref 'Memory'
         User: root
         DockerLabels:
@@ -147,6 +146,20 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
+  JMXTrans:
+    DependsOn: 'ZkNodeService'
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ../jmxtrans/service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        JMXPort: !Ref 'JMXPort'
+        JMXHost: !Sub '${ServerName}.${DomainName}'
+        ComponentName: 'zookeeper'
+        ServiceId: !Ref 'ServerId'
+        LogGroup: !Ref 'LogGroup'
+        StackName: !Ref 'StackName'
+        
 Outputs:
   ConnectionString:
     Description: The connection string for this Zookeeper node

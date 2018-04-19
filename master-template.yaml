@@ -166,6 +166,7 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
+        ECSInstanceSecurityGroup: !GetAtt 'ECSZK.Outputs.InstanceSecurityGroup'
     DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
@@ -184,6 +185,7 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
+        ECSInstanceSecurityGroup: !GetAtt 'ECSBrokers.Outputs.InstanceSecurityGroup'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 Outputs:
   ClientKafkaSG:
