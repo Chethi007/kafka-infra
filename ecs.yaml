@@ -525,10 +525,17 @@ Resources:
                     loyaltyone/docker-mirror:0.1.2
                 end script
         install_monitoring:
+          packages:
+            yum:
+              unzip: []
           commands:
             01_install_disk_mem_monitoring:
               command: |
                 #!/bin/bash
+                
+                exec 2>>/var/log/user-data.log
+                set -e
+                set -x
                 
                 yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
                 
