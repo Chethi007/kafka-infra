@@ -52,16 +52,16 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: true
     ConstraintDescription: Must be either 'true' or 'false'
-  ASGMinSize:
-    Description: Minimum size of ECS Auto Scaling Group
+  ServicesASGMinSize:
+    Description: Minimum size of services ECS Auto Scaling Group
     Type: Number
     Default: 3
-  ASGMaxSize:
-    Description: Maximum size of ECS Auto Scaling Group
+  ServicesASGMaxSize:
+    Description: Maximum size of services ECS Auto Scaling Group
     Type: Number
     Default: 3
-  ASGDesiredCapacity:
-    Description: Desired Capacity of the ECS Auto Scaling Group
+  ServicesASGDesiredCapacity:
+    Description: Desired Capacity of the services ECS Auto Scaling Group
     Type: Number
     Default: 3
   RollingUpdateMinInService:
@@ -85,6 +85,13 @@ Parameters:
     MaxValue: 2000
     Default: 1000
     ConstraintDescription: Must be a value between 100 and 2000
+  ServicesDataVolumeSize:
+    Type: Number
+    Description: Data volume size in GB for Services nodes
+    MinValue: 25
+    MaxValue: 250
+    Default: 100
+    ConstraintDescription: Must be a value between 25 and 250
   Project:
     Description: Project tag
     Type: String
@@ -114,9 +121,9 @@ Resources:
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
-        ASGMinSize: !Ref 'ASGMinSize'
-        ASGMaxSize: !Ref 'ASGMaxSize'
-        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        ASGMinSize: 3
+        ASGMaxSize: 3
+        ASGDesiredCapacity: 3
         RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
@@ -138,9 +145,9 @@ Resources:
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
-        ASGMinSize: !Ref 'ASGMinSize'
-        ASGMaxSize: !Ref 'ASGMaxSize'
-        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        ASGMinSize: 3
+        ASGMaxSize: 3
+        ASGDesiredCapacity: 3
         RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
@@ -151,6 +158,32 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+
+  ECSServices:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./services_template.yaml
+      Parameters:
+        KeyName: !Ref 'KeyName'
+        VPCId: !Ref 'VPCId'
+        VPCCidrBlock: !Ref 'VPCCidrBlock'
+        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        InstanceType: !Ref 'InstanceType'
+        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
+        ASGMinSize: !Ref 'ServicesASGMinSize'
+        ASGMaxSize: !Ref 'ServicesASGMaxSize'
+        ASGDesiredCapacity: !Ref 'ServicesASGDesiredCapacity'
+        RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
+        ASGEventsTopic: !Ref 'ASGEventsTopic'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        ClusterType: service
+        HostedZoneId: !ImportValue
+          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+        EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -166,7 +199,6 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
-        ECSInstanceSecurityGroup: !GetAtt 'ECSZK.Outputs.InstanceSecurityGroup'
     DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
@@ -185,8 +217,19 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
-        ECSInstanceSecurityGroup: !GetAtt 'ECSBrokers.Outputs.InstanceSecurityGroup'
     DependsOn: ['ECSBrokers', 'Zookeeper']
+  SchemaRegistry:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./schema-registry/service.yaml
+      Parameters:
+        ClusterStackName: !GetAtt 'ECSServices.Outputs.ClusterName'
+        Priority: 101
+        UIPriority: 102
+        KinesisStackName: dev-splunk
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+    DependsOn: ['ECSServices', 'Brokers']
+
 Outputs:
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers
