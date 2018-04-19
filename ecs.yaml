@@ -168,6 +168,8 @@ Resources:
           Statement:
           - Action: [
               'cloudwatch:PutMetricData',
+              'cloudwatch:ListMetrics',
+              'cloudwatch:GetMetricStatistics', 
               'ds:CreateComputer',
               'ds:DescribeDirectories',
               'ec2:DescribeInstanceStatus',
