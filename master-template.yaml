@@ -19,6 +19,8 @@ Parameters:
   HostedZoneStackName:
     Description: The Stack Name of the hosted zone in which to register services
     Type: String
+
+  # Networking
   KeyName:
     Description: Key Pair name for SSH access
     Type: AWS::EC2::KeyPair::KeyName
@@ -52,6 +54,8 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: true
     ConstraintDescription: Must be either 'true' or 'false'
+
+  # ASG
   ServicesASGMinSize:
     Description: Minimum size of services ECS Auto Scaling Group
     Type: Number
@@ -71,6 +75,8 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
+
+  # Storage
   ZookeeperDataVolumeSize:
     Type: Number
     Description: Data volume size in GB for Zookeeper nodes
@@ -92,6 +98,31 @@ Parameters:
     MaxValue: 250
     Default: 100
     ConstraintDescription: Must be a value between 25 and 250
+
+  # ELB
+  TargetGroupPrefix:
+    Type: String
+    MinLength: 1
+    MaxLength: 24
+    ConstraintDescription: Must be a unique prefix up to 24 characters to identify target groups for the cluster.
+    Description: The prefix to use for target groups.
+  CertificateArn:
+    Type: String
+    Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
+  InternalCidr0:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+  InternalCidr1:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+  InternalCidr2:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+
+  # Tags
   Project:
     Description: Project tag
     Type: String
@@ -108,6 +139,10 @@ Parameters:
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
+
+  KinesisStackName:
+    Type: String
+    Description: Name of the CF stack used to create the Kinesis stream
 
 Resources:
   ECSBrokers:
@@ -162,14 +197,15 @@ Resources:
   ECSServices:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./services_template.yaml
+      TemplateURL: ./services-template.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         VPCCidrBlock: !Ref 'VPCCidrBlock'
-        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        PrivateSubnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
+        EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
         ASGMinSize: !Ref 'ServicesASGMinSize'
         ASGMaxSize: !Ref 'ServicesASGMaxSize'
         ASGDesiredCapacity: !Ref 'ServicesASGDesiredCapacity'
@@ -178,11 +214,13 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
-        ClusterType: service
-        HostedZoneId: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
-        EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        CertificateArn: !Ref 'CertificateArn'
+        TargetGroupPrefix: !Ref 'TargetGroupPrefix'
+        InternalCidr0: !Ref 'InternalCidr0'
+        InternalCidr1: !Ref 'InternalCidr1'
+        InternalCidr2: !Ref 'InternalCidr2'
 
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
@@ -226,7 +264,7 @@ Resources:
         ClusterStackName: !GetAtt 'ECSServices.Outputs.ClusterName'
         Priority: 101
         UIPriority: 102
-        KinesisStackName: dev-splunk
+        KinesisStackName: !Ref 'KinesisStackName'
         HostedZoneStackName: !Ref 'HostedZoneStackName'
     DependsOn: ['ECSServices', 'Brokers']
 
