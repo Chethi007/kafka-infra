@@ -129,6 +129,25 @@ Resources:
           Host:
             SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/secrets'
       Family: !Sub '${StackName}-zk-${ServerId}'
+      - Name: jmxtrans
+        Image: loyaltyone/jmxtrans:0.1-beta
+        Cpu: '512'
+        MemoryReservation: '2048'
+        Environment:
+          - Name: SECONDS_BETWEEN_RUNS
+            Value: 10
+          - Name: JMXTRANS_ENV
+            Value: aws
+          - Name: JMXTRANS_HOSTS
+            Value: !Sub 'zookeeper#localhost:${JMXPort}'
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Sub 'zookeeper${ServerId}'
+      Family: !Sub '${StackName}-jmx-zk${ServerId}'
+      
   ZkNodeService:
     Type: 'AWS::ECS::Service'
     Properties:
@@ -146,19 +165,6 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
-  JMXTrans:
-    DependsOn: 'ZkNodeService'
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: ../jmxtrans/service.yaml
-      Parameters:
-        Cluster: !Ref 'Cluster'
-        JMXPort: !Ref 'JMXPort'
-        JMXHost: !Sub '${ServerName}.${DomainName}'
-        ComponentName: 'zookeeper'
-        ServiceId: !Ref 'ServerId'
-        LogGroup: !Ref 'LogGroup'
-        StackName: !Ref 'StackName'
         
 Outputs:
   ConnectionString:
