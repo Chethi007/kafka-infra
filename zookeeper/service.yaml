@@ -116,19 +116,6 @@ Resources:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
             awslogs-stream-prefix: !Sub 'zk${ServerId}'
-      Volumes:
-        # It's probably not a good idea to change these mounts and deploy against a live
-        # cluster in production.
-        - Name: data
-          Host:
-            SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/data'
-        - Name: log
-          Host:
-            SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/log'
-        - Name: secrets
-          Host:
-            SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/secrets'
-      Family: !Sub '${StackName}-zk-${ServerId}'
       - Name: jmxtrans
         Image: loyaltyone/jmxtrans:0.1-beta
         Cpu: '512'
@@ -146,7 +133,20 @@ Resources:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
             awslogs-stream-prefix: !Sub 'zookeeper${ServerId}'
-      Family: !Sub '${StackName}-jmx-zk${ServerId}'
+                  
+      Volumes:
+        # It's probably not a good idea to change these mounts and deploy against a live
+        # cluster in production.
+        - Name: data
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/data'
+        - Name: log
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/log'
+        - Name: secrets
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/secrets'
+      Family: !Sub '${StackName}-zk-${ServerId}'
       
   ZkNodeService:
     Type: 'AWS::ECS::Service'
