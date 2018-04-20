@@ -46,6 +46,12 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
+  EBSOptimizedInstance:
+    Description: Enable EBS optimized flag. This will only work for instances that support it.
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: true
+    ConstraintDescription: Must be either 'true' or 'false'
   ASGMinSize:
     Description: Minimum size of ECS Auto Scaling Group
     Type: Number
@@ -65,10 +71,6 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
-  MonitoringCidr:
-    Type: String
-    Description: CIDR range to allow access for monitoring
-    Default: ''
   ZookeeperDataVolumeSize:
     Type: Number
     Description: Data volume size in GB for Zookeeper nodes
@@ -111,6 +113,7 @@ Resources:
         VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
+        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
@@ -134,6 +137,7 @@ Resources:
         VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
+        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
@@ -161,8 +165,8 @@ Resources:
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
-        MonitoringCidr: !Ref 'MonitoringCidr'
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
+        ECSInstanceSecurityGroup: !GetAtt 'ECSZK.Outputs.InstanceSecurityGroup'
     DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
@@ -180,8 +184,8 @@ Resources:
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
-        MonitoringCidr: !Ref 'MonitoringCidr'
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
+        ECSInstanceSecurityGroup: !GetAtt 'ECSBrokers.Outputs.InstanceSecurityGroup'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 Outputs:
   ClientKafkaSG:

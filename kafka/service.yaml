@@ -42,6 +42,10 @@ Parameters:
     Description: Kafka client port
     Type: Number
     Default: 9092
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989
   LogGroup:
     Description: Log Group
     Type: String
@@ -51,10 +55,6 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
-  PrometheusJmxExporterPort:
-    Description: The JMX port to use for metric collection
-    Type: Number
-    Default: 9404
 
 Resources:
   BrokerNodeTaskDefinition:
@@ -65,7 +65,6 @@ Resources:
       - Name: broker
         Image: loyaltyone/cp-kafka:0.1-beta
         Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
         MemoryReservation: !Ref 'Memory'
         User: root
         DockerLabels:
@@ -79,15 +78,17 @@ Resources:
             Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
-          - Name: KAFKA_JMX_OPTS
-            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/kafka-metrics.yml'
+          - Name: KAFKA_JMX_HOSTNAME
+            Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
+          - Name: KAFKA_JMX_PORT
+            Value: !Ref 'JMXPort'
           - Name: KAFKA_LOG4J_LOGGERS
             Value: 'kafka.controller=WARN,state.change.logger=WARN'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
-          - ContainerPort: !Ref 'PrometheusJmxExporterPort'
-            HostPort: !Ref 'PrometheusJmxExporterPort'
+          - ContainerPort: !Ref 'JMXPort'
+            HostPort: !Ref 'JMXPort'
         MountPoints:
           - SourceVolume: data
             ContainerPath: /var/lib/kafka/data
@@ -98,7 +99,7 @@ Resources:
           Options:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'kafka${BrokerId}'
+            awslogs-stream-prefix: !Sub 'node${BrokerId}'
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.
@@ -127,6 +128,20 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
+  JMXTrans:
+    DependsOn: 'BrokerNodeService'
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ../jmxtrans/service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        JMXPort: !Ref 'JMXPort'
+        JMXHost: !Sub '${BrokerName}${BrokerId}.${DomainName}'
+        ComponentName: 'kafka'
+        ServiceId: !Ref 'BrokerId'
+        LogGroup: !Ref 'LogGroup'
+        StackName: !Ref 'StackName'
+        
 Outputs:
   ConnectionString:
     Description: The connection string for this broker

@@ -14,9 +14,6 @@ Parameters:
     MinValue: 0
     Default: 0
     ConstraintDescription: Must be a non-negative number
-  EfsStackName:
-    Description: CloudFormation Stack Name for EFS
-    Type: String
   HostedZoneStackName:
     Description: The Stack Name of the hosted zone in which to register services
     Type: String
@@ -46,10 +43,12 @@ Parameters:
     Type: String
     AllowedValues: [r4.xlarge]
     Default: r4.xlarge
-  EFSMountPath:
-    Description: Path at which to create the volume mount for EFS
+  EBSOptimizedInstance:
+    Description: Enable EBS optimized flag. This will only work for instances that support it.
     Type: String
-    Default: /mnt/efs
+    AllowedValues: ['true', 'false']
+    Default: true
+    ConstraintDescription: Must be either 'true' or 'false'
   ASGMinSize:
     Description: Minimum size of ECS Auto Scaling Group
     Type: Number
@@ -125,18 +124,14 @@ Resources:
   ECS:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ecs-with-efs.yaml
+      TemplateURL: ./ecs.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
         InstanceType: !Ref 'InstanceType'
-        EFSFileSystemId: !ImportValue
-          'Fn::Sub': '${EfsStackName}-FileSystemId'
-        EFSMountPath: !Ref 'EFSMountPath'
-        EFSAccessSecurityGroup: !ImportValue
-          'Fn::Sub': '${EfsStackName}-FSAccessSecurityGroupID'
+        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
         ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'

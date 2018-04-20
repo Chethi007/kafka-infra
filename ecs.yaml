@@ -32,6 +32,12 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
+  EBSOptimizedInstance:
+    Description: Enable EBS optimized flag. This will only work for instances that support it.
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: true
+    ConstraintDescription: Must be either 'true' or 'false'
 
   # Storage
   EBSMountPath:
@@ -162,6 +168,8 @@ Resources:
           Statement:
           - Action: [
               'cloudwatch:PutMetricData',
+              'cloudwatch:ListMetrics',
+              'cloudwatch:GetMetricStatistics', 
               'ds:CreateComputer',
               'ds:DescribeDirectories',
               'ec2:DescribeInstanceStatus',
@@ -251,12 +259,14 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
+      EbsOptimized: !Ref 'EBSOptimizedInstance'
       BlockDeviceMappings:
         - DeviceName: '/dev/xvdh'
           Ebs:
             VolumeSize: !Ref 'EBSVolumeSize'
             DeleteOnTermination: 'true'
             Encrypted: 'true'
+            VolumeType: 'gp2'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
@@ -293,38 +303,14 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           general:
-          - install_cfn_hooks
           - install_logging
+          - install_data_volume
           - install_ecs
+          - install_monitoring
           - install_service_discovery
           services:
           - ConfigSet: general
           - install_docker_mirror
-
-        install_cfn_hooks:
-          files:
-            '/etc/cfn/cfn-hup.conf':
-              mode: '000400'
-              owner: root
-              group: root
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-            '/etc/cfn/hooks.d/cfn-auto-reloader.conf':
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets general
-          services:
-            sysvinit:
-              cfn-hup:
-                enabled: true
-                ensureRunning: true
-                files:
-                  - /etc/cfn/cfn-hup.conf
-                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
 
         # Configure and install aws logs agent
         install_logging:
@@ -438,8 +424,7 @@ Resources:
                   chkconfig awslogs on
                 end script
 
-        # Let ecs agent know which cluster to join
-        install_ecs:
+        install_data_volume:
           files:
             '/usr/local/share/setup-data-volume':
               mode: '000744'
@@ -460,11 +445,15 @@ Resources:
                 echo "Mounting file system..."
                 mount -v ${EBSMountPath}
           commands:
-            01_add_instance_to_cluster:
-              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-            02_setup_ebs_volume:
+            01_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
 
+        # Let ecs agent know which cluster to join
+        install_ecs:
+          commands:
+            01_add_instance_to_cluster:
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+              
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -535,6 +524,43 @@ Resources:
                     -v /etc/hostip:/etc/hostip \
                     loyaltyone/docker-mirror:0.1.2
                 end script
+        install_monitoring:
+          packages:
+            yum:
+              unzip: []
+          commands:
+            01_install_disk_mem_monitoring:
+              command: |
+                #!/bin/bash
+                
+                exec 2>>/var/log/user-data.log
+                set -e
+                set -x
+                
+                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https perl-Digest-SHA.x86_64 -y
+                
+                version=1.2.2
+                archive=CloudWatchMonitoringScripts-$version.zip
+                
+                mon_dir=/opt/monitoring
+                
+                mkdir -p $mon_dir
+                cd $mon_dir
+                curl http://aws-cloudwatch.s3.amazonaws.com/downloads/$archive -O
+                
+                unzip $archive
+                rm $archive
+          files:
+            "/etc/cron.d/metrics":
+              content: !Sub |
+                # Version: 1.1.2-rpm
+                PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+                
+                * * * * * root /opt/monitoring/aws-scripts-mon/mon-put-instance-data.pl --mem-used-incl-cache-buff --mem-avail --mem-util --mem-used --disk-space-units=bytes --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=${EBSMountPath} --auto-scaling --from-cron
+                 
+              mode: '000644'
+              owner: root
+              group: root                
   ECSAutoScalingGroup:
     DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup

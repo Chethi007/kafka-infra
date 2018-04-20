@@ -2,13 +2,13 @@
 
 set -e
 
-# Specifying KAFKA_JMX_HOSTNAME in ECS causes problems because service discovery isn't available yet.
-# If the JMX port is specified but the host name isn't, use the container's IP bound to the ENI
-# Note: This is specifically for containers running in ECS in vpc networking mode.
-if [ -n "${KAFKA_JMX_PORT}" ];
+if [ -n "${KAFKA_JMX_PORT}" ] || [ -n "${KAFKA_JMX_HOSTNAME}" ] || [ -n "${KAFKA_JMX_OPTS}" ];
 then
-    export KAFKA_JMX_HOSTNAME=${KAFKA_JMX_HOSTNAME:-$(hostname -I | cut -d" " -f2)}
-    echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
+    # JMX agent complains about malformed URLs and is not able to resolve ECS container
+    # short hostnames. This will take care of the problem.
+    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
 fi
+echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
+echo "KAFKA_JMX_PORT: ${KAFKA_JMX_PORT}"
 
 exec "$@"

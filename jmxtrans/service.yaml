@@ -1,0 +1,70 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Creates an ECS JMX Trans Service/Task
+
+Parameters:
+  Cluster:
+    Description: ECS Cluster
+    Type: String
+  Cpu:
+    Description: CPU (1024 = 1 core)
+    Type: Number
+    Default: 512
+  Memory:
+    Description: Memory
+    Type: Number
+    Default: 2048    
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989
+  JMXHost:
+    Description: JMX Host string to specify which host/component to monitor.
+    Type: String  
+  ComponentName:
+    Description: The name of the component which is being monitored by the agent
+    Type: String        
+  ServiceId:
+    Description: A unique ID across instances of the component which this agent is monitoring
+    Type: String
+  LogGroup:
+    Description: Log Group
+    Type: String
+  StackName:
+    Description: The Parent Stack Name
+    Type: String
+
+Resources:
+  JMXTransTaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      ContainerDefinitions:
+      - Name: jmxtrans
+        Image: loyaltyone/jmxtrans:0.1-beta
+        Cpu: !Ref 'Cpu'
+        MemoryReservation: !Ref 'Memory'
+        Environment:
+          - Name: SECONDS_BETWEEN_RUNS
+            Value: 10
+          - Name: JMXTRANS_ENV
+            Value: aws
+          - Name: JMXTRANS_HOSTS
+            Value: !Sub '${ComponentName}#${JMXHost}:${JMXPort}'
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Sub '${ComponentName}${ServiceId}'
+      Family: !Sub '${StackName}-jmx-${ComponentName}${ServiceId}'
+  JMXTransService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      ServiceName: !Sub '${StackName}-jmxtrans-${ComponentName}${ServiceId}'
+      Cluster: !Ref 'Cluster'
+      DesiredCount: 1
+      TaskDefinition: !Ref 'JMXTransTaskDefinition'
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0

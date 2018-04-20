@@ -36,6 +36,10 @@ Parameters:
     Description: Zookeeper client port
     Type: Number
     Default: 2181
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989    
   PeerPortOne:
     Description: Zookeeper first peer port
     Type: Number
@@ -69,7 +73,6 @@ Resources:
       - Name: zookeeper
         Image: loyaltyone/cp-zookeeper:0.1-beta
         Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
         MemoryReservation: !Ref 'Memory'
         User: root
         DockerLabels:
@@ -87,8 +90,10 @@ Resources:
             Value: 5
           - Name: ZOOKEEPER_SYNC_LIMIT
             Value: 2
-          - Name: KAFKA_JMX_OPTS
-            Value: !Sub '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=${PrometheusJmxExporterPort}:/usr/local/share/zookeeper-metrics.yml'
+          - Name: KAFKA_JMX_HOSTNAME
+            Value: !Sub '${ServerName}.${DomainName}'
+          - Name: KAFKA_JMX_PORT
+            Value: !Ref 'JMXPort'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
@@ -96,8 +101,8 @@ Resources:
             HostPort: !Ref 'PeerPortOne'
           - ContainerPort: !Ref 'PeerPortTwo'
             HostPort: !Ref 'PeerPortTwo'
-          - ContainerPort: !Ref 'PrometheusJmxExporterPort'
-            HostPort: !Ref 'PrometheusJmxExporterPort'
+          - ContainerPort: !Ref 'JMXPort'
+            HostPort: !Ref 'JMXPort'
         MountPoints:
           - SourceVolume: data
             ContainerPath: /var/lib/zookeeper/data
@@ -141,6 +146,20 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
+  JMXTrans:
+    DependsOn: 'ZkNodeService'
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ../jmxtrans/service.yaml
+      Parameters:
+        Cluster: !Ref 'Cluster'
+        JMXPort: !Ref 'JMXPort'
+        JMXHost: !Sub '${ServerName}.${DomainName}'
+        ComponentName: 'zookeeper'
+        ServiceId: !Ref 'ServerId'
+        LogGroup: !Ref 'LogGroup'
+        StackName: !Ref 'StackName'
+        
 Outputs:
   ConnectionString:
     Description: The connection string for this Zookeeper node

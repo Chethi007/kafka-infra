@@ -62,8 +62,8 @@ for i in ${!host_groups[@]}; do
 
         # Replace the HOSTNAME placeholder in destination config
         sed -i \
-            -e "s/HOSTNAME/${host_name}/g" \
-            -e "s/HOSTPORT/${host_port}/g" \
+            -e "s/{HOSTNAME}/${host_name}/g" \
+            -e "s/{HOSTPORT}/${host_port}/g" \
             ${dest_config}
     done;
 done;

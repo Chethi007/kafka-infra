@@ -1,9 +1,9 @@
 {
   "servers": [
     {
-      "alias": "HOSTNAME",
-      "host": "HOSTNAME",
-      "port": "HOSTPORT",
+      "alias": "{HOSTNAME}",
+      "host": "{HOSTNAME}",
+      "port": "{HOSTPORT}",
       "numQueryThreads" : 2,
       "queries": [
         {
@@ -16,7 +16,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
+                  {"name": "HostName", "value": "{HOSTNAME}"}
                 ]
               }
             }
@@ -45,7 +45,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
+                  {"name": "HostName", "value": "{HOSTNAME}"}
                 ]
               }
             }
@@ -61,7 +61,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
+                  {"name": "HostName", "value": "{HOSTNAME}"}
                 ]
               }
             }
@@ -77,7 +77,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
+                  {"name": "HostName", "value": "{HOSTNAME}"}
                 ]
               }
             }
@@ -93,7 +93,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "InstanceId", "value": "zookeeper"}
+                  {"name": "HostName", "value": "{HOSTNAME}"}
                 ]
               }
             }

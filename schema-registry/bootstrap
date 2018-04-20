@@ -20,4 +20,13 @@ fi
 echo "SCHEMA_REGISTRY_HOST_NAME: $SCHEMA_REGISTRY_HOST_NAME"
 echo "SCHEMA_REGISTRY_LISTENERS: $SCHEMA_REGISTRY_LISTENERS"
 
+if [ -n "${SCHEMA_REGISTRY_JMX_PORT}" ] || [ -n "${SCHEMA_REGISTRY_JMX_HOSTNAME}" ] || [ -n "${SCHEMA_REGISTRY_JMX_OPTS}" ];
+then
+    # JMX agent complains about malformed URLs and is not able to resolve ECS container
+    # short hostnames. This will take care of the problem.
+    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+fi
+echo "SCHEMA_REGISTRY_JMX_HOSTNAME: ${SCHEMA_REGISTRY_JMX_HOSTNAME}"
+echo "SCHEMA_REGISTRY_JMX_PORT: ${SCHEMA_REGISTRY_JMX_PORT}"
+
 exec "$@"
