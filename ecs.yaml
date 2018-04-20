@@ -38,6 +38,10 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: true
     ConstraintDescription: Must be either 'true' or 'false'
+  AdditionalSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Additional security group to add ECS instances to
+    Default: ''
 
   # Storage
   EBSMountPath:
@@ -169,7 +173,7 @@ Resources:
           - Action: [
               'cloudwatch:PutMetricData',
               'cloudwatch:ListMetrics',
-              'cloudwatch:GetMetricStatistics', 
+              'cloudwatch:GetMetricStatistics',
               'ds:CreateComputer',
               'ds:DescribeDirectories',
               'ec2:DescribeInstanceStatus',
@@ -255,6 +259,7 @@ Resources:
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
+
   ECSLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -273,6 +278,7 @@ Resources:
       KeyName: !Ref 'KeyName'
       SecurityGroups:
         - !Ref 'ECSSecurityGroup'
+        - !Ref 'AdditionalSecurityGroup'
       UserData:
         'Fn::Base64': !Sub |
           #!/bin/bash
@@ -453,7 +459,7 @@ Resources:
           commands:
             01_add_instance_to_cluster:
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
-              
+
         install_service_discovery:
           files:
             "/etc/init/service_discovery.conf":
@@ -532,22 +538,22 @@ Resources:
             01_install_disk_mem_monitoring:
               command: |
                 #!/bin/bash
-                
+
                 exec 2>>/var/log/user-data.log
                 set -e
                 set -x
-                
+
                 yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https perl-Digest-SHA.x86_64 -y
-                
+
                 version=1.2.2
                 archive=CloudWatchMonitoringScripts-$version.zip
-                
+
                 mon_dir=/opt/monitoring
-                
+
                 mkdir -p $mon_dir
                 cd $mon_dir
                 curl http://aws-cloudwatch.s3.amazonaws.com/downloads/$archive -O
-                
+
                 unzip $archive
                 rm $archive
           files:
@@ -555,12 +561,12 @@ Resources:
               content: !Sub |
                 # Version: 1.1.2-rpm
                 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-                
+
                 * * * * * root /opt/monitoring/aws-scripts-mon/mon-put-instance-data.pl --mem-used-incl-cache-buff --mem-avail --mem-util --mem-used --disk-space-units=bytes --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=${EBSMountPath} --auto-scaling --from-cron
-                 
+
               mode: '000644'
               owner: root
-              group: root                
+              group: root
   ECSAutoScalingGroup:
     DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup

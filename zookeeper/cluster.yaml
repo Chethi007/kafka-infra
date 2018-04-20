@@ -28,7 +28,7 @@ Parameters:
   JMXPort:
     Description: JMX Port to expose metrics on
     Type: Number
-    Default: 8989    
+    Default: 8989
   PeerPortOne:
     Description: Zookeeper first peer port
     Type: Number
@@ -45,9 +45,9 @@ Parameters:
     Description: Amount of Memory to reserve
     Type: Number
     Default: 4096
-  ECSInstanceSecurityGroup:
-    Description: Security Group ID of the ECS Instances to allow JMX ingress for this component
-    Type: String        
+  InternalSG:
+    Description: Security Group ID of the ECS Instances to allow JMX and client port ingress for this component
+    Type: String
   Project:
     Description: Project tag
     Type: String
@@ -67,7 +67,7 @@ Parameters:
   DomainName:
     Description: The domain name for Zookeeper hosts
     Type: String
-    
+
 Resources:
   ZKNodesLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -142,14 +142,22 @@ Resources:
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalZKSG'
-  ECSInstanceSGIngressJMXRule:
+  InternalSGIngressJMXRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
       FromPort: !Ref 'JMXPort'
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalZKSG'
-      SourceSecurityGroupId: !Ref 'ECSInstanceSecurityGroup'      
+      SourceSecurityGroupId: !Ref 'InternalSG'
+  InternalSGClientIngressRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'ClientPort'
+      ToPort: !Ref 'ClientPort'
+      GroupId: !Ref 'InternalZKSG'
+      SourceSecurityGroupId: !Ref 'InternalSG'
   ZookeeperNode1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

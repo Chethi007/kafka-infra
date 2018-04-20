@@ -76,6 +76,9 @@ Parameters:
   LoadBalancerDNSName:
     Description: Load balancer DNS name
     Type: String
+  ZookeeperConnectionString:
+    Description: 'Comma delimited list of Zookeeper node addresses'
+    Type: String
 
 Resources:
   TargetGroup:
@@ -173,6 +176,17 @@ Resources:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: ecs
+          Environment:
+            - Name: APP_PORT
+              Value: 8081
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL
+              Value: !Ref 'ZookeeperConnectionString'
+            - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_METHODS
+              Value: GET,POST,PUT,OPTIONS
+            - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_ORIGIN
+              Value: "*"
+            - Name: SCHEMA_REGISTRY_JMX_PORT
+              Value: 8989
       Volumes: []
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'

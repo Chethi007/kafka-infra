@@ -169,6 +169,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'BrokerDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -193,6 +194,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
 
   ECSServices:
     Type: 'AWS::CloudFormation::Stack'
@@ -221,6 +223,11 @@ Resources:
         InternalCidr0: !Ref 'InternalCidr0'
         InternalCidr1: !Ref 'InternalCidr1'
         InternalCidr2: !Ref 'InternalCidr2'
+        KinesisStackName: !Ref 'KinesisStackName'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+    DependsOn: 'ECSBrokers'
 
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
@@ -237,6 +244,7 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
@@ -255,18 +263,14 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: ['ECSBrokers', 'Zookeeper']
-  SchemaRegistry:
-    Type: 'AWS::CloudFormation::Stack'
+
+  InternalSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      TemplateURL: ./schema-registry/service.yaml
-      Parameters:
-        ClusterStackName: !GetAtt 'ECSServices.Outputs.ClusterName'
-        Priority: 101
-        UIPriority: 102
-        KinesisStackName: !Ref 'KinesisStackName'
-        HostedZoneStackName: !Ref 'HostedZoneStackName'
-    DependsOn: ['ECSServices', 'Brokers']
+      VpcId: !Ref 'VPCId'
+      GroupDescription: Allow connections from vpc
 
 Outputs:
   ClientKafkaSG:

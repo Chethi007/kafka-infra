@@ -123,6 +123,12 @@ Parameters:
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
+  ZookeeperConnectionString:
+    Description: 'Comma delimited list of Zookeeper node addresses'
+    Type: String
+  InternalSG:
+    Description: Security Group for internal access
+    Type: AWS::EC2::SecurityGroup::Id
 
 Resources:
   ELB:
@@ -165,6 +171,7 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        AdditionalSecurityGroup: !Ref 'InternalSG'
   SchemaRegistry:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -180,6 +187,8 @@ Resources:
         EcsServiceRole: !GetAtt 'ECS.Outputs.ServiceRole'
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
+        ZookeeperConnectionString: !Ref ZookeeperConnectionString
+        SubnetId: !Ref 'PrivateSubnets'
     DependsOn: ['ECS']
 
 Outputs:
