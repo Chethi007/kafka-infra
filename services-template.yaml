@@ -120,6 +120,10 @@ Parameters:
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
 
+  KinesisStackName:
+    Type: String
+    Description: Name of the CF stack used to create the Kinesis stream
+
 Resources:
   ELB:
     Type: 'AWS::CloudFormation::Stack'
@@ -161,6 +165,23 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+  SchemaRegistry:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./schema-registry/service.yaml
+      Parameters:
+        ECSClusterName: !GetAtt 'ECS.Outputs.ClusterName'
+        Priority: 101
+        UIPriority: 102
+        KinesisStackName: !Ref 'KinesisStackName'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        Listener: !GetAtt 'ELB.Outputs.Listener'
+        VpcId: !Ref 'VPCId'
+        EcsServiceRole: !GetAtt 'ECS.Outputs.ServiceRole'
+        LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
+        LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
+    DependsOn: ['ECS']
+
 Outputs:
   Listener:
     Description: The ARN of the load balancer's listener
@@ -184,7 +205,7 @@ Outputs:
       Name: !Sub '${AWS::StackName}-LoadBalancerFullName'
   ClusterName:
     Description: A reference to the ECS cluster
-    Value: !GetAtt 'ECS.Outputs.ClusterName'
+    Value: !Sub '${AWS::StackName}'
     Export:
       Name: !Sub '${AWS::StackName}-ClusterName'
   AutoScalingGroupName:

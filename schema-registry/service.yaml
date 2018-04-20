@@ -1,12 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Creates a service / task def for schema registry
 Parameters:
-  ClusterStackName:
-    Description: Name of an active CloudFormation stack that contains an ECS cluster
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-Z0-9]*$
   Priority:
     Type: Number
     Description: The priority to register with the Load Balancer
@@ -64,6 +58,25 @@ Parameters:
   HostedZoneStackName:
     Type: String
     Description: The Hosted Zone stack name to create the service's record set in
+  Listener:
+    Description: ARN of the listener
+    Type: String
+  VpcId:
+    Description: Choose which VPC this cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  EcsServiceRole:
+    Description: The Service role used by ECS
+    Type: String
+  ECSClusterName:
+    Description: Name of ECS cluster to create the service in
+    Type: String
+  LoadBalancerCanonicalHostedZoneID:
+    Description: Hosted Zone ID for the load balancer
+    Type: String
+  LoadBalancerDNSName:
+    Description: Load balancer DNS name
+    Type: String
+
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -81,16 +94,14 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: '300'
       UnhealthyThresholdCount: 3
-      VpcId: !ImportValue
-        Fn::Sub: ${ClusterStackName}-VpcId
+      VpcId: !Ref 'VpcId'
       Tags:
         - Key: Name
           Value: !Sub 'ECS Target Group - ${AWS::StackName}'
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
-      ListenerArn: !ImportValue
-        Fn::Sub: ${ClusterStackName}-Listener
+      ListenerArn: !Ref 'Listener'
       Priority: !Ref 'Priority'
       Conditions:
         - Field: host-header
@@ -115,16 +126,14 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: '300'
       UnhealthyThresholdCount: 3
-      VpcId: !ImportValue
-        Fn::Sub: ${ClusterStackName}-VpcId
+      VpcId: !Ref 'VpcId'
       Tags:
         - Key: Name
           Value: !Sub 'ECS Target Group - ${AWS::StackName} - UI'
   ListenerRuleUI:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
-      ListenerArn: !ImportValue
-        Fn::Sub: ${ClusterStackName}-Listener
+      ListenerArn: !Ref 'Listener'
       Priority: !Ref 'UIPriority'
       Conditions:
         - Field: host-header
@@ -174,16 +183,14 @@ Resources:
       - LogGroup
     Properties:
       ServiceName: !Ref 'AppName'
-      Role: !ImportValue
-        Fn::Sub: ${ClusterStackName}-EcsServiceRole
+      Role: !Ref 'EcsServiceRole'
       TaskDefinition: !Ref 'TaskDefinition'
       DesiredCount: !Ref 'AppDesiredCount'
       LoadBalancers:
         - TargetGroupArn: !Ref 'TargetGroup'
           ContainerPort: !Ref 'AppContainerPort'
           ContainerName: !Ref 'AppName'
-      Cluster: !ImportValue
-        Fn::Sub: ${ClusterStackName}-ClusterName
+      Cluster: !Ref 'ECSClusterName'
       PlacementStrategies:
         - Field: attribute:ecs.availability-zone
           Type: spread
@@ -220,16 +227,14 @@ Resources:
       - LogGroup
     Properties:
       ServiceName: !Sub '${AppName}-UI'
-      Role: !ImportValue
-        Fn::Sub: ${ClusterStackName}-EcsServiceRole
+      Role: !Ref 'EcsServiceRole'
       TaskDefinition: !Ref 'TaskDefinitionUI'
       DesiredCount: !Ref 'UIDesiredCount'
       LoadBalancers:
         - TargetGroupArn: !Ref 'TargetGroupUI'
           ContainerPort: 8000
           ContainerName: !Sub '${AppName}-ui'
-      Cluster: !ImportValue
-        Fn::Sub: ${ClusterStackName}-ClusterName
+      Cluster: !Ref 'ECSClusterName'
       PlacementStrategies:
         - Field: attribute:ecs.availability-zone
           Type: spread
@@ -272,8 +277,7 @@ Resources:
       ResourceId: !Join
         - /
         - - service
-          - !ImportValue
-            Fn::Sub: ${ClusterStackName}-ClusterName
+          - !Ref 'ECSClusterName'
           - !GetAtt 'Service.Name'
       RoleARN: !GetAtt 'EcsAutoScaleRole.Arn'
       ScalableDimension: ecs:service:DesiredCount
@@ -331,8 +335,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ClusterName
-          Value: !ImportValue
-            Fn::Sub: ${ClusterStackName}-ClusterName
+          Value: !Ref 'ECSClusterName'
         - Name: ServiceName
           Value: !GetAtt 'Service.Name'
   CpuUtilAlarmLow:
@@ -350,18 +353,15 @@ Resources:
       ComparisonOperator: LessThanThreshold
       Dimensions:
         - Name: ClusterName
-          Value: !ImportValue
-            Fn::Sub: ${ClusterStackName}-ClusterName
+          Value: !Ref 'ECSClusterName'
         - Name: ServiceName
           Value: !GetAtt 'Service.Name'
   DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
       AliasTarget:
-        HostedZoneId: !ImportValue
-          Fn::Sub: ${ClusterStackName}-LoadBalancerCanonicalHostedZoneID
-        DNSName: !ImportValue
-          Fn::Sub: ${ClusterStackName}-LoadBalancerDNSName
+        HostedZoneId: !Ref 'LoadBalancerCanonicalHostedZoneID'
+        DNSName: !Ref 'LoadBalancerDNSName'
       HostedZoneName: !ImportValue
         Fn::Sub: ${HostedZoneStackName}-ZoneName
       SetIdentifier: !Ref 'AWS::StackName'
@@ -376,10 +376,8 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       AliasTarget:
-        HostedZoneId: !ImportValue
-          Fn::Sub: ${ClusterStackName}-LoadBalancerCanonicalHostedZoneID
-        DNSName: !ImportValue
-          Fn::Sub: ${ClusterStackName}-LoadBalancerDNSName
+        HostedZoneId: !Ref 'LoadBalancerCanonicalHostedZoneID'
+        DNSName: !Ref 'LoadBalancerDNSName'
       HostedZoneName: !ImportValue
         Fn::Sub: ${HostedZoneStackName}-ZoneName
       SetIdentifier: !Ref 'AWS::StackName'
