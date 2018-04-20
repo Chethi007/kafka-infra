@@ -303,7 +303,6 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           general:
-          - install_cfn_hooks
           - install_logging
           - install_data_volume
           - install_ecs
@@ -312,31 +311,6 @@ Resources:
           services:
           - ConfigSet: general
           - install_docker_mirror
-
-        install_cfn_hooks:
-          files:
-            '/etc/cfn/cfn-hup.conf':
-              mode: '000400'
-              owner: root
-              group: root
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-            '/etc/cfn/hooks.d/cfn-auto-reloader.conf':
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets general
-          services:
-            sysvinit:
-              cfn-hup:
-                enabled: true
-                ensureRunning: true
-                files:
-                  - /etc/cfn/cfn-hup.conf
-                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
 
         # Configure and install aws logs agent
         install_logging:
@@ -551,12 +525,19 @@ Resources:
                     loyaltyone/docker-mirror:0.1.2
                 end script
         install_monitoring:
+          packages:
+            yum:
+              unzip: []
           commands:
             01_install_disk_mem_monitoring:
               command: |
                 #!/bin/bash
                 
-                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
+                exec 2>>/var/log/user-data.log
+                set -e
+                set -x
+                
+                yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https perl-Digest-SHA.x86_64 -y
                 
                 version=1.2.2
                 archive=CloudWatchMonitoringScripts-$version.zip
