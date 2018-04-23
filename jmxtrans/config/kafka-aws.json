@@ -16,7 +16,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "BrokerTopicMetrics"},
                   {"name": "Metric", "value": "MessagesInPerSec"}
                 ]
