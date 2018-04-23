@@ -3,24 +3,28 @@
 set -e
 
 # Handle default environment options
-if [ -z "$JMXTRANS_ENV" ]; then
-    JMXTRANS_ENV=local
-fi
-echo "JMXTRANS_ENV='$JMXTRANS_ENV'"
-
-if [ -z "$JMXTRANS_HOSTS" ]; then
-    JMXTRANS_HOSTS=zookeeper
-fi
-echo "JMXTRANS_HOSTS='$JMXTRANS_HOSTS'"
-
-echo ""
+JMXTRANS_ENV=${JMXTRANS_ENV:-local}
+echo "JMXTRANS_ENV='${JMXTRANS_ENV}'"
 
 # JMXTRANS_HOSTS=type1#host1:port1,host2:port2,host3:port3..|type2#host4:port4,host5:port5,...|...
 # type=zookeeper|kafka|schema-registry|kafka-connect|kafka-rest
+JMXTRANS_HOSTS=${JMXTRANS_HOSTS:-localhost}
+echo "JMXTRANS_HOSTS='${JMXTRANS_HOSTS}'"
+
+# JMXTRANS_ALIASES=alias1,alias2,alias3|alias4,alias5,alias6|...
+# This is useful if you are using 'localhost' for hostname but want to alias it.
+# These should correspond exactly with JMX_HOSTS. If it turns up empty;
+# the hostname from JMXTRANS_HOST will be used.
+JMXTRANS_ALIASES=${JMXTRANS_ALIASES:-zookeeper}
+echo "JMXTRANS_ALIASES='${JMXTRANS_ALIASES}'"
+
+echo ""
 
 # Retrieve individual host groups
 IFS='|' read -r -a host_groups <<< "$JMXTRANS_HOSTS"
 echo "host_groups='${host_groups[@]}'"
+
+IFS='|' read -r -a host_aliases <<< "$JMXTRANS_ALIASES"
 
 # Process each group
 for i in ${!host_groups[@]}; do
@@ -41,6 +45,9 @@ for i in ${!host_groups[@]}; do
     unset host_array
     IFS=',' read -r -a host_array <<< "${host_list}"
 
+    unset alias_array
+    IFS=',' read -r -a alias_array <<< "${host_aliases[i]}"
+
     # Setup config for each host
     for j in ${!host_array[@]};
     do
@@ -50,11 +57,15 @@ for i in ${!host_groups[@]}; do
         host_name=${host[0]}
         host_port=${host[1]}
 
+        host_alias=${alias_array[j]}
+        host_alias=${host_alias:-${host_name}}
+
         # Figure out the destination path based on type and host name
         dest_config=/var/lib/jmxtrans/${host_type}-${host_name}.json
 
         echo "  - host_name='${host_name}'"
         echo "    host_port='${host_port}'"
+        echo "    host_alias='${host_alias}'"
         echo "    dest_config='${dest_config}'"
 
         # Copy the template
@@ -62,6 +73,7 @@ for i in ${!host_groups[@]}; do
 
         # Replace the HOSTNAME placeholder in destination config
         sed -i \
+            -e "s/{ALIAS}/${host_alias}/g" \
             -e "s/{HOSTNAME}/${host_name}/g" \
             -e "s/{HOSTPORT}/${host_port}/g" \
             ${dest_config}

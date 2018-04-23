@@ -113,3 +113,4 @@ services:
       SECONDS_BETWEEN_RUNS: 10
       JMXTRANS_ENV: local
       JMXTRANS_HOSTS: zookeeper#zk1:8989,zk2:8989,zk3:8989|kafka#k1:8989,k2:8989,k3:8989
+      JMXTRANS_ALIASES: zook1,zook2,zook3|broker1,broker2,broker3
