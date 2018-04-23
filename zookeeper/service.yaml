@@ -127,6 +127,8 @@ Resources:
             Value: aws
           - Name: JMXTRANS_HOSTS
             Value: !Sub 'zookeeper#localhost:${JMXPort}'
+          - Name: JMXTRANS_ALIASES
+            Value: !Sub '${ServerName}.${DomainName}'
         LogConfiguration:
           LogDriver: awslogs
           Options:

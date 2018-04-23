@@ -110,7 +110,9 @@ Resources:
           - Name: JMXTRANS_ENV
             Value: aws
           - Name: JMXTRANS_HOSTS
-            Value: !Sub 'zookeeper#localhost:${JMXPort}'
+            Value: !Sub 'kafka#localhost:${JMXPort}'
+          - Name: JMXTRANS_ALIASES
+            Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
         LogConfiguration:
           LogDriver: awslogs
           Options:
