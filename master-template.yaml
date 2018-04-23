@@ -227,6 +227,7 @@ Resources:
         HostedZoneStackName: !Ref 'HostedZoneStackName'
         ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+        StackName: !Ref 'AWS::StackName'
     DependsOn: 'ECSBrokers'
 
   Zookeeper:

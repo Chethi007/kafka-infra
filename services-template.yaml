@@ -119,7 +119,9 @@ Parameters:
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
-
+  StackName:
+    Description: The Parent Stack Name
+    Type: String
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
@@ -178,8 +180,8 @@ Resources:
       TemplateURL: ./schema-registry/service.yaml
       Parameters:
         ECSClusterName: !GetAtt 'ECS.Outputs.ClusterName'
-        Priority: 101
-        UIPriority: 102
+        Priority: '101'
+        UIPriority: '102'
         KinesisStackName: !Ref 'KinesisStackName'
         HostedZoneStackName: !Ref 'HostedZoneStackName'
         Listener: !GetAtt 'ELB.Outputs.Listener'
@@ -187,9 +189,9 @@ Resources:
         EcsServiceRole: !GetAtt 'ECS.Outputs.ServiceRole'
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
-        ZookeeperConnectionString: !Ref ZookeeperConnectionString
-        SubnetId: !Ref 'PrivateSubnets'
-    DependsOn: ['ECS']
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        AppName: !Join ["-", [!Ref 'StackName', 'schema-registry']]
+    DependsOn: 'ECS'
 
 Outputs:
   Listener:

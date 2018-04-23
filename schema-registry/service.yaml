@@ -11,7 +11,6 @@ Parameters:
   AppName:
     Type: String
     Description: Name of app. Should be the same as docker repository name.
-    Default: cp-schema-registry
   AppContainerPort:
     Type: Number
     Description: Port the app runs on in the image
