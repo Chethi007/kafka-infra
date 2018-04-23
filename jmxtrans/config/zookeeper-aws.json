@@ -1,7 +1,7 @@
 {
   "servers": [
     {
-      "alias": "{HOSTNAME}",
+      "alias": "{ALIAS}",
       "host": "{HOSTNAME}",
       "port": "{HOSTPORT}",
       "numQueryThreads" : 2,
@@ -16,7 +16,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }
@@ -45,7 +45,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }
@@ -61,7 +61,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }
@@ -77,7 +77,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }
@@ -93,7 +93,7 @@
               "settings": {
                 "namespace": "Zookeeper",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }

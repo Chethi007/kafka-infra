@@ -1,7 +1,7 @@
 {
   "servers": [
     {
-      "alias": "{HOSTNAME}",
+      "alias": "{ALIAS}",
       "host": "{HOSTNAME}",
       "port": "{HOSTPORT}",
       "numQueryThreads" : 2,

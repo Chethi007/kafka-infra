@@ -116,6 +116,26 @@ Resources:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
             awslogs-stream-prefix: !Sub 'zk${ServerId}'
+      - Name: jmxtrans
+        Image: loyaltyone/jmxtrans:0.1-beta
+        Cpu: '512'
+        MemoryReservation: '2048'
+        Environment:
+          - Name: SECONDS_BETWEEN_RUNS
+            Value: 60
+          - Name: JMXTRANS_ENV
+            Value: aws
+          - Name: JMXTRANS_HOSTS
+            Value: !Sub 'zookeeper#localhost:${JMXPort}'
+          - Name: JMXTRANS_ALIASES
+            Value: !Sub '${ServerName}.${DomainName}'
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Sub 'zookeeper${ServerId}'
+                  
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.
@@ -129,6 +149,7 @@ Resources:
           Host:
             SourcePath: !Sub '${DataVolumeMountPath}/zk/${ServerId}/secrets'
       Family: !Sub '${StackName}-zk-${ServerId}'
+      
   ZkNodeService:
     Type: 'AWS::ECS::Service'
     Properties:
@@ -146,19 +167,6 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
-  JMXTrans:
-    DependsOn: 'ZkNodeService'
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: ../jmxtrans/service.yaml
-      Parameters:
-        Cluster: !Ref 'Cluster'
-        JMXPort: !Ref 'JMXPort'
-        JMXHost: !Sub '${ServerName}.${DomainName}'
-        ComponentName: 'zookeeper'
-        ServiceId: !Ref 'ServerId'
-        LogGroup: !Ref 'LogGroup'
-        StackName: !Ref 'StackName'
         
 Outputs:
   ConnectionString:
