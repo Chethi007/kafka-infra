@@ -134,7 +134,7 @@ Resources:
           Options:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'zookeeper${ServerId}'
+            awslogs-stream-prefix: !Sub 'zk${ServerId}'
                   
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live

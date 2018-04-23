@@ -99,7 +99,7 @@ Resources:
           Options:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'node${BrokerId}'
+            awslogs-stream-prefix: !Sub 'broker${BrokerId}'
       - Name: jmxtrans
         Image: loyaltyone/jmxtrans:0.1-beta
         Cpu: '512'
@@ -118,7 +118,7 @@ Resources:
           Options:
             awslogs-group: !Ref 'LogGroup'
             awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'kafka${BrokerId}'
+            awslogs-stream-prefix: !Sub 'broker${BrokerId}'
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.
