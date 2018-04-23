@@ -122,7 +122,7 @@ Resources:
         MemoryReservation: '2048'
         Environment:
           - Name: SECONDS_BETWEEN_RUNS
-            Value: 10
+            Value: 60
           - Name: JMXTRANS_ENV
             Value: aws
           - Name: JMXTRANS_HOSTS
