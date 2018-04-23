@@ -1,7 +1,7 @@
 {
   "servers": [
     {
-      "alias": "{HOSTNAME}",
+      "alias": "{ALIAS}",
       "host": "{HOSTNAME}",
       "port": "{HOSTPORT}",
       "numQueryThreads" : 2,
@@ -16,7 +16,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "BrokerTopicMetrics"},
                   {"name": "Metric", "value": "MessagesInPerSec"}
                 ]
