@@ -150,7 +150,7 @@ Resources:
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'ECSInstanceSecurityGroup'      
-  ZookeeperNode1:
+  Server1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./service.yaml
@@ -171,7 +171,7 @@ Resources:
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
-  ZookeeperNode2:
+  Server2:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./service.yaml
@@ -191,8 +191,8 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode1']
-  ZookeeperNode3:
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'Server1']
+  Server3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./service.yaml
@@ -212,7 +212,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZookeeperNode2']
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'Server2']
 
 Outputs:
   ClientZKSG:
@@ -222,6 +222,6 @@ Outputs:
     Description: Comma delimited list of zookeeper node addresses
     Value: !Sub
       - '${Server1},${Server2},${Server3}'
-      - Server1: !GetAtt 'ZookeeperNode1.Outputs.ConnectionString'
-        Server2: !GetAtt 'ZookeeperNode2.Outputs.ConnectionString'
-        Server3: !GetAtt 'ZookeeperNode3.Outputs.ConnectionString'
+      - Server1: !GetAtt 'Server1.Outputs.ConnectionString'
+        Server2: !GetAtt 'Server2.Outputs.ConnectionString'
+        Server3: !GetAtt 'Server3.Outputs.ConnectionString'
