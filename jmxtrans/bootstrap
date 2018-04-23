@@ -3,20 +3,23 @@
 set -e
 
 # Handle default environment options
-JMXTRANS_ENV=${JMXTRANS_ENV:-local}
+export JMXTRANS_ENV=${JMXTRANS_ENV:-local}
 echo "JMXTRANS_ENV='${JMXTRANS_ENV}'"
 
 # JMXTRANS_HOSTS=type1#host1:port1,host2:port2,host3:port3..|type2#host4:port4,host5:port5,...|...
 # type=zookeeper|kafka|schema-registry|kafka-connect|kafka-rest
-JMXTRANS_HOSTS=${JMXTRANS_HOSTS:-localhost}
+export JMXTRANS_HOSTS=${JMXTRANS_HOSTS:-localhost}
 echo "JMXTRANS_HOSTS='${JMXTRANS_HOSTS}'"
 
 # JMXTRANS_ALIASES=alias1,alias2,alias3|alias4,alias5,alias6|...
 # This is useful if you are using 'localhost' for hostname but want to alias it.
 # These should correspond exactly with JMX_HOSTS. If it turns up empty;
 # the hostname from JMXTRANS_HOST will be used.
-JMXTRANS_ALIASES=${JMXTRANS_ALIASES:-zookeeper}
+export JMXTRANS_ALIASES=${JMXTRANS_ALIASES:-zookeeper}
 echo "JMXTRANS_ALIASES='${JMXTRANS_ALIASES}'"
+
+export SECONDS_BETWEEN_RUNS=${SECONDS_BETWEEN_RUNS:-10}
+echo "SECONDS_BETWEEN_RUNS='${SECONDS_BETWEEN_RUNS}'"
 
 echo ""
 
