@@ -11,12 +11,14 @@ Parameters:
   VPCId:
     Description: Choose which VPC this ECS cluster should be deployed to
     Type: AWS::EC2::VPC::Id
-  VPCCidrBlock:
-    Description: VPC CIDR Block
-    Type: String
   Subnets:
     Description: Choose which subnets this ECS cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
+  BastionSG:
+    Description: Security group used to whitelist for SSH access
+    Type: AWS::EC2::SecurityGroup::Id
+
+  # Instances
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
@@ -239,8 +241,10 @@ Resources:
       VpcId: !Ref 'VPCId'
       GroupDescription: Allow connections from vpc
       SecurityGroupIngress:
-      - CidrIp: !Ref 'VPCCidrBlock'
-        IpProtocol: -1
+      - SourceSecurityGroupId: !Ref 'BastionSG'
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
       Tags:
       - Key: Name
         Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
@@ -255,6 +259,7 @@ Resources:
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
+
   ECSLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
