@@ -25,12 +25,12 @@ Parameters:
   VPCId:
     Description: Choose which VPC this cluster should be deployed to
     Type: AWS::EC2::VPC::Id
-  VPCCidrBlock:
-    Description: VPC CIDR Block
-    Type: String
   Subnets:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
+  BastionSG:
+    Description: Security group used to whitelist for SSH access
+    Type: AWS::EC2::SecurityGroup::Id
   InstanceType:
     Description: Which instance type should we use to build the ECS clusters
     Type: String
@@ -110,7 +110,6 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
@@ -127,6 +126,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'BrokerDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        BastionSG: !Ref 'BastionSG'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -134,7 +134,6 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
@@ -151,6 +150,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        BastionSG: !Ref 'BastionSG'
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
