@@ -34,7 +34,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "BrokerTopicMetrics"},
                   {"name": "Metric", "value": "BytesInPerSec"}
                 ]
@@ -52,7 +52,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "BrokerTopicMetrics"},
                   {"name": "Metric", "value": "BytesOutPerSec"}
                 ]
@@ -70,7 +70,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaManager"},
                   {"name": "Metric", "value": "LeaderCount"}
                 ]
@@ -88,7 +88,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaManager"},
                   {"name": "Metric", "value": "PartitionCount"}
                 ]
@@ -106,7 +106,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaManager"},
                   {"name": "Metric", "value": "FailedIsrUpdatesPerSec"}
                 ]
@@ -124,7 +124,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaManager"},
                   {"name": "Metric", "value": "IsrShrinksPerSec"}
                 ]
@@ -142,7 +142,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaManager"},
                   {"name": "Metric", "value": "IsrExpandsPerSec"}
                 ]
@@ -160,7 +160,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaManager"},
                   {"name": "Metric", "value": "UnderReplicatedPartitions"}
                 ]
@@ -178,7 +178,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ReplicaFetcherManager"},
                   {"name": "Metrics", "value": "MaxLag.Replica"}
                 ]
@@ -196,7 +196,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "DelayedOperationPurgatory"},
                   {"name": "Metrics", "value": "PurgatorySize.Produce"}
                 ]
@@ -214,7 +214,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "DelayedOperationPurgatory"},
                   {"name": "Metrics", "value": "PurgatorySize.Fetch"}
                 ]
@@ -232,7 +232,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "KafkaRequestHandlerPool"},
                   {"name": "Metrics", "value": "RequestHandlerAvgIdlePercent"}
                 ]
@@ -250,7 +250,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "Produce"},
                   {"name": "Metrics", "value": "QueueSize"}
                 ]
@@ -268,7 +268,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "Fetch"},
                   {"name": "Metrics", "value": "QueueSize"}
                 ]
@@ -286,7 +286,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "Request"},
                   {"name": "Metrics", "value": "QueueSize"}
                 ]
@@ -304,7 +304,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RequestsPerSec.Produce"}
                 ]
@@ -325,7 +325,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "TotalTimeMs.Produce"}
                 ]
@@ -346,7 +346,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "LocalTimeMs.Produce"}
                 ]
@@ -367,7 +367,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RemoteTimeMs.Produce"}
                 ]
@@ -388,7 +388,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "ResponseQueueTimeMs.Produce"}
                 ]
@@ -409,7 +409,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RequestQueueTimeMs.Produce"}
                 ]
@@ -430,7 +430,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "ResponseSendTimeMs.Produce"}
                 ]
@@ -451,7 +451,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "TotalTimeMs.FetchConsumer"}
                 ]
@@ -472,7 +472,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "LocalTimeMs.FetchConsumer"}
                 ]
@@ -493,7 +493,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RemoteTimeMs.FetchConsumer"}
                 ]
@@ -514,7 +514,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "ResponseQueueTimeMs.FetchConsumer"}
                 ]
@@ -535,7 +535,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RequestQueueTimeMs.FetchConsumer"}
                 ]
@@ -556,7 +556,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "ResponseSendTimeMs.FetchConsumer"}
                 ]
@@ -574,7 +574,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RequestsPerSec.FetchConsumer"}
                 ]
@@ -595,7 +595,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "TotalTimeMs.FetchFollower"}
                 ]
@@ -616,7 +616,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "LocalTimeMs.FetchFollower"}
                 ]
@@ -637,7 +637,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RemoteTimeMs.FetchFollower"}
                 ]
@@ -658,7 +658,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "ResponseQueueTimeMs.FetchFollower"}
                 ]
@@ -679,7 +679,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RequestQueueTimeMs.FetchFollower"}
                 ]
@@ -700,7 +700,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "ResponseSendTimeMs.FetchFollower"}
                 ]
@@ -718,7 +718,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "RequestMetrics"},
                   {"name": "Metric", "value": "RequestsPerSec.FetchFollower"}
                 ]
@@ -736,7 +736,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "SocketServer"},
                   {"name": "Metric", "value": "NetworkProcessorAvgIdlePercent"}
                 ]
@@ -754,7 +754,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "KafkaController"},
                   {"name": "Metric", "value": "ActiveControllerCount"}
                 ]
@@ -775,7 +775,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ControllerStats"},
                   {"name": "Metric", "value": "LeaderElectionRateAndTimeMs"}
                 ]
@@ -793,7 +793,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"},
+                  {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "MetricType", "value": "ControllerStats"},
                   {"name": "Metric", "value": "UncleanLeaderElectionsPerSec"}
                 ]
@@ -811,7 +811,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }
@@ -827,7 +827,7 @@
               "settings": {
                 "namespace": "Kafka",
                 "dimensions": [
-                  {"name": "HostName", "value": "{HOSTNAME}"}
+                  {"name": "HostName", "value": "{ALIAS}"}
                 ]
               }
             }

@@ -109,7 +109,7 @@ Resources:
         - Key: Environment
           Value: !Ref 'Environment'
         - Key: Component
-          Value: zookeeper
+          Value: kafka
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"

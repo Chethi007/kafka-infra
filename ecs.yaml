@@ -11,12 +11,14 @@ Parameters:
   VPCId:
     Description: Choose which VPC this ECS cluster should be deployed to
     Type: AWS::EC2::VPC::Id
-  VPCCidrBlock:
-    Description: VPC CIDR Block
-    Type: String
   Subnets:
     Description: Choose which subnets this ECS cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
+  BastionSG:
+    Description: Security group used to whitelist for SSH access
+    Type: AWS::EC2::SecurityGroup::Id
+
+  # Instances
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
@@ -243,8 +245,10 @@ Resources:
       VpcId: !Ref 'VPCId'
       GroupDescription: Allow connections from vpc
       SecurityGroupIngress:
-      - CidrIp: !Ref 'VPCCidrBlock'
-        IpProtocol: -1
+      - SourceSecurityGroupId: !Ref 'BastionSG'
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
       Tags:
       - Key: Name
         Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
@@ -484,7 +488,25 @@ Resources:
                   cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
                   region=$(curl 169.254.169.254/latest/meta-data/placement/availability-zone | sed s'/.$//')
 
+                  # Pull docker image. Try up to 3 times before giving up.
+                  docker_image=loyaltyone/service-discovery-agent-route53:latest
+                  count=3
+                  while [[ $count -gt 0 ]]; do
+                    echo "Fetching docker image '$docker_image'..."
+                    docker pull $docker_image
+                    if [[ "$?" -gt 0 ]]; then
+                      count=$(($count - 1))
+                      echo "Problem fetching docker image '$docker_image'."
+                      echo "Taking a nap for 5 seconds..."
+                      sleep 5
+                    else
+                      echo "Fetched docker image for '$docker_image'."
+                      count=0
+                    fi
+                  done
+
                   # Start service discovery agent
+                  echo "Running service discovery agent..."
                   docker run -d \
                     --name service-discovery-agent \
                     --restart always \
@@ -494,7 +516,7 @@ Resources:
                     --log-opt awslogs-group=$cluster \
                     --log-opt awslogs-region=$region \
                     --log-opt tag='{{.Name}}/{{.ID}}' \
-                    loyaltyone/service-discovery-agent-route53:latest --hostedZoneId=${HostedZoneId}
+                    $docker_image --hostedZoneId=${HostedZoneId}
                 end script
         install_docker_mirror:
           files:
@@ -521,14 +543,32 @@ Resources:
                   ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
                   echo $ip > /etc/hostip
 
+                  # Pull docker image. Try up to 3 times before giving up.
+                  docker_image=loyaltyone/docker-mirror:0.1.2
+                  count=3
+                  while [[ $count -gt 0 ]]; do
+                    echo "Fetching docker image '$docker_image'..."
+                    docker pull $docker_image
+                    if [[ "$?" -gt 0 ]]; then
+                      count=$(($count - 1))
+                      echo "Problem fetching docker image '$docker_image'."
+                      echo "Taking a nap for 5 seconds..."
+                      sleep 5
+                    else
+                      echo "Fetched docker image for '$docker_image'."
+                      count=0
+                    fi
+                  done
+
                   # Start docker mirror
+                  echo "Starting docker mirror..."
                   docker run -d \
                     --name docker-mirror \
                     -p 9001:9000 \
                     --restart always \
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     -v /etc/hostip:/etc/hostip \
-                    loyaltyone/docker-mirror:0.1.2
+                    $docker_image
                 end script
         install_monitoring:
           packages:
