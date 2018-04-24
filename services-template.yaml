@@ -23,9 +23,6 @@ Parameters:
   VPCId:
     Description: Choose which VPC this cluster should be deployed to
     Type: AWS::EC2::VPC::Id
-  VPCCidrBlock:
-    Description: VPC CIDR Block
-    Type: String
   CertificateArn:
     Type: String
     Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
@@ -131,6 +128,9 @@ Parameters:
   InternalSG:
     Description: Security Group for internal access
     Type: AWS::EC2::SecurityGroup::Id
+  BastionSG:
+    Description: Security group used to whitelist for SSH access
+    Type: AWS::EC2::SecurityGroup::Id
 
 Resources:
   ELB:
@@ -156,7 +156,6 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        VPCCidrBlock: !Ref 'VPCCidrBlock'
         Subnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
@@ -174,6 +173,9 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !Ref 'InternalSG'
+        BastionSG: !Ref 'BastionSG'
+        ELBSecurityGroupId: !GetAtt 'ELB.Outputs.ELBSecurityGroupId'
+    DependsOn: 'ELB'
   SchemaRegistry:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
