@@ -100,12 +100,6 @@ Parameters:
     ConstraintDescription: Must be a value between 25 and 250
 
   # ELB
-  TargetGroupPrefix:
-    Type: String
-    MinLength: 1
-    MaxLength: 24
-    ConstraintDescription: Must be a unique prefix up to 24 characters to identify target groups for the cluster.
-    Description: The prefix to use for target groups.
   CertificateArn:
     Type: String
     Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
@@ -218,7 +212,7 @@ Resources:
         HostedZoneStackName: !Ref 'HostedZoneStackName'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         CertificateArn: !Ref 'CertificateArn'
-        TargetGroupPrefix: !Ref 'TargetGroupPrefix'
+        TargetGroupPrefix: !Ref 'AWS::StackName'
         InternalCidr0: !Ref 'InternalCidr0'
         InternalCidr1: !Ref 'InternalCidr1'
         InternalCidr2: !Ref 'InternalCidr2'
