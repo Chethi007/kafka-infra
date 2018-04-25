@@ -272,6 +272,9 @@ Resources:
     Properties:
       VpcId: !Ref 'VPCId'
       GroupDescription: Allow connections from vpc
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: "0.0.0.0/0"
 
 Outputs:
   ClientKafkaSG:
