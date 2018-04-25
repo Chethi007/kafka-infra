@@ -19,7 +19,7 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
   ELBSecurityGroupId:
     Description: Security group used to whitelist elb access
-    Type: AWS::EC2::SecurityGroup::Id
+    Type: String
     Default: ''
 
   # Instances
