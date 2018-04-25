@@ -14,7 +14,7 @@ phases:
   build:
     commands:
       - |
-        CFNS=$(grep --include="*.yaml" --exclude=master.yaml --exclude=services.yaml --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
+        CFNS=$(grep --include="*.yaml" --exclude=master.yaml --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
         for cfn in ${CFNS}; do
             echo "Validating template ${cfn}"
             ERRORS=$(aws cloudformation validate-template --template-body file://${cfn}  | jq .Error)

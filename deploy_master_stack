@@ -12,12 +12,9 @@ fi
 
 readonly CFNS=$(grep \
     --include="*.yaml" \
-    --exclude=services-template.yaml \
     --exclude=master.yaml \
-    --exclude=services.yaml \
     --exclude=efs.yaml \
-    --exclude=elb.yaml \
-    --exclude-dir={.idea,kafka-connect,kafka-rest,schema-registry,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
+    --exclude-dir={.idea,kafka-connect,kafka-rest,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
 
 for cfn in ${CFNS}; do
     echo "Validating template ${cfn}"
@@ -44,4 +41,3 @@ echo "Cleaning up"
 rm -rf master.yaml
 
 echo "Deployed stack successfully"
-

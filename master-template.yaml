@@ -19,6 +19,8 @@ Parameters:
   HostedZoneStackName:
     Description: The Stack Name of the hosted zone in which to register services
     Type: String
+
+  # Networking
   KeyName:
     Description: Key Pair name for SSH access
     Type: AWS::EC2::KeyPair::KeyName
@@ -52,16 +54,18 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: true
     ConstraintDescription: Must be either 'true' or 'false'
-  ASGMinSize:
-    Description: Minimum size of ECS Auto Scaling Group
+
+  # ASG
+  ServicesASGMinSize:
+    Description: Minimum size of services ECS Auto Scaling Group
     Type: Number
     Default: 3
-  ASGMaxSize:
-    Description: Maximum size of ECS Auto Scaling Group
+  ServicesASGMaxSize:
+    Description: Maximum size of services ECS Auto Scaling Group
     Type: Number
     Default: 3
-  ASGDesiredCapacity:
-    Description: Desired Capacity of the ECS Auto Scaling Group
+  ServicesASGDesiredCapacity:
+    Description: Desired Capacity of the services ECS Auto Scaling Group
     Type: Number
     Default: 3
   RollingUpdateMinInService:
@@ -71,6 +75,8 @@ Parameters:
   ASGEventsTopic:
     Type: String
     Description: SNS topic to notify of ASG events
+
+  # Storage
   ZookeeperDataVolumeSize:
     Type: Number
     Description: Data volume size in GB for Zookeeper nodes
@@ -85,6 +91,38 @@ Parameters:
     MaxValue: 2000
     Default: 1000
     ConstraintDescription: Must be a value between 100 and 2000
+  ServicesDataVolumeSize:
+    Type: Number
+    Description: Data volume size in GB for Services nodes
+    MinValue: 25
+    MaxValue: 250
+    Default: 100
+    ConstraintDescription: Must be a value between 25 and 250
+
+  # ELB
+  TargetGroupPrefix:
+    Type: String
+    MinLength: 1
+    MaxLength: 24
+    ConstraintDescription: Must be a unique prefix up to 24 characters to identify target groups for the cluster.
+    Description: The prefix to use for target groups.
+  CertificateArn:
+    Type: String
+    Description: SSL certificates ARN to assign to ALB (See Certificate Mangager for the ARN)
+  InternalCidr0:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+  InternalCidr1:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+  InternalCidr2:
+    Type: String
+    Description: CIDR range to allow access to internal ELB
+    Default: ''
+
+  # Tags
   Project:
     Description: Project tag
     Type: String
@@ -102,6 +140,10 @@ Parameters:
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
 
+  KinesisStackName:
+    Type: String
+    Description: Name of the CF stack used to create the Kinesis stream
+
 Resources:
   ECSBrokers:
     Type: 'AWS::CloudFormation::Stack'
@@ -113,9 +155,9 @@ Resources:
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
-        ASGMinSize: !Ref 'ASGMinSize'
-        ASGMaxSize: !Ref 'ASGMaxSize'
-        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        ASGMinSize: 3
+        ASGMaxSize: 3
+        ASGDesiredCapacity: 3
         RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
@@ -126,6 +168,7 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'BrokerDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
@@ -137,9 +180,9 @@ Resources:
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'InstanceType'
         EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
-        ASGMinSize: !Ref 'ASGMinSize'
-        ASGMaxSize: !Ref 'ASGMaxSize'
-        ASGDesiredCapacity: !Ref 'ASGDesiredCapacity'
+        ASGMinSize: 3
+        ASGMaxSize: 3
+        ASGDesiredCapacity: 3
         RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
@@ -150,7 +193,43 @@ Resources:
           'Fn::Sub': "${HostedZoneStackName}-ZoneId"
         EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
+
+  ECSServices:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./services-template.yaml
+      Parameters:
+        KeyName: !Ref 'KeyName'
+        VPCId: !Ref 'VPCId'
+        PrivateSubnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        InstanceType: !Ref 'InstanceType'
+        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
+        EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
+        ASGMinSize: !Ref 'ServicesASGMinSize'
+        ASGMaxSize: !Ref 'ServicesASGMaxSize'
+        ASGDesiredCapacity: !Ref 'ServicesASGDesiredCapacity'
+        RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
+        ASGEventsTopic: !Ref 'ASGEventsTopic'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
+        CertificateArn: !Ref 'CertificateArn'
+        TargetGroupPrefix: !Ref 'TargetGroupPrefix'
+        InternalCidr0: !Ref 'InternalCidr0'
+        InternalCidr1: !Ref 'InternalCidr1'
+        InternalCidr2: !Ref 'InternalCidr2'
+        KinesisStackName: !Ref 'KinesisStackName'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+        StackName: !Ref 'AWS::StackName'
+        BastionSG: !Ref 'BastionSG'
+    DependsOn: 'ECSBrokers'
+
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -166,7 +245,7 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
-        ECSInstanceSecurityGroup: !GetAtt 'ECSZK.Outputs.InstanceSecurityGroup'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: 'ECSZK'
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
@@ -185,8 +264,15 @@ Resources:
         DomainName: !ImportValue
           'Fn::Sub': "${HostedZoneStackName}-ZoneName"
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
-        ECSInstanceSecurityGroup: !GetAtt 'ECSBrokers.Outputs.InstanceSecurityGroup'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: ['ECSBrokers', 'Zookeeper']
+
+  InternalSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref 'VPCId'
+      GroupDescription: Allow connections from vpc
+
 Outputs:
   ClientKafkaSG:
     Description: Allows Client Access to Kafka Brokers

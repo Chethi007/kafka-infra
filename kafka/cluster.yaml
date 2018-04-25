@@ -28,16 +28,16 @@ Parameters:
   JMXPort:
     Description: JMX Port to expose metrics on
     Type: Number
-    Default: 8989    
+    Default: 8989
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
     Type: String
   ZookeeperSecurityGroup:
     Description: Security Group to allow access to ZK
     Type: String
-  ECSInstanceSecurityGroup:
-    Description: Security Group ID of the ECS Instances to allow JMX ingress for this component
-    Type: String    
+  InternalSG:
+    Description: Security Group ID of the ECS Instances to allow JMX and client port ingress for this component
+    Type: String
   Cpu:
     Description: Amount of CPU to reserve
     Type: Number
@@ -65,7 +65,7 @@ Parameters:
   DomainName:
     Description: The domain name for Kafka brokers
     Type: String
-    
+
 Resources:
   BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -131,14 +131,22 @@ Resources:
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalKafkaSG'
-  ECSInstanceSGIngressJMXRule:
+  InternalSGIngressJMXRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
       FromPort: !Ref 'JMXPort'
       ToPort: !Ref 'JMXPort'
       GroupId: !Ref 'InternalKafkaSG'
-      SourceSecurityGroupId: !Ref 'ECSInstanceSecurityGroup'
+      SourceSecurityGroupId: !Ref 'InternalSG'
+  InternalSGClientIngressRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'ClientPort'
+      ToPort: !Ref 'ClientPort'
+      GroupId: !Ref 'InternalKafkaSG'
+      SourceSecurityGroupId: !Ref 'InternalSG'
   Broker1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -197,7 +205,7 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        JMXPort: !Ref 'JMXPort'        
+        JMXPort: !Ref 'JMXPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]

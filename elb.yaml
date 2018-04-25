@@ -192,3 +192,6 @@ Outputs:
   LoadBalancerFullName:
     Description: The full name of the app load balancer
     Value: !GetAtt [LoadBalancer, LoadBalancerFullName]
+  ELBSecurityGroupId:
+    Description: The id of the ELB Security Group
+    Value: !GetAtt [LoadBalancerSecurityGroup, GroupId]
