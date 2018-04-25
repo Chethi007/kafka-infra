@@ -45,7 +45,7 @@ Parameters:
     Default: true
     ConstraintDescription: Must be either 'true' or 'false'
   AdditionalSecurityGroup:
-    Type: AWS::EC2::SecurityGroup::Id
+    Type: String
     Description: Additional security group to add ECS instances to
     Default: ''
 
