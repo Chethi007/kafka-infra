@@ -56,7 +56,7 @@ services:
       KAFKA_REST_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
       KAFKA_REST_ID: 'rest-a'
-      KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-connect-metrics.yml'
+      KAFKAREST_JMX_OPTS: '-javaagent:/usr/local/share/jmx_prometheus_javaagent-0.3.0.jar=9404:/usr/local/share/kafka-rest-metrics.yml'
 #     KAFKA_REST_JMX_PORT: 8989
 
   prometheus:

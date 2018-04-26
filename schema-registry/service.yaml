@@ -405,26 +405,18 @@ Outputs:
   Service:
     Description: The name of the ECS service created
     Value: !GetAtt 'Service.Name'
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceName'
   TaskFamily:
     Description: The family of the task created for the service
     Value: !Ref 'AWS::StackName'
   TaskArn:
     Description: The ARN of the task created for the service
     Value: !Ref 'TaskDefinition'
-  ServiceDNS:
-    Description: The dns name of the service
-    Value: !Ref 'DNSRecord'
-    Export:
-      Name: !Sub '${AWS::StackName}-DNSName'
-  UIDNS:
-    Description: The dns name of the UI for the service
-    Value: !Ref 'DNSRecordUI'
-    Export:
-      Name: !Sub '${AWS::StackName}-DNSNameUI'
+  URL:
+    Description: The URL at which the service is available
+    Value: !Sub 'https://${DNSRecord}'
+  UIURL:
+    Description: The URL at which the schema registry UI is available
+    Value: !Sub 'https://${DNSRecordUI}'
   LogGroup:
     Description: The name of the log group created for the app
     Value: !Ref 'LogGroup'
-    Export:
-      Name: !Sub '${AWS::StackName}-LogGroupName'

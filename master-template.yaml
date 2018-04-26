@@ -190,7 +190,7 @@ Resources:
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
 
-  ECSServices:
+  Services:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./services-template.yaml
@@ -219,6 +219,7 @@ Resources:
         KinesisStackName: !Ref 'KinesisStackName'
         HostedZoneStackName: !Ref 'HostedZoneStackName'
         ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
+        KafkaConnectionString: !GetAtt 'Brokers.Outputs.ConnectionString'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
         StackName: !Ref 'AWS::StackName'
         BastionSG: !Ref 'BastionSG'
@@ -291,6 +292,21 @@ Outputs:
     Value: !GetAtt 'Brokers.Outputs.ConnectionString'
     Export:
       Name: !Sub '${AWS::StackName}-KafkaConnectionString'
+  SchemaRegistryURL:
+    Description: 'The URL for Kafka Schema Registry'
+    Value: !GetAtt 'Services.Outputs.SchemaRegistryURL'
+    Export:
+      Name: !Sub '${AWS::StackName}-SchemaRegistryURL'      
+  SchemaRegistryUIURL:
+    Description: 'The URL for Kafka Schema Registry'
+    Value: !GetAtt 'Services.Outputs.SchemaRegistryUIURL'
+    Export:
+      Name: !Sub '${AWS::StackName}-SchemaRegistryUIURL'      
+  RestProxyURL:
+    Description: 'The URL for Kafka Rest Proxy'
+    Value: !GetAtt 'Services.Outputs.KafkaRestURL'
+    Export:
+      Name: !Sub '${AWS::StackName}-KafkaRestURL'      
   VpcId:
     Description: "Cluster's VPC Id"
     Value: !Ref 'VPCId'
