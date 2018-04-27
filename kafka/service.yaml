@@ -79,7 +79,7 @@ Resources:
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
           - Name: KAFKA_JMX_HOSTNAME
-            Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
+            Value: 'localhost'
           - Name: KAFKA_JMX_PORT
             Value: !Ref 'JMXPort'
           - Name: KAFKA_LOG4J_LOGGERS

@@ -91,7 +91,7 @@ Resources:
           - Name: ZOOKEEPER_SYNC_LIMIT
             Value: 2
           - Name: KAFKA_JMX_HOSTNAME
-            Value: !Sub '${ServerName}.${DomainName}'
+            Value: 'localhost'
           - Name: KAFKA_JMX_PORT
             Value: !Ref 'JMXPort'
         PortMappings:
