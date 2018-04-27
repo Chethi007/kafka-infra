@@ -125,6 +125,9 @@ Parameters:
   ZookeeperConnectionString:
     Description: 'Comma delimited list of Zookeeper node addresses'
     Type: String
+  KafkaConnectionString:
+    Description: 'Comma delimited list of Kafka broker addresses'
+    Type: String
   InternalSG:
     Description: Security Group for internal access
     Type: AWS::EC2::SecurityGroup::Id
@@ -192,10 +195,39 @@ Resources:
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
-        AppName: !Join ["-", [!Ref 'StackName', 'schema-registry']]
+        AppName: !Join ['-', [!Ref 'StackName', 'schema-registry']]
     DependsOn: 'ECS'
 
+  RestProxy:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./kafka-rest/service.yaml
+      Parameters:
+        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        AppName: !Join ['-', [!Ref 'StackName', 'rest-proxy']]
+        Priority: '103'
+        KinesisStackName: !Ref 'KinesisStackName'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        Listener: !GetAtt 'ELB.Outputs.Listener'
+        VpcId: !Ref 'VPCId'
+        EcsServiceRole: !GetAtt 'ECS.Outputs.ServiceRole'
+        LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
+        LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        KafkaConnectionString: !Ref 'KafkaConnectionString'
+        SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
+    DependsOn: 'SchemaRegistry'
+
 Outputs:
+  SchemaRegistryURL:
+    Description: The URL for the Schema Registry
+    Value: !GetAtt 'SchemaRegistry.Outputs.URL'
+  SchemaRegistryUIURL:
+    Description: The URL for the Schema Registry UI
+    Value: !GetAtt 'SchemaRegistry.Outputs.UIURL'
+  KafkaRestURL:
+    Description: The URL for the Kafka Rest Proxy
+    Value: !GetAtt 'RestProxy.Outputs.URL'    
   Listener:
     Description: The ARN of the load balancer's listener
     Value: !GetAtt 'ELB.Outputs.Listener'
