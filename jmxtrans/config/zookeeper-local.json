@@ -8,7 +8,7 @@
       "queries": [
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*",
-          "resultAlias": "Zookeeper_Server",
+          "resultAlias": "zookeeper-server",
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -21,7 +21,7 @@
         },
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*",
-          "resultAlias": "Zookeeper_Clients",
+          "resultAlias": "zookeeper-clients",
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -34,7 +34,7 @@
         },
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*,name3=InMemoryDataTree",
-          "resultAlias": "Zookeeper_InMemoryDataTree",
+          "resultAlias": "zookeeper-in-memory-data-tree",
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -47,7 +47,7 @@
         },
         {
           "obj": "java.lang:type=Memory",
-          "resultAlias": "JVM_Memory",
+          "resultAlias": "jvm-memory",
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -60,7 +60,7 @@
         },
         {
           "obj": "java.lang:type=Threading",
-          "resultAlias": "JVM_Threading",
+          "resultAlias": "jvm-threading",
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
