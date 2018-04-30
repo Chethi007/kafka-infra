@@ -63,12 +63,17 @@ for i in ${!host_groups[@]}; do
         host_alias=${alias_array[j]}
         host_alias=${host_alias:-${host_name}}
 
+        if [[ "${JMXTRANS_ENV}" == "aws" ]]; then
+            host_az=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+        fi
+
         # Figure out the destination path based on type and host name
         dest_config=/var/lib/jmxtrans/${host_type}-${host_name}.json
 
         echo "  - host_name='${host_name}'"
         echo "    host_port='${host_port}'"
         echo "    host_alias='${host_alias}'"
+        echo "    host_az='${host_az}'"
         echo "    dest_config='${dest_config}'"
 
         # Copy the template
@@ -79,6 +84,7 @@ for i in ${!host_groups[@]}; do
             -e "s/{ALIAS}/${host_alias}/g" \
             -e "s/{HOSTNAME}/${host_name}/g" \
             -e "s/{HOSTPORT}/${host_port}/g" \
+            -e "s/{AZ}/${host_az}/g" \
             ${dest_config}
     done;
 done;

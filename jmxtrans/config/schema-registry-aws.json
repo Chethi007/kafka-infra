@@ -12,11 +12,15 @@
           "typeNames": ["node-id"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer-node.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -25,11 +29,15 @@
           "resultAlias": "consumer-coordinator",
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer-coordinator.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerCoordinatorMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -38,11 +46,15 @@
           "resultAlias": "consumer",
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -52,11 +64,15 @@
           "typeNames": ["node-id"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer-fetch-manager.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -66,11 +82,15 @@
           "typeNames": ["client-id", "node-id"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer-node.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ProducerNodeMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -80,11 +100,15 @@
           "typeNames": ["client-id"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer-topic.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ProducerTopicMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -94,11 +118,15 @@
           "typeNames": ["client-id"],
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ProducerMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -107,11 +135,15 @@
           "resultAlias": "producer",
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.jersey.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "JerseyMetrics"}
+                ]
+              }
             }
           ]
         },
@@ -120,11 +152,14 @@
           "resultAlias": "JVM_Memory",
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schame-registry.jvm-memory.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                ]
+              }
             }
           ]
         },
@@ -133,11 +168,14 @@
           "resultAlias": "JVM_Threading",
           "outputWriters": [
             {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.jvm-threading.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Schema Registry",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                ]
+              }
             }
           ]
         }
