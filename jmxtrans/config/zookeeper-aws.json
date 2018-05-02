@@ -54,6 +54,7 @@
         {
           "obj": "java.lang:type=Memory",
           "resultAlias": "jvm-memory",
+          "attr": ["HeapMemoryUsage", "NonHeapMemoryUsage"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
@@ -69,6 +70,7 @@
         {
           "obj": "java.lang:type=Threading",
           "resultAlias": "jvm-threading",
+          "attr": ["ThreadCount"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
