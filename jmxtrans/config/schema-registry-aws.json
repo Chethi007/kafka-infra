@@ -61,7 +61,6 @@
         {
           "obj": "kafka.consumer:client-id=KafkaStore-reader-_schemas,topic=_schemas,type=consumer-fetch-manager-metrics",
           "resultAlias": "consumer-fetch-manager",
-          "typeNames": ["node-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",

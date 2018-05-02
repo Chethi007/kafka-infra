@@ -191,7 +191,7 @@ Resources:
           - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_ORIGIN
             Value: "*"
           - Name: SCHEMA_REGISTRY_JMX_HOSTNAME
-            Value: localhost
+            Value: !Ref 'AppName'
           - Name: SCHEMA_REGISTRY_JMX_PORT
             Value: !Ref 'JMXPort'
           - Name: SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS
@@ -200,13 +200,14 @@ Resources:
         Image: loyaltyone/jmxtrans:0.1-beta
         Cpu: '512'
         MemoryReservation: '2048'
+        Links: [!Ref 'AppName']
         Environment:
           - Name: SECONDS_BETWEEN_RUNS
             Value: 60
           - Name: JMXTRANS_ENV
             Value: aws
           - Name: JMXTRANS_HOSTS
-            Value: !Sub 'schema-registry#localhost:${JMXPort}'
+            Value: !Sub 'schema-registry#${AppName}:${JMXPort}'
           - Name: JMXTRANS_ALIASES
             Value: 'localhost'
         LogConfiguration:
