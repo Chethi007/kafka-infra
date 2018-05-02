@@ -9,6 +9,7 @@
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*",
           "resultAlias": "zookeeper-server",
+          "attr": ["QuorumSize"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
@@ -24,6 +25,20 @@
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*",
           "resultAlias": "zookeeper-clients",
+          "attr": [
+            "MaxClientCnxnsPerHost",
+            "MaxRequestLatency",
+            "AvgRequestLatency",
+            "MinRequestLatency",
+            "MaxSessionTimeout",
+            "MinSessionTimeout",
+            "OutstandingRequests",
+            "PacketsReceived",
+            "PacketsSent",
+            "PendingRevalidationCount",
+            "TickTime",
+            "NumAliveConnections"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
@@ -39,6 +54,7 @@
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*,name3=InMemoryDataTree",
           "resultAlias": "zookeeper-in-memory-data-tree",
+          "attr": ["NodeCount", "WatchCount"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",

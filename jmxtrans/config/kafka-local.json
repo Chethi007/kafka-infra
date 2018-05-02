@@ -9,6 +9,7 @@
         {
           "obj": "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -17,11 +18,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -30,11 +32,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -48,6 +51,7 @@
         {
           "obj": "kafka.server:type=ReplicaManager,name=LeaderCount",
           "resultAlias": "kafka-server",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -61,6 +65,7 @@
         {
           "obj": "kafka.server:type=ReplicaManager,name=PartitionCount",
           "resultAlias": "kafka-server",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -69,11 +74,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=ReplicaManager,name=FailedIsrUpdatesPerSec",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -87,6 +93,7 @@
         {
           "obj": "kafka.server:type=ReplicaManager,name=IsrShrinksPerSec",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -95,11 +102,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=ReplicaManager,name=IsrExpandsPerSec",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -113,6 +121,7 @@
         {
           "obj": "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions",
           "resultAlias": "kafka-server",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -121,11 +130,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica",
           "resultAlias": "kafka-server",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -134,11 +144,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Produce",
           "resultAlias": "kafka-server",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -152,6 +163,7 @@
         {
           "obj": "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Fetch",
           "resultAlias": "kafka-server",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -165,6 +177,7 @@
         {
           "obj": "kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent",
           "resultAlias": "kafka-server",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -178,6 +191,7 @@
         {
           "obj": "kafka.server:type=Produce",
           "resultAlias": "kafka-server",
+          "attr": ["queue-size"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -186,11 +200,12 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.server:type=Fetch",
           "resultAlias": "kafka-server",
+          "attr": ["queue-size"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -204,6 +219,7 @@
         {
           "obj": "kafka.server:type=Request",
           "resultAlias": "kafka-server",
+          "attr": ["queue-size"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -217,6 +233,7 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -230,6 +247,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -238,11 +259,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=LocalTimeMs,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -256,6 +281,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RemoteTimeMs,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -269,6 +298,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -282,6 +315,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -295,6 +332,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs,request=Produce",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -303,11 +344,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -316,11 +361,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=LocalTimeMs,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -334,6 +383,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RemoteTimeMs,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -347,6 +400,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -360,6 +417,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -373,6 +434,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -386,6 +451,7 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchConsumer",
           "resultAlias": "kafka-network",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -394,11 +460,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -407,11 +477,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=LocalTimeMs,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -420,11 +494,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=RemoteTimeMs,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -438,6 +516,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -451,6 +533,10 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -459,11 +545,15 @@
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
             }
-         ]
+          ]
         },
         {
           "obj": "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": [
+            "FiveMinuteRate", "MeanRate", "OneMinuteRate", "FifteenMinuteRate", "Min", "Max", "Count", "StdDev",
+            "Mean", "50thPercentile", "75thPercentile", "95thPercentile", "98thPercentile", "99thPercentile", "999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -477,6 +567,7 @@
         {
           "obj": "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchFollower",
           "resultAlias": "kafka-network",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -490,6 +581,7 @@
         {
           "obj": "kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent",
           "resultAlias": "kafka-network",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -503,6 +595,7 @@
         {
           "obj": "kafka.controller:type=KafkaController,name=ActiveControllerCount",
           "resultAlias": "kafka-controller",
+          "attr": ["Value"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -516,6 +609,10 @@
         {
           "obj": "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs",
           "resultAlias": "kafka-controller",
+          "attr": [
+            "FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate","Min","Max","Count","StdDev","Mean",
+            "50thPercentile","75thPercentile","95thPercentile","98thPercentile","99thPercentile","999thPercentile"
+          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -529,6 +626,7 @@
         {
           "obj": "kafka.controller:type=ControllerStats,name=UncleanLeaderElectionsPerSec",
           "resultAlias": "kafka-controller",
+          "attr": ["Count","FiveMinuteRate","MeanRate","OneMinuteRate","FifteenMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
