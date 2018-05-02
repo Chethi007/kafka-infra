@@ -8,7 +8,7 @@
       "queries": [
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*",
-          "resultAlias": "Zookeeper_Server",
+          "resultAlias": "zookeeper-server",
           "attr": ["QuorumSize"],
           "outputWriters": [
             {
@@ -24,7 +24,7 @@
         },
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*",
-          "resultAlias": "Zookeeper_Clients",
+          "resultAlias": "zookeeper-clients",
           "attr": [
             "MaxClientCnxnsPerHost",
             "MaxRequestLatency",
@@ -53,7 +53,7 @@
         },
         {
           "obj": "org.apache.ZooKeeperService:name0=ReplicatedServer_id*,name1=*,name2=*,name3=InMemoryDataTree",
-          "resultAlias": "Zookeeper_InMemoryDataTree",
+          "resultAlias": "zookeeper-in-memory-data-tree",
           "attr": ["NodeCount", "WatchCount"],
           "outputWriters": [
             {
@@ -69,7 +69,7 @@
         },
         {
           "obj": "java.lang:type=Memory",
-          "resultAlias": "JVM_Memory",
+          "resultAlias": "jvm-memory",
           "attr": ["HeapMemoryUsage", "NonHeapMemoryUsage"],
           "outputWriters": [
             {
@@ -85,7 +85,7 @@
         },
         {
           "obj": "java.lang:type=Threading",
-          "resultAlias": "JVM_Threading",
+          "resultAlias": "jvm-threading",
           "attr": ["ThreadCount"],
           "outputWriters": [
             {

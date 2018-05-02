@@ -49,10 +49,7 @@ services:
   k1:
     image: confluentinc/cp-kafka:latest
     container_name: k1
-    depends_on:
-      - zk1
-      - zk2
-      - zk3
+    depends_on: [zk1,zk2,zk3]
     ports:
       - '19092:19092'
     environment:
@@ -65,10 +62,7 @@ services:
   k2:
     image: confluentinc/cp-kafka:latest
     container_name: k2
-    depends_on:
-      - zk1
-      - zk2
-      - zk3
+    depends_on: [zk1,zk2,zk3]
     ports:
       - '29092:29092'
     environment:
@@ -81,10 +75,7 @@ services:
   k3:
     image: confluentinc/cp-kafka:latest
     container_name: k3
-    depends_on:
-      - zk1
-      - zk2
-      - zk3
+    depends_on: [zk1,zk2,zk3]
     ports:
       - '39092:39092'
     environment:
@@ -94,23 +85,31 @@ services:
       KAFKA_JMX_PORT: 8989
       KAFKA_JMX_HOSTNAME: k3
 
+  sr:
+    build: ../schema-registry
+    container_name: sr
+    hostname: sr
+    depends_on: [zk1,zk2,zk3,k1,k2,k3]
+    ports:
+      - '8081:8081'
+      - '8989:8989'
+    volumes:
+      - ./data:/usr/local/share/data
+    environment:
+      APP_HOST: sr
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zk1:22181,zk2:32181,zk3:42181'
+      SCHEMA_REGISTRY_JMX_PORT: 8989
+      SCHEMA_REGISTRY_JMX_HOSTNAME: sr
+
   jmxtrans:
     build:
       context: .
       args:
         JMXTRANS_VERSION: 270
     container_name: jmxtrans
-    depends_on:
-      - zk1
-      - zk2
-      - zk3
-      - k1
-      - k2
-      - k3
-    volumes:
-      - ~/.aws:/root/.aws
+    depends_on: [zk1,zk2,zk3,k1,k2,k3,sr]
     environment:
       SECONDS_BETWEEN_RUNS: 10
       JMXTRANS_ENV: local
-      JMXTRANS_HOSTS: zookeeper#zk1:8989,zk2:8989,zk3:8989|kafka#k1:8989,k2:8989,k3:8989
-      JMXTRANS_ALIASES: zookeeper1,zookeeper2,zookeeper3|broker1,broker2,broker3
+      JMXTRANS_HOSTS: zookeeper#zk1:8989,zk2:8989,zk3:8989|kafka#k1:8989,k2:8989,k3:8989|schema-registry#sr:8989
+      JMXTRANS_ALIASES: zookeeper1,zookeeper2,zookeeper3|broker1,broker2,broker3|schema-registry

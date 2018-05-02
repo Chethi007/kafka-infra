@@ -47,6 +47,10 @@ Parameters:
     Type: Number
     Description: Percentage of service memory utilization that is considered low
     Default: '15'
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989
   LogRetention:
     Type: Number
     Description: Number of days to retain logs in CWL
@@ -161,31 +165,57 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-schema-registry:0.1-beta
-          Cpu: !Ref 'Cpu'
-          PortMappings:
-            - ContainerPort: !Ref 'AppContainerPort'
-              HostPort: 0
-          MemoryReservation: !Ref 'Memory'
-          Essential: 'true'
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref 'LogGroup'
-              awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: ecs
-          Environment:
-            - Name: APP_PORT
-              Value: 8081
-            - Name: SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL
-              Value: !Ref 'ZookeeperConnectionString'
-            - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_METHODS
-              Value: GET,POST,PUT,OPTIONS
-            - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_ORIGIN
-              Value: "*"
-            - Name: SCHEMA_REGISTRY_JMX_PORT
-              Value: 8989
+      - Name: !Ref 'AppName'
+        Image: loyaltyone/cp-schema-registry:0.1-beta
+        Cpu: !Ref 'Cpu'
+        PortMappings:
+          - ContainerPort: !Ref 'AppContainerPort'
+            HostPort: 0
+          - ContainerPort: !Ref 'JMXPort'
+            HostPort: !Ref 'JMXPort'
+        MemoryReservation: !Ref 'Memory'
+        Essential: 'true'
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: ecs
+        Environment:
+          - Name: APP_PORT
+            Value: !Ref 'AppContainerPort'
+          - Name: SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL
+            Value: !Ref 'ZookeeperConnectionString'
+          - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_METHODS
+            Value: GET,POST,PUT,OPTIONS
+          - Name: SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_ORIGIN
+            Value: "*"
+          - Name: SCHEMA_REGISTRY_JMX_HOSTNAME
+            Value: !Ref 'AppName'
+          - Name: SCHEMA_REGISTRY_JMX_PORT
+            Value: !Ref 'JMXPort'
+          - Name: SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS
+            Value: 3
+      - Name: jmxtrans
+        Image: loyaltyone/jmxtrans:0.1-beta
+        Cpu: '512'
+        MemoryReservation: '2048'
+        Links: [!Ref 'AppName']
+        Environment:
+          - Name: SECONDS_BETWEEN_RUNS
+            Value: 60
+          - Name: JMXTRANS_ENV
+            Value: aws
+          - Name: JMXTRANS_HOSTS
+            Value: !Sub 'schema-registry#${AppName}:${JMXPort}'
+          - Name: JMXTRANS_ALIASES
+            Value: 'localhost'
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'LogGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Sub 'schema-registry'
       Volumes: []
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'
