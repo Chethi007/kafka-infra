@@ -220,6 +220,26 @@ Resources:
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
     DependsOn: 'SchemaRegistry'
 
+  Connect:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./kafka-connect/service.yaml
+      Parameters:
+        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        Priority: '104'
+        AppName: !Join ["-", [!Ref 'StackName', 'connect']]
+        KinesisStackName: !Ref 'KinesisStackName'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        TrustedCertsBucket: 'dev-cassandra-configuration'
+        Listener: !GetAtt 'ELB.Outputs.Listener'
+        VpcId: !Ref 'VPCId'
+        EcsServiceRole: !GetAtt 'ECS.Outputs.ServiceRole'
+        LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
+        LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        KafkaConnectionString: !Ref 'KafkaConnectionString'
+    DependsOn: 'SchemaRegistry'
+
 Outputs:
   SchemaRegistryURL:
     Description: The URL for the Schema Registry
@@ -229,7 +249,10 @@ Outputs:
     Value: !GetAtt 'SchemaRegistry.Outputs.UIURL'
   KafkaRestURL:
     Description: The URL for the Kafka Rest Proxy
-    Value: !GetAtt 'RestProxy.Outputs.URL'    
+    Value: !GetAtt 'RestProxy.Outputs.URL'
+  KafkaConnectURL:
+    Description: The URL for the Kafka Connect
+    Value: !GetAtt 'Connect.Outputs.URL'
   Listener:
     Description: The ARN of the load balancer's listener
     Value: !GetAtt 'ELB.Outputs.Listener'

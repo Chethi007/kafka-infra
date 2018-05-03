@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates a service / task def for Kafka REST Proxy
+Description: Creates a service / task def for Kafka Connect
 Parameters:
   Cluster:
     Description: Name of an active CloudFormation stack that contains an ECS cluster
@@ -13,15 +13,14 @@ Parameters:
   AppContainerPort:
     Type: Number
     Description: Port the app runs on in the image
-    Default: '8082'
+    Default: '8083'
   AppName:
     Type: String
-    Description: Name of app
-    Default: cp-kafka-rest  
+    Description: Name of app. Should be the same as docker repository name.
   Memory:
     Type: Number
     Description: Soft memory on container
-    Default: '1280'
+    Default: '1024'
   Cpu:
     Type: Number
     Description: cpu unites on container
@@ -33,7 +32,7 @@ Parameters:
   AppMaxCount:
     Type: Number
     Description: Max number of instances of the service to scale out to
-    Default: '1'
+    Default: '3'
   AppMinCount:
     Type: Number
     Description: Min number of instances of the service to scale in to
@@ -54,21 +53,24 @@ Parameters:
     Type: Number
     Description: Number of days to retain logs in CWL
     Default: '14'
-  VpcId:
-    Description: Choose which VPC this cluster should be deployed to
-    Type: AWS::EC2::VPC::Id
-  EcsServiceRole:
-    Description: The Service role used by ECS
-    Type: String        
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
   HostedZoneStackName:
     Type: String
     Description: The Hosted Zone stack name to create the service's record set in
+  TrustedCertsBucket:
+    Type: String
+    Description: The S3 bucket where the trusted certs are available
   Listener:
     Description: ARN of the listener
-    Type: String    
+    Type: String
+  VpcId:
+    Description: Choose which VPC this cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  EcsServiceRole:
+    Description: The Service role used by ECS
+    Type: String
   LoadBalancerCanonicalHostedZoneID:
     Description: Hosted Zone ID for the load balancer
     Type: String
@@ -81,10 +83,7 @@ Parameters:
   KafkaConnectionString:
     Description: 'Comma delimited list of Kafka broker addresses'
     Type: String
-  SchemaRegistryUrl:
-    Description: 'URL of the Kafka Schema Registry. Must include protocol'
-    Type: String  
-        
+
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -92,7 +91,7 @@ Resources:
       HealthCheckIntervalSeconds: 10
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
-      HealthCheckPath: /
+      HealthCheckPath: !Sub '/connector-plugins'
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: 200-299
@@ -130,13 +129,20 @@ Resources:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
       Path: /
-      Policies: []
+      Policies:
+        - PolicyName: S3-Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::${TrustedCertsBucket}/*'
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-kafka-rest:0.1-beta
+          Image: loyaltyone/cp-kafka-connect:0.1-beta
           Cpu: !Ref 'Cpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -154,15 +160,39 @@ Resources:
           Environment:
             - Name: APP_PORT
               Value: !Ref 'AppContainerPort'
-            - Name: KAFKA_REST_ZOOKEEPER_CONNECT
+            - Name: CONNECT_ZOOKEEPER_CONNECT
               Value: !Ref 'ZookeeperConnectionString'
-            - Name: KAFKA_REST_BOOTSTRAP_SERVERS
+            - Name: CONNECT_BOOTSTRAP_SERVERS
               Value: !Ref 'KafkaConnectionString'
-            - Name: KAFKA_REST_SCHEMA_REGISTRY_URL
-              Value: !Ref 'SchemaRegistryUrl'
-            - Name: KAFKA_REST_JMX_HOSTNAME
+            - Name: CONNECT_GROUP_ID
+              Value: kafka-connect-group
+            - Name: CONNECT_PLUGIN_PATH
+              Value: /usr/local/share/kafka/plugins
+            - Name: CONNECT_CONFIG_STORAGE_TOPIC
+              Value: kafka-connect-configs
+            - Name: CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR
+              Value: 3
+            - Name: CONNECT_OFFSET_FLUSH_INTERVAL_MS
+              Value: 10000
+            - Name: CONNECT_OFFSET_STORAGE_TOPIC
+              Value: kafka-connect-offsets
+            - Name: CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR
+              Value: 3
+            - Name: CONNECT_STATUS_STORAGE_TOPIC
+              Value: kafka-connect-status
+            - Name: CONNECT_STATUS_STORAGE_REPLICATION_FACTOR
+              Value: 3
+            - Name: CONNECT_KEY_CONVERTER
+              Value: org.apache.kafka.connect.json.JsonConverter
+            - Name: CONNECT_VALUE_CONVERTER
+              Value: org.apache.kafka.connect.json.JsonConverter
+            - Name: CONNECT_INTERNAL_KEY_CONVERTER
+              Value: org.apache.kafka.connect.json.JsonConverter
+            - Name: CONNECT_INTERNAL_VALUE_CONVERTER
+              Value: org.apache.kafka.connect.json.JsonConverter
+            - Name: KAFKA_JMX_HOSTNAME
               Value: !Ref 'AppName'
-            - Name: KAFKA_REST_JMX_PORT
+            - Name: KAFKA_JMX_PORT
               Value: !Ref 'JMXPort'
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.1-beta
@@ -175,7 +205,7 @@ Resources:
             - Name: JMXTRANS_ENV
               Value: aws
             - Name: JMXTRANS_HOSTS
-              Value: !Sub 'kafka-rest#${AppName}:${JMXPort}'
+              Value: !Sub 'kafka-connect#${AppName}:${JMXPort}'
             - Name: JMXTRANS_ALIASES
               Value: 'localhost'
           LogConfiguration:
@@ -183,7 +213,7 @@ Resources:
             Options:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: !Sub 'kafka-rest-proxy'
+              awslogs-stream-prefix: !Sub 'kafka-connect'
       Volumes: []
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'
@@ -199,7 +229,7 @@ Resources:
       DesiredCount: !Ref 'AppDesiredCount'
       LoadBalancers:
         - TargetGroupArn: !Ref 'TargetGroup'
-          ContainerPort: '8082'
+          ContainerPort: !Ref 'AppContainerPort'
           ContainerName: !Ref 'AppName'
       Cluster: !Ref 'Cluster'
       PlacementStrategies:
@@ -235,21 +265,27 @@ Resources:
             Action: sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
   ScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       MaxCapacity: !Ref 'AppMaxCount'
       MinCapacity: !Ref 'AppMinCount'
-      ResourceId: !Join [/, [service, !Ref 'Cluster',
-          !GetAtt [Service, Name]]]
-      RoleARN: !GetAtt [EcsAutoScaleRole, Arn]
+      ResourceId: !Join
+        - /
+        - - service
+          - !Ref 'Cluster'
+          - !GetAtt 'Service.Name'
+      RoleARN: !GetAtt 'EcsAutoScaleRole.Arn'
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
   ScaleUpPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: !Join ['-', [!GetAtt [Service, Name], ScaleUpPolicy]]
+      PolicyName: !Join
+        - '-'
+        - - !GetAtt 'Service.Name'
+          - ScaleUpPolicy
       PolicyType: StepScaling
       ScalingTargetId: !Ref 'ScalableTarget'
       StepScalingPolicyConfiguration:
@@ -257,15 +293,18 @@ Resources:
         Cooldown: 60
         MetricAggregationType: Average
         StepAdjustments:
-        - MetricIntervalLowerBound: 0
-          MetricIntervalUpperBound: 10
-          ScalingAdjustment: 10
-        - MetricIntervalLowerBound: 10
-          ScalingAdjustment: 30
+          - MetricIntervalLowerBound: 0
+            MetricIntervalUpperBound: 10
+            ScalingAdjustment: 10
+          - MetricIntervalLowerBound: 10
+            ScalingAdjustment: 30
   ScaleDownPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: !Join ['-', [!GetAtt [Service, Name], ScaleDownPolicy]]
+      PolicyName: !Join
+        - '-'
+        - - !GetAtt 'Service.Name'
+          - ScaleDownPolicy
       PolicyType: StepScaling
       ScalingTargetId: !Ref 'ScalableTarget'
       StepScalingPolicyConfiguration:
@@ -273,17 +312,17 @@ Resources:
         Cooldown: 60
         MetricAggregationType: Average
         StepAdjustments:
-        - MetricIntervalLowerBound: -10
-          MetricIntervalUpperBound: 0
-          ScalingAdjustment: -10
-        - MetricIntervalUpperBound: -10
-          ScalingAdjustment: -30
+          - MetricIntervalLowerBound: -10
+            MetricIntervalUpperBound: 0
+            ScalingAdjustment: -10
+          - MetricIntervalUpperBound: -10
+            ScalingAdjustment: -30
   CpuUtilAlarmHigh:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Cpu utilization alarm for ECS service for high cpu usage
       AlarmActions:
-      - !Ref 'ScaleUpPolicy'
+        - !Ref 'ScaleUpPolicy'
       MetricName: CPUUtilization
       Namespace: AWS/ECS
       Statistic: Average
@@ -292,16 +331,16 @@ Resources:
       Threshold: !Ref 'AutoScaleHighThreshold'
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
-      - Name: ClusterName
-        Value: !Ref 'Cluster'
-      - Name: ServiceName
-        Value: !GetAtt [Service, Name]
+        - Name: ClusterName
+          Value: !Ref 'Cluster'
+        - Name: ServiceName
+          Value: !GetAtt 'Service.Name'
   CpuUtilAlarmLow:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Cpu utilization alarm for ECS service for low cpu usage
       AlarmActions:
-      - !Ref 'ScaleDownPolicy'
+        - !Ref 'ScaleDownPolicy'
       MetricName: CPUUtilization
       Namespace: AWS/ECS
       Statistic: Average
@@ -310,10 +349,10 @@ Resources:
       Threshold: !Ref 'AutoScaleLowThreshold'
       ComparisonOperator: LessThanThreshold
       Dimensions:
-      - Name: ClusterName
-        Value: !Ref 'Cluster'
-      - Name: ServiceName
-        Value: !GetAtt [Service, Name]
+        - Name: ClusterName
+          Value: !Ref 'Cluster'
+        - Name: ServiceName
+          Value: !GetAtt 'Service.Name'
   DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -333,7 +372,7 @@ Resources:
 Outputs:
   Service:
     Description: The name of the ECS service created
-    Value: !GetAtt [Service, Name]
+    Value: !GetAtt 'Service.Name'
   TaskFamily:
     Description: The family of the task created for the service
     Value: !Ref 'AWS::StackName'
