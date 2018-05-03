@@ -7,27 +7,6 @@
       "numQueryThreads" : 2,
       "queries": [
         {
-          "obj": "kafka.admin.client:client-id=*,node-id=*,type=connect-node-metrics",
-          "resultAlias": "connect-node",
-          "attr": [
-            "response-total", "request-latency-avg", "request-total"
-          ],
-          "typeNames": ["client-id", "node-id"],
-          "outputWriters": [
-            {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Kafka Rest Proxy",
-                "dimensions": [
-                  {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConnectNodeMetrics"}
-                ]
-              }
-            }
-          ]
-        },
-        {
           "obj": "kafka.connect:client-id=*,type=connect-coordinator-metrics",
           "resultAlias": "connect-coordinator",
           "attr": [
@@ -39,7 +18,7 @@
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -53,16 +32,14 @@
           "obj": "kafka.connect:client-id=*,type=connect-metrics",
           "resultAlias": "connect",
           "attr": [
-            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio",
-            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total",
-            "request-size-avg", "request-total", "response-total", "select-total"
+            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio"
           ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -73,43 +50,21 @@
           ]
         },
         {
-          "obj": "kafka.consumer:client-id=*,node-id=*,type=consumer-node-metrics",
-          "resultAlias": "consumer-node",
+          "obj": "kafka.connect:client-id=*,type=connect-metrics",
+          "resultAlias": "connect",
           "attr": [
-            "response-total", "request-latency-avg", "request-total"
-          ],
-          "typeNames": ["client-id", "node-id"],
-          "outputWriters": [
-            {
-              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
-              "settings": {
-                "namespace": "Kafka Rest Proxy",
-                "dimensions": [
-                  {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "obj": "kafka.consumer:client-id=*,type=consumer-coordinator-metrics",
-          "resultAlias": "consumer-coordinator",
-          "attr": [
-            "commit-total", "commit-latency-avg", "sync-time-avg", "sync-total",
-            "heartbeat-total", "join-time-avg", "join-total"
+            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total"
           ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerCoordinatorMetrics"}
+                  {"name": "MetricType", "value": "ConnectMetrics"}
                 ]
               }
             }
@@ -119,16 +74,56 @@
           "obj": "kafka.consumer:client-id=*,type=consumer-metrics",
           "resultAlias": "consumer",
           "attr": [
-            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio",
-            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total",
-            "request-size-avg", "request-total", "response-total", "select-total"
+            "connection-count", "io-ratio", "io-wait-ratio"
           ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.consumer:client-id=*,type=consumer-metrics",
+          "resultAlias": "consumer",
+          "attr": [
+            "io-waittime-total", "iotime-total", "network-io-total"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.consumer:client-id=*,type=consumer-metrics",
+          "resultAlias": "consumer",
+          "attr": [
+            "request-total", "response-total", "select-total"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -141,12 +136,13 @@
         {
           "obj": "kafka.consumer:client-id=*,topic=*,type=consumer-fetch-manager-metrics",
           "resultAlias": "consumer-fetch-manager",
+          "attr": [ "bytes-consumed-total" ],
           "typeNames": ["client-id", "topic"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -157,21 +153,57 @@
           ]
         },
         {
-          "obj": "kafka.producer:client-id=*,node-id=*,type=producer-node-metrics",
-          "resultAlias": "producer-node",
-          "attr": [
-            "response-total", "request-latency-avg", "request-total"
-          ],
-          "typeNames": ["client-id", "node-id"],
+          "obj": "kafka.consumer:client-id=*,topic=*,type=consumer-fetch-manager-metrics",
+          "resultAlias": "consumer-fetch-manager",
+          "attr": [ "records-consumed-total" ],
+          "typeNames": ["client-id", "topic"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ProducerNodeMetrics"}
+                  {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.consumer:client-id=*,topic=*,type=consumer-fetch-manager-metrics",
+          "resultAlias": "consumer-fetch-manager",
+          "attr": [ "fetch-size-avg" ],
+          "typeNames": ["client-id", "topic"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.consumer:client-id=*,topic=*,type=consumer-fetch-manager-metrics",
+          "resultAlias": "consumer-fetch-manager",
+          "attr": [ "records-per-request-avg" ],
+          "typeNames": ["client-id", "topic"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
             }
@@ -185,7 +217,7 @@
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -199,8 +231,48 @@
           "obj": "kafka.producer:client-id=*,type=producer-metrics",
           "resultAlias": "producer",
           "attr": [
-            "batch-size-avg", "connection-count", "incoming-byte-total",
-            "io-ratio", "io-wait-ratio", "io-waittime-total", "iotime-total",
+            "batch-size-avg", "connection-count"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ProducerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.producer:client-id=*,type=producer-metrics",
+          "resultAlias": "producer",
+          "attr": [
+            "io-ratio", "io-wait-ratio", "io-waittime-total", "iotime-total"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ProducerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.producer:client-id=*,type=producer-metrics",
+          "resultAlias": "producer",
+          "attr": [
             "network-io-total", "outgoing-byte-total", "produce-throttle-time-avg"
           ],
           "typeNames": ["client-id"],
@@ -208,7 +280,7 @@
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -222,15 +294,14 @@
           "obj": "kafka.producer:client-id=*,type=producer-metrics",
           "resultAlias": "producer",
           "attr": [
-            "produce-throttle-time-max", "record-error-total", "record-queue-time-avg", "record-retry-total",
-            "record-send-total", "record-size-avg", "record-size-max", "records-per-request-avg", "request-latency-avg"
+            "record-error-total", "record-queue-time-avg", "record-retry-total"
           ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -244,15 +315,35 @@
           "obj": "kafka.producer:client-id=*,type=producer-metrics",
           "resultAlias": "producer",
           "attr": [
-            "request-latency-max", "request-size-avg", "request-size-max", "request-total", "requests-in-flight",
-            "response-total", "select-total", "waiting-threads"
+            "record-send-total", "record-size-avg", "records-per-request-avg", "request-latency-avg"
           ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "ProducerMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.producer:client-id=*,type=producer-metrics",
+          "resultAlias": "producer",
+          "attr": [
+            "request-total", "requests-in-flight", "response-total", "select-total", "waiting-threads"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -274,7 +365,7 @@
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
@@ -292,7 +383,7 @@
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"}
@@ -309,7 +400,7 @@
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
               "settings": {
-                "namespace": "Kafka Rest Proxy",
+                "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"}

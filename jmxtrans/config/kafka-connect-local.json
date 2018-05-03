@@ -9,9 +9,6 @@
         {
           "obj": "kafka.admin.client:client-id=*,node-id=*,type=connect-node-metrics",
           "resultAlias": "connect-node",
-          "attr": [
-            "response-total", "request-latency-avg", "request-total"
-          ],
           "typeNames": ["client-id", "node-id"],
           "outputWriters": [
             {
@@ -26,10 +23,6 @@
         {
           "obj": "kafka.connect:client-id=*,type=connect-coordinator-metrics",
           "resultAlias": "connect-coordinator",
-          "attr": [
-            "commit-total", "commit-latency-avg", "sync-time-avg", "sync-total",
-            "heartbeat-total", "join-time-avg", "join-total"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -44,11 +37,6 @@
         {
           "obj": "kafka.connect:client-id=*,type=connect-metrics",
           "resultAlias": "connect",
-          "attr": [
-            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio",
-            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total",
-            "request-size-avg", "request-total", "response-total", "select-total"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -63,9 +51,6 @@
         {
           "obj": "kafka.consumer:client-id=*,node-id=*,type=consumer-node-metrics",
           "resultAlias": "consumer-node",
-          "attr": [
-            "response-total", "request-latency-avg", "request-total"
-          ],
           "typeNames": ["client-id", "node-id"],
           "outputWriters": [
             {
@@ -80,10 +65,6 @@
         {
           "obj": "kafka.consumer:client-id=*,type=consumer-coordinator-metrics",
           "resultAlias": "consumer-coordinator",
-          "attr": [
-            "commit-total", "commit-latency-avg", "sync-time-avg", "sync-total",
-            "heartbeat-total", "join-time-avg", "join-total"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -98,11 +79,6 @@
         {
           "obj": "kafka.consumer:client-id=*,type=consumer-metrics",
           "resultAlias": "consumer",
-          "attr": [
-            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio",
-            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total",
-            "request-size-avg", "request-total", "response-total", "select-total"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -131,9 +107,6 @@
         {
           "obj": "kafka.producer:client-id=*,node-id=*,type=producer-node-metrics",
           "resultAlias": "producer-node",
-          "attr": [
-            "response-total", "request-latency-avg", "request-total"
-          ],
           "typeNames": ["client-id", "node-id"],
           "outputWriters": [
             {
@@ -162,11 +135,6 @@
         {
           "obj": "kafka.producer:client-id=*,type=producer-metrics",
           "resultAlias": "producer",
-          "attr": [
-            "batch-size-avg", "connection-count", "incoming-byte-total",
-            "io-ratio", "io-wait-ratio", "io-waittime-total", "iotime-total",
-            "network-io-total", "outgoing-byte-total", "produce-throttle-time-avg"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -181,10 +149,6 @@
         {
           "obj": "kafka.producer:client-id=*,type=producer-metrics",
           "resultAlias": "producer",
-          "attr": [
-            "produce-throttle-time-max", "record-error-total", "record-queue-time-avg", "record-retry-total",
-            "record-send-total", "record-size-avg", "record-size-max", "records-per-request-avg", "request-latency-avg"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -199,10 +163,6 @@
         {
           "obj": "kafka.producer:client-id=*,type=producer-metrics",
           "resultAlias": "producer",
-          "attr": [
-            "request-latency-max", "request-size-avg", "request-size-max", "request-total", "requests-in-flight",
-            "response-total", "select-total", "waiting-threads"
-          ],
           "typeNames": ["client-id"],
           "outputWriters": [
             {
@@ -217,11 +177,6 @@
         {
           "obj": "kafka.schema.registry:type=jersey-metrics",
           "resultAlias": "producer",
-          "attr": [
-            "request-byte-rate", "request-error-rate", "request-latency-avg", "request-latency-max", "request-rate",
-            "request-size-avg", "request-size-max", "response-byte-rate", "response-rate", "response-size-avg",
-            "response-size-max"
-          ],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -235,7 +190,6 @@
         {
           "obj": "java.lang:type=Memory",
           "resultAlias": "JVM_Memory",
-          "attr": ["HeapMemoryUsage", "NonHeapMemoryUsage"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -249,7 +203,6 @@
         {
           "obj": "java.lang:type=Threading",
           "resultAlias": "JVM_Threading",
-          "attr": ["ThreadCount"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
