@@ -7,6 +7,42 @@
       "numQueryThreads" : 2,
       "queries": [
         {
+          "obj": "kafka.admin.client:client-id=*,node-id=*,type=client-node-metrics",
+          "resultAlias": "admin-client-node",
+          "attr": [
+            "response-total", "request-latency-avg", "request-total"
+          ],
+          "typeNames": ["client-id", "node-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/kafka-rest.client-node.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "kafka.admin.client:client-id=*,type=admin-client-metrics",
+          "resultAlias": "admin-client",
+          "attr": [
+            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio",
+            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total",
+            "request-size-avg", "request-total", "response-total", "select-total"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/kafka-rest.admin-client.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
           "obj": "kafka.consumer:client-id=*,node-id=*,type=consumer-node-metrics",
           "resultAlias": "consumer-node",
           "attr": [

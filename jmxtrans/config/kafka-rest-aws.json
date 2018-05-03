@@ -7,6 +7,50 @@
       "numQueryThreads" : 2,
       "queries": [
         {
+          "obj": "kafka.admin.client:client-id=*,node-id=*,type=client-node-metrics",
+          "resultAlias": "admin-client-node",
+          "attr": [
+            "response-total", "request-latency-avg", "request-total"
+          ],
+          "typeNames": ["client-id", "node-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Rest Proxy",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "AdminClientNodeMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "obj": "kafka.admin.client:client-id=*,type=admin-client-metrics",
+          "resultAlias": "admin-client",
+          "attr": [
+            "connection-count", "incoming-byte-total", "io-ratio", "io-wait-ratio",
+            "io-waittime-total", "iotime-total", "network-io-total", "outgoing-byte-total",
+            "request-size-avg", "request-total", "response-total", "select-total"
+          ],
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka Rest Proxy",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "MetricType", "value": "AdminClientMetrics"}
+                ]
+              }
+            }
+          ]
+        },
+        {
           "obj": "kafka.consumer:client-id=*,node-id=*,type=consumer-node-metrics",
           "resultAlias": "consumer-node",
           "attr": [
@@ -43,7 +87,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ConsumerCoordinatorMetrics"}
                 ]
               }
             }
@@ -66,7 +110,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ConsumerMetrics"}
                 ]
               }
             }
@@ -84,7 +128,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
             }
@@ -105,7 +149,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ProducerNodeMetrics"}
                 ]
               }
             }
@@ -123,7 +167,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ProducerTopicMetrics"}
                 ]
               }
             }
@@ -146,7 +190,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
             }
@@ -168,7 +212,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
             }
@@ -190,7 +234,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "ProdcuerMetrics"}
                 ]
               }
             }
@@ -212,7 +256,7 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
+                  {"name": "MetricType", "value": "JerseyMetrics"}
                 ]
               }
             }
@@ -230,7 +274,6 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
                 ]
               }
             }
@@ -248,7 +291,6 @@
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
                   {"name": "AvailabilityZone", "value": "{AZ}"},
-                  {"name": "MetricType", "value": "ConsumerNodeMetrics"}
                 ]
               }
             }
