@@ -148,5 +148,5 @@ services:
     environment:
       SECONDS_BETWEEN_RUNS: 10
       JMXTRANS_ENV: local
-      JMXTRANS_HOSTS: zookeeper#zookeeper1:8989,zookeeper2:8989,zookeeper3:8989|kafka#broker1:8989,broker2:8989,broker3:8989|schema-registry#schema-registry:8989|kafka-rest#rest:8989
-      JMXTRANS_ALIASES: zookeeper1,zookeeper2,zookeeper3|broker1,broker2,broker3|schema-registry|kafka-rest
+      JMXTRANS_HOSTS: zookeeper#zookeeper1:8989,zookeeper2:8989,zookeeper3:8989|kafka#broker1:8989,broker2:8989,broker3:8989|schema-registry#schema-registry:8989|kafka-rest#rest:8989|kafka-connect#connect1:8989
+      JMXTRANS_ALIASES: zookeeper1,zookeeper2,zookeeper3|broker1,broker2,broker3|schema-registry|kafka-rest|connect1
