@@ -10,6 +10,10 @@ Parameters:
   Priority:
     Type: Number
     Description: The priority to register with the Load Balancer
+  AppContainerPort:
+    Type: Number
+    Description: Port the app runs on in the image
+    Default: '8082'
   AppName:
     Type: String
     Description: Name of app
@@ -42,6 +46,10 @@ Parameters:
     Type: Number
     Description: Percentage of service memory utilization that is considered low
     Default: '15'
+  JMXPort:
+    Description: JMX Port to expose metrics on
+    Type: Number
+    Default: 8989
   LogRetention:
     Type: Number
     Description: Number of days to retain logs in CWL
@@ -91,90 +99,114 @@ Resources:
       Port: 80
       Protocol: HTTP
       TargetGroupAttributes:
-      - Key: deregistration_delay.timeout_seconds
-        Value: '300'
+        - Key: deregistration_delay.timeout_seconds
+          Value: '300'
       UnhealthyThresholdCount: 3
       VpcId: !Ref 'VpcId'
       Tags:
-      - Key: Name
-        Value: !Sub 'ECS Target Group - ${AWS::StackName}'
+        - Key: Name
+          Value: !Sub 'ECS Target Group - ${AWS::StackName}'
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       ListenerArn: !Ref 'Listener'
       Priority: !Ref 'Priority'
       Conditions:
-      - Field: host-header
-        Values:
-        - !Ref 'DNSRecord'
+        - Field: host-header
+          Values:
+            - !Ref 'DNSRecord'
       Actions:
-      - TargetGroupArn: !Ref 'TargetGroup'
-        Type: forward
+        - TargetGroupArn: !Ref 'TargetGroup'
+          Type: forward
   EcsTaskRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Sid: ''
-          Effect: Allow
-          Principal:
-            Service: ecs-tasks.amazonaws.com
-          Action: sts:AssumeRole
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
       Path: /
       Policies: []
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-      - Name: !Ref 'AppName'
-        Image: loyaltyone/cp-kafka-rest:0.1-beta
-        Cpu: !Ref 'Cpu'
-        PortMappings:
-        - ContainerPort: '8082'
-          HostPort: 0
-        MemoryReservation: !Ref 'Memory'
-        Essential: 'true'
-        Environment:
-          - Name: APP_PORT
-            Value: 8082
-          - Name: KAFKA_REST_ZOOKEEPER_CONNECT
-            Value: !Ref 'ZookeeperConnectionString'
-          - Name: KAFKA_REST_BOOTSTRAP_SERVERS
-            Value: !Ref 'KafkaConnectionString'
-          - Name: KAFKA_REST_SCHEMA_REGISTRY_URL
-            Value: !Ref 'SchemaRegistryUrl'              
-          - Name: KAFKA_REST_JMX_PORT
-            Value: 8989        
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group: !Ref 'LogGroup'
-            awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: ecs
+        - Name: !Ref 'AppName'
+          Image: loyaltyone/cp-kafka-rest:0.1-beta
+          Cpu: !Ref 'Cpu'
+          PortMappings:
+            - ContainerPort: !Ref 'AppContainerPort'
+              HostPort: 0
+            - ContainerPort: !Ref 'JMXPort'
+              HostPort: !Ref 'JMXPort'
+          MemoryReservation: !Ref 'Memory'
+          Essential: 'true'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'LogGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: APP_PORT
+              Value: !Ref 'AppContainerPort'
+            - Name: KAFKA_REST_ZOOKEEPER_CONNECT
+              Value: !Ref 'ZookeeperConnectionString'
+            - Name: KAFKA_REST_BOOTSTRAP_SERVERS
+              Value: !Ref 'KafkaConnectionString'
+            - Name: KAFKA_REST_SCHEMA_REGISTRY_URL
+              Value: !Ref 'SchemaRegistryUrl'
+            - Name: KAFKA_REST_JMX_HOSTNAME
+              Value: !Ref 'AppName'
+            - Name: KAFKA_REST_JMX_PORT
+              Value: !Ref 'JMXPort'
+        - Name: jmxtrans
+          Image: loyaltyone/jmxtrans:0.1-beta
+          Cpu: '512'
+          MemoryReservation: '2048'
+          Links: [!Ref 'AppName']
+          Environment:
+            - Name: SECONDS_BETWEEN_RUNS
+              Value: 60
+            - Name: JMXTRANS_ENV
+              Value: aws
+            - Name: JMXTRANS_HOSTS
+              Value: !Sub 'kafka-rest#${AppName}:${JMXPort}'
+            - Name: JMXTRANS_ALIASES
+              Value: 'localhost'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'LogGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Sub 'kafka-rest-proxy'
       Volumes: []
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'
   Service:
     Type: AWS::ECS::Service
     DependsOn:
-    - ListenerRule
-    - LogGroup
+      - ListenerRule
+      - LogGroup
     Properties:
       ServiceName: !Ref 'AppName'
       Role: !Ref 'EcsServiceRole'
       TaskDefinition: !Ref 'TaskDefinition'
       DesiredCount: !Ref 'AppDesiredCount'
       LoadBalancers:
-      - TargetGroupArn: !Ref 'TargetGroup'
-        ContainerPort: '8082'
-        ContainerName: !Ref 'AppName'
+        - TargetGroupArn: !Ref 'TargetGroup'
+          ContainerPort: '8082'
+          ContainerName: !Ref 'AppName'
       Cluster: !Ref 'Cluster'
       PlacementStrategies:
-      - Field: attribute:ecs.availability-zone
-        Type: spread
-      - Field: instanceId
-        Type: spread
+        - Field: attribute:ecs.availability-zone
+          Type: spread
+        - Field: instanceId
+          Type: spread
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -183,7 +215,7 @@ Resources:
   SubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     DependsOn:
-    - LogGroup
+      - LogGroup
     Properties:
       RoleArn: !ImportValue
         Fn::Sub: ${KinesisStackName}-Role-Arn
@@ -197,10 +229,10 @@ Resources:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: application-autoscaling.amazonaws.com
-          Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: application-autoscaling.amazonaws.com
+            Action: sts:AssumeRole
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
@@ -292,8 +324,11 @@ Resources:
         Fn::Sub: ${HostedZoneStackName}-ZoneName
       SetIdentifier: !Ref 'AWS::StackName'
       Weight: 50
-      Name: !Sub ['${AppName}.${HostedZoneName}', {AppName: !Ref 'AppName', HostedZoneName: !ImportValue {
-            'Fn::Sub': '${HostedZoneStackName}-ZoneName'}}]
+      Name: !Sub
+        - ${AppName}.${HostedZoneName}
+        - AppName: !Ref 'AppName'
+          HostedZoneName: !ImportValue
+            Fn::Sub: ${HostedZoneStackName}-ZoneName
       Type: A
 Outputs:
   Service:

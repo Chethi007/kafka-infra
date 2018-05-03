@@ -295,7 +295,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"}
                 ]
               }
             }
@@ -312,7 +312,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "AvailabilityZone", "value": "{AZ}"}
                 ]
               }
             }
