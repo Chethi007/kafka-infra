@@ -70,7 +70,7 @@ Parameters:
   EcsServiceRole:
     Description: The Service role used by ECS
     Type: String
-  ECSClusterName:
+  Cluster:
     Description: Name of ECS cluster to create the service in
     Type: String
   LoadBalancerCanonicalHostedZoneID:
@@ -233,7 +233,7 @@ Resources:
         - TargetGroupArn: !Ref 'TargetGroup'
           ContainerPort: !Ref 'AppContainerPort'
           ContainerName: !Ref 'AppName'
-      Cluster: !Ref 'ECSClusterName'
+      Cluster: !Ref 'Cluster'
       PlacementStrategies:
         - Field: attribute:ecs.availability-zone
           Type: spread
@@ -277,7 +277,7 @@ Resources:
         - TargetGroupArn: !Ref 'TargetGroupUI'
           ContainerPort: 8000
           ContainerName: !Sub '${AppName}-ui'
-      Cluster: !Ref 'ECSClusterName'
+      Cluster: !Ref 'Cluster'
       PlacementStrategies:
         - Field: attribute:ecs.availability-zone
           Type: spread
@@ -320,7 +320,7 @@ Resources:
       ResourceId: !Join
         - /
         - - service
-          - !Ref 'ECSClusterName'
+          - !Ref 'Cluster'
           - !GetAtt 'Service.Name'
       RoleARN: !GetAtt 'EcsAutoScaleRole.Arn'
       ScalableDimension: ecs:service:DesiredCount
@@ -378,7 +378,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ClusterName
-          Value: !Ref 'ECSClusterName'
+          Value: !Ref 'Cluster'
         - Name: ServiceName
           Value: !GetAtt 'Service.Name'
   CpuUtilAlarmLow:
@@ -396,7 +396,7 @@ Resources:
       ComparisonOperator: LessThanThreshold
       Dimensions:
         - Name: ClusterName
-          Value: !Ref 'ECSClusterName'
+          Value: !Ref 'Cluster'
         - Name: ServiceName
           Value: !GetAtt 'Service.Name'
   DNSRecord:
