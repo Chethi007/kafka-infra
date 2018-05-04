@@ -37,14 +37,11 @@ Parameters:
     Description: Which instance type should we use to build the Kafka ECS cluster
     Type: String
     AllowedValues: [
-      m3.large, m3.xlarge, m3.2xlarge,
       m4.large, m4.xlarge, m4.2xlarge,
       m5.large, m5.xlarge, m5.2xlarge,
-      c3.large, c3.xlarge, c3.2xlarge,
       c4.large, c4.xlarge, c4.2xlarge,
       c5.large, c5.xlarge, c5.2xlarge,
-      r3.large, r3.xlarge, r3.2xlarge,
-      r4.large, r4.xlarge, r4.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
@@ -52,14 +49,11 @@ Parameters:
     Description: Which instance type should we use to build the Zookeeper ECS cluster
     Type: String
     AllowedValues: [
-      m3.large, m3.xlarge, m3.2xlarge,
       m4.large, m4.xlarge, m4.2xlarge,
       m5.large, m5.xlarge, m5.2xlarge,
-      c3.large, c3.xlarge, c3.2xlarge,
       c4.large, c4.xlarge, c4.2xlarge,
       c5.large, c5.xlarge, c5.2xlarge,
-      r3.large, r3.xlarge, r3.2xlarge,
-      r4.large, r4.xlarge, r4.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
@@ -67,35 +61,14 @@ Parameters:
     Description: Which instance type should we use to build the Kafka ECS cluster
     Type: String
     AllowedValues: [
-      m3.large, m3.xlarge, m3.2xlarge,
       m4.large, m4.xlarge, m4.2xlarge,
       m5.large, m5.xlarge, m5.2xlarge,
-      c3.large, c3.xlarge, c3.2xlarge,
       c4.large, c4.xlarge, c4.2xlarge,
       c5.large, c5.xlarge, c5.2xlarge,
-      r3.large, r3.xlarge, r3.2xlarge,
-      r4.large, r4.xlarge, r4.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge
     ]
     Default: m5.xlarge
     ConstraintDescription: Must be a valid EC2 instance type
-  BrokerEBSOptimizedInstance:
-    Description: Enable EBS optimized flag for brokers. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
-  ZookeeperEBSOptimizedInstance:
-    Description: Enable EBS optimized flag for zookeepers. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
-  ServicesEBSOptimizedInstance:
-    Description: Enable EBS optimized flag for services. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
 
   # ASG
   ServicesASGMinSize:
@@ -190,7 +163,7 @@ Resources:
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'BrokerInstanceType'
-        EBSOptimizedInstance: !Ref 'BrokerEBSOptimizedInstance'
+        EBSOptimizedInstance: 'true'
         ASGMinSize: 3
         ASGMaxSize: 3
         ASGDesiredCapacity: 3
@@ -215,7 +188,7 @@ Resources:
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'ZookeeperInstanceType'
-        EBSOptimizedInstance: !Ref 'ZookeeperEBSOptimizedInstance'
+        EBSOptimizedInstance: 'true'
         ASGMinSize: 3
         ASGMaxSize: 3
         ASGDesiredCapacity: 3
@@ -241,7 +214,7 @@ Resources:
         VPCId: !Ref 'VPCId'
         PrivateSubnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'ServicesInstanceType'
-        EBSOptimizedInstance: !Ref 'ServicesEBSOptimizedInstance'
+        EBSOptimizedInstance: 'true'
         EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
         ASGMinSize: !Ref 'ServicesASGMinSize'
         ASGMaxSize: !Ref 'ServicesASGMaxSize'
