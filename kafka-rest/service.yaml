@@ -177,7 +177,7 @@ Resources:
             - Name: JMXTRANS_HOSTS
               Value: !Sub 'kafka-rest#${AppName}:${JMXPort}'
             - Name: JMXTRANS_ALIASES
-              Value: 'localhost'
+              Value: !Ref 'AppName'
           LogConfiguration:
             LogDriver: awslogs
             Options:

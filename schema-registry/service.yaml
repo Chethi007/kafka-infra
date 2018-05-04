@@ -209,7 +209,7 @@ Resources:
             - Name: JMXTRANS_HOSTS
               Value: !Sub 'schema-registry#${AppName}:${JMXPort}'
             - Name: JMXTRANS_ALIASES
-              Value: 'localhost'
+              Value: !Ref 'AppName'
           LogConfiguration:
             LogDriver: awslogs
             Options:
