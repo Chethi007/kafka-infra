@@ -170,7 +170,7 @@ Resources:
   DefaultTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub '${TargetGroupPrefix}-default'
+      Name: !Sub '${TargetGroupPrefix}-def'
       VpcId: !Ref 'VPCId'
       Port: 80
       Protocol: HTTP

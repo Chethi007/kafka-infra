@@ -17,18 +17,31 @@ then
 else
     export KAFKA_REST_HOST_NAME=${APP_HOST}
 fi
-
-uuid=$(cat /proc/sys/kernel/random/uuid)
-export KAFKA_REST_ID=${uuid}
-
 echo "KAFKA_REST_HOST_NAME: ${KAFKA_REST_HOST_NAME}"
 echo "KAFKA_REST_LISTENERS: ${KAFKA_REST_LISTENERS}"
+
+if [[ -z ${KAFKA_REST_ID} ]]; then
+    uuid=$(cat /proc/sys/kernel/random/uuid)
+    export KAFKA_REST_ID=${uuid}
+fi
+echo "KAFKA_REST_ID: ${KAFKA_REST_ID}"
 
 if [ -n "${KAFKA_REST_JMX_PORT}" ] || [ -n "${KAFKA_REST_JMX_HOSTNAME}" ] || [ -n "${KAFKA_REST_JMX_OPTS}" ];
 then
     # JMX agent complains about malformed URLs and is not able to resolve ECS container
     # short hostnames. This will take care of the problem.
     echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+
+    if [[ -z ${KAFKA_REST_JMX_OPTS} ]]; then
+        opts="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+        opts="${opts} -Djava.rmi.server.hostname=${KAFKA_REST_JMX_HOSTNAME:-${HOSTNAME}} -Dcom.sun.management.jmxremote.local.only=false"
+        if [[ -n ${KAFKA_REST_JMX_PORT} ]]; then
+            opts="${opts} -Dcom.sun.management.jmxremote.rmi.port=${KAFKA_REST_JMX_PORT} -Dcom.sun.management.jmxremote.port=${KAFKA_REST_JMX_PORT}"
+        fi
+        export KAFKA_REST_JMX_OPTS=${opts}
+    fi
+    # This is the weird thing with the rest proxy and it needs KAFKAREST_JMX_OPTS
+    export KAFKAREST_JMX_OPTS=${KAFKA_REST_JMX_OPTS}
 fi
 echo "KAFKA_REST_JMX_HOSTNAME: ${KAFKA_REST_JMX_HOSTNAME}"
 echo "KAFKA_REST_JMX_PORT: ${KAFKA_REST_JMX_PORT}"

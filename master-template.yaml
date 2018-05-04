@@ -33,27 +33,42 @@ Parameters:
   BastionSG:
     Description: Security group used to whitelist for SSH access
     Type: AWS::EC2::SecurityGroup::Id
-  InstanceType:
-    Description: Which instance type should we use to build the ECS clusters
+  BrokerInstanceType:
+    Description: Which instance type should we use to build the Kafka ECS cluster
     Type: String
     AllowedValues: [
-      m3.large, m3.xlarge, m3.2xlarge,
       m4.large, m4.xlarge, m4.2xlarge,
       m5.large, m5.xlarge, m5.2xlarge,
-      c3.large, c3.xlarge, c3.2xlarge,
       c4.large, c4.xlarge, c4.2xlarge,
       c5.large, c5.xlarge, c5.2xlarge,
-      r3.large, r3.xlarge, r3.2xlarge,
-      r4.large, r4.xlarge, r4.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
-  EBSOptimizedInstance:
-    Description: Enable EBS optimized flag. This will only work for instances that support it.
+  ZookeeperInstanceType:
+    Description: Which instance type should we use to build the Zookeeper ECS cluster
     Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
+    AllowedValues: [
+      m4.large, m4.xlarge, m4.2xlarge,
+      m5.large, m5.xlarge, m5.2xlarge,
+      c4.large, c4.xlarge, c4.2xlarge,
+      c5.large, c5.xlarge, c5.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge
+    ]
+    Default: m5.large
+    ConstraintDescription: Must be a valid EC2 instance type
+  ServicesInstanceType:
+    Description: Which instance type should we use to build the Kafka ECS cluster
+    Type: String
+    AllowedValues: [
+      m4.large, m4.xlarge, m4.2xlarge,
+      m5.large, m5.xlarge, m5.2xlarge,
+      c4.large, c4.xlarge, c4.2xlarge,
+      c5.large, c5.xlarge, c5.2xlarge,
+      r4.large, r4.xlarge, r4.2xlarge
+    ]
+    Default: m5.xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
 
   # ASG
   ServicesASGMinSize:
@@ -147,8 +162,8 @@ Resources:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
-        InstanceType: !Ref 'InstanceType'
-        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
+        InstanceType: !Ref 'BrokerInstanceType'
+        EBSOptimizedInstance: 'true'
         ASGMinSize: 3
         ASGMaxSize: 3
         ASGDesiredCapacity: 3
@@ -172,8 +187,8 @@ Resources:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
-        InstanceType: !Ref 'InstanceType'
-        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
+        InstanceType: !Ref 'ZookeeperInstanceType'
+        EBSOptimizedInstance: 'true'
         ASGMinSize: 3
         ASGMaxSize: 3
         ASGDesiredCapacity: 3
@@ -193,13 +208,13 @@ Resources:
   Services:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./services-template.yaml
+      TemplateURL: ./services-cluster.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         PrivateSubnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
-        InstanceType: !Ref 'InstanceType'
-        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
+        InstanceType: !Ref 'ServicesInstanceType'
+        EBSOptimizedInstance: 'true'
         EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
         ASGMinSize: !Ref 'ServicesASGMinSize'
         ASGMaxSize: !Ref 'ServicesASGMaxSize'
@@ -242,6 +257,7 @@ Resources:
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: 'ECSZK'
+
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

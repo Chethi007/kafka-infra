@@ -3,7 +3,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Description: >
   This template deploys an ELB stack followed by a highly available ECS cluster using an AutoScaling Group, with
-  ECS hosts distributed across multiple Availability Zones.
+  ECS hosts distributed across multiple Availability Zones. The cluster is used to deploy components such as
+  Schema Registry, Kafka Rest Proxy and Kafka Connect.
 Parameters:
   # Parameter to force a rolling deployment
   RollingDeploymentVersion:
@@ -179,12 +180,14 @@ Resources:
         BastionSG: !Ref 'BastionSG'
         ELBSecurityGroupId: !GetAtt 'ELB.Outputs.ELBSecurityGroupId'
     DependsOn: 'ELB'
+
   SchemaRegistry:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./schema-registry/service.yaml
       Parameters:
-        ECSClusterName: !GetAtt 'ECS.Outputs.ClusterName'
+        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        AppName: !Sub '${StackName}-schema-registry'
         Priority: '101'
         UIPriority: '102'
         KinesisStackName: !Ref 'KinesisStackName'
@@ -195,7 +198,6 @@ Resources:
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
-        AppName: !Join ['-', [!Ref 'StackName', 'schema-registry']]
     DependsOn: 'ECS'
 
   RestProxy:
@@ -204,7 +206,7 @@ Resources:
       TemplateURL: ./kafka-rest/service.yaml
       Parameters:
         Cluster: !GetAtt 'ECS.Outputs.ClusterName'
-        AppName: !Join ['-', [!Ref 'StackName', 'rest-proxy']]
+        AppName: !Sub '${StackName}-rest-proxy'
         Priority: '103'
         KinesisStackName: !Ref 'KinesisStackName'
         HostedZoneStackName: !Ref 'HostedZoneStackName'
@@ -218,6 +220,26 @@ Resources:
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
     DependsOn: 'SchemaRegistry'
 
+  Connect:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./kafka-connect/service.yaml
+      Parameters:
+        Cluster: !GetAtt 'ECS.Outputs.ClusterName'
+        Priority: '104'
+        AppName: !Join ["-", [!Ref 'StackName', 'connect']]
+        KinesisStackName: !Ref 'KinesisStackName'
+        HostedZoneStackName: !Ref 'HostedZoneStackName'
+        TrustedCertsBucket: 'dev-cassandra-configuration'
+        Listener: !GetAtt 'ELB.Outputs.Listener'
+        VpcId: !Ref 'VPCId'
+        EcsServiceRole: !GetAtt 'ECS.Outputs.ServiceRole'
+        LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
+        LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
+        ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        KafkaConnectionString: !Ref 'KafkaConnectionString'
+    DependsOn: 'SchemaRegistry'
+
 Outputs:
   SchemaRegistryURL:
     Description: The URL for the Schema Registry
@@ -227,7 +249,10 @@ Outputs:
     Value: !GetAtt 'SchemaRegistry.Outputs.UIURL'
   KafkaRestURL:
     Description: The URL for the Kafka Rest Proxy
-    Value: !GetAtt 'RestProxy.Outputs.URL'    
+    Value: !GetAtt 'RestProxy.Outputs.URL'
+  KafkaConnectURL:
+    Description: The URL for the Kafka Connect
+    Value: !GetAtt 'Connect.Outputs.URL'
   Listener:
     Description: The ARN of the load balancer's listener
     Value: !GetAtt 'ELB.Outputs.Listener'

@@ -7,13 +7,41 @@
       "numQueryThreads" : 2,
       "queries": [
         {
-          "obj": "kafka.consumer:client-id=KafkaStore-reader-_schemas,node-id=*,type=consumer-node-metrics",
+          "obj": "kafka.admin.client:client-id=*,node-id=*,type=client-node-metrics",
+          "resultAlias": "client-node",
+          "typeNames": ["client-id", "node-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/kafka-rest.client-node.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "kafka.admin.client:client-id=*,type=admin-client-metrics",
+          "resultAlias": "admin-client",
+          "typeNames": ["client-id"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
+              "outputFile" : "/tmp/kafka-rest.admin-client.txt",
+              "maxLogFileSize" : "10MB",
+              "maxLogBackupFiles" : 200,
+              "delimiter" : "\t"
+            }
+          ]
+        },
+        {
+          "obj": "kafka.consumer:client-id=*,node-id=*,type=consumer-node-metrics",
           "resultAlias": "consumer-node",
-          "typeNames": ["node-id"],
+          "typeNames": ["client-id", "node-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer-node.txt",
+              "outputFile" : "/tmp/kafka-rest.consumer-node.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -21,12 +49,13 @@
           ]
         },
         {
-          "obj": "kafka.consumer:client-id=KafkaStore-reader-_schemas,type=consumer-coordinator-metrics",
+          "obj": "kafka.consumer:client-id=*,type=consumer-coordinator-metrics",
           "resultAlias": "consumer-coordinator",
+          "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer-coordinator.txt",
+              "outputFile" : "/tmp/kafka-rest.consumer-coordinator.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -34,12 +63,13 @@
           ]
         },
         {
-          "obj": "kafka.consumer:client-id=KafkaStore-reader-_schemas,type=consumer-metrics",
+          "obj": "kafka.consumer:client-id=*,type=consumer-metrics",
           "resultAlias": "consumer",
+          "typeNames": ["client-id"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer.txt",
+              "outputFile" : "/tmp/kafka-rest.consumer.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -47,12 +77,13 @@
           ]
         },
         {
-          "obj": "kafka.consumer:client-id=KafkaStore-reader-_schemas,topic=_schemas,type=consumer-fetch-manager-metrics",
+          "obj": "kafka.consumer:client-id=*,topic=*,type=consumer-fetch-manager-metrics",
           "resultAlias": "consumer-fetch-manager",
+          "typeNames": ["client-id", "topic"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.consumer-fetch-manager.txt",
+              "outputFile" : "/tmp/kafka-rest.consumer-fetch-manager.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -66,7 +97,7 @@
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer-node.txt",
+              "outputFile" : "/tmp/kafka-rest.producer-node.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -74,13 +105,13 @@
           ]
         },
         {
-          "obj": "kafka.producer:client-id=*,topic=_schemas,type=producer-topic-metrics",
+          "obj": "kafka.producer:client-id=*,topic=*,type=producer-topic-metrics",
           "resultAlias": "producer-topic",
-          "typeNames": ["client-id"],
+          "typeNames": ["client-id", "topic"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer-topic.txt",
+              "outputFile" : "/tmp/kafka-rest.producer-topic.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -94,7 +125,7 @@
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer.txt",
+              "outputFile" : "/tmp/kafka-rest.producer.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -108,7 +139,7 @@
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer.txt",
+              "outputFile" : "/tmp/kafka-rest.producer.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -122,7 +153,7 @@
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.producer.txt",
+              "outputFile" : "/tmp/kafka-rest.producer.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -135,7 +166,7 @@
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.jersey.txt",
+              "outputFile" : "/tmp/kafka-rest.jersey.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
@@ -161,7 +192,7 @@
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/schema-registry.jvm-threading.txt",
+              "outputFile" : "/tmp/kafka-rest.jvm-threading.txt",
               "maxLogFileSize" : "10MB",
               "maxLogBackupFiles" : 200,
               "delimiter" : "\t"
