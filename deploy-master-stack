@@ -4,9 +4,23 @@
 #set -o pipefail
 [[ "${DEBUG}" == 'true' ]] && set -o xtrace
 
+prg=$0
+function usage() {
+    echo "Usage:"
+    echo "  $prg <stack-suffix> <path-to-config>"
+}
+
 stack_suffix=$1
 if [[ -z "${stack_suffix}" ]]; then
-    echo "Please specify a suffix to use for the CF stack"
+    echo "Please specify a suffix to use for the CloudFormation stack name"
+    usage
+    exit 1
+fi
+
+stack_config=$2
+if [[ -z "${stack_config}" ]]; then
+    echo "Please specify the path to the parameter configuration file"
+    usage
     exit 1
 fi
 
@@ -31,9 +45,9 @@ aws cloudformation package --template-file master-template.yaml \
     --output-template-file master.yaml
 
 echo "Deploying master template"
-params=$(jq -r '.Parameters | to_entries | map("\(.key)=\(.value|tostring)")|.[]' ../kafka-infra-config/dev-master-params.json | tr '\n' ' ')
+params=$(jq -r '.Parameters | to_entries | map("\(.key)=\(.value|tostring)")|.[]' ${stack_config} | tr '\n' ' ')
 aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-${stack_suffix} \
-    --capabilities CAPABILITY_IAM --parameter-overrides $params
+    --capabilities CAPABILITY_IAM --parameter-overrides ${params}
 
 # aws cloudformation describe-stack-events --stack-name "${ENV:-dev}"-${stack_suffix} --output table
 
