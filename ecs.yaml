@@ -621,7 +621,7 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-  ECSAutoScalingGroup:
+  ECSAutoScalingGroup0:
     DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -668,6 +668,100 @@ Resources:
           - AlarmNotification
           - ScheduledActions
         WaitOnResourceSignals: true
+ECSAutoScalingGroup1:
+  DependsOn: 'ECSLogGroup'
+  Type: AWS::AutoScaling::AutoScalingGroup
+  Properties:
+    VPCZoneIdentifier: !Ref 'Subnets'
+    LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
+    MinSize: !Ref 'ASGMinSize'
+    MaxSize: !Ref 'ASGMaxSize'
+    DesiredCapacity: !Ref 'ASGDesiredCapacity'
+    NotificationConfigurations:
+      - TopicARN: !Ref 'ASGEventsTopic'
+        NotificationTypes:
+        - autoscaling:EC2_INSTANCE_TERMINATE
+    Tags:
+      - Key: Name
+        Value: !Sub 'ECS Container Instance - ${AWS::StackName}'
+        PropagateAtLaunch: true
+      - Key: Project
+        Value: !Ref 'Project'
+        PropagateAtLaunch: true
+      - Key: Team
+        Value: !Ref 'Team'
+        PropagateAtLaunch: true
+      - Key: Environment
+        Value: !Ref 'Environment'
+        PropagateAtLaunch: true
+      - Key: Component
+        Value: ecs
+        PropagateAtLaunch: true
+      - Key: Scheduler
+        Value: false
+        PropagateAtLaunch: true
+  CreationPolicy:
+    ResourceSignal:
+      Timeout: PT15M
+  UpdatePolicy:
+    AutoScalingRollingUpdate:
+      MinInstancesInService: !Ref 'RollingUpdateMinInService'
+      MaxBatchSize: 1
+      PauseTime: PT15M
+      SuspendProcesses:
+        - HealthCheck
+        - ReplaceUnhealthy
+        - AZRebalance
+        - AlarmNotification
+        - ScheduledActions
+      WaitOnResourceSignals: true
+ECSAutoScalingGroup2:
+  DependsOn: 'ECSLogGroup'
+  Type: AWS::AutoScaling::AutoScalingGroup
+  Properties:
+    VPCZoneIdentifier: !Ref 'Subnets'
+    LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
+    MinSize: !Ref 'ASGMinSize'
+    MaxSize: !Ref 'ASGMaxSize'
+    DesiredCapacity: !Ref 'ASGDesiredCapacity'
+    NotificationConfigurations:
+      - TopicARN: !Ref 'ASGEventsTopic'
+        NotificationTypes:
+        - autoscaling:EC2_INSTANCE_TERMINATE
+    Tags:
+      - Key: Name
+        Value: !Sub 'ECS Container Instance - ${AWS::StackName}'
+        PropagateAtLaunch: true
+      - Key: Project
+        Value: !Ref 'Project'
+        PropagateAtLaunch: true
+      - Key: Team
+        Value: !Ref 'Team'
+        PropagateAtLaunch: true
+      - Key: Environment
+        Value: !Ref 'Environment'
+        PropagateAtLaunch: true
+      - Key: Component
+        Value: ecs
+        PropagateAtLaunch: true
+      - Key: Scheduler
+        Value: false
+        PropagateAtLaunch: true
+  CreationPolicy:
+    ResourceSignal:
+      Timeout: PT15M
+  UpdatePolicy:
+    AutoScalingRollingUpdate:
+      MinInstancesInService: !Ref 'RollingUpdateMinInService'
+      MaxBatchSize: 1
+      PauseTime: PT15M
+      SuspendProcesses:
+        - HealthCheck
+        - ReplaceUnhealthy
+        - AZRebalance
+        - AlarmNotification
+        - ScheduledActions
+      WaitOnResourceSignals: true
 
   ECSAutoScalingNotificationAccessRole:
     Type: AWS::IAM::Role
