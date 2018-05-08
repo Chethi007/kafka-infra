@@ -3,6 +3,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Description: >
   Creates an ECS cluster that expects data volumes for each ECS Instance to be precreated and tagged.
+  The cluster is spread across 3 availability zones with one autoscaling group per availability zone.
 
 Parameters:
   # Networking
