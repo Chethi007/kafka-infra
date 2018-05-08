@@ -1,7 +1,8 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Creates an ECS cluster
+Description: >
+  Creates an ECS cluster that expects data volumes for each ECS Instance to be precreated and tagged.
 
 Parameters:
   # Networking
@@ -56,30 +57,18 @@ Parameters:
     Default: /mnt/data
     MinLength: 1
     ConstraintDescription: Must be a valid folder path
-  EBSVolumeSize:
-    Description: Data volume size in GB for ECS instances. These will be exposed via EBSMountPath to containers.
-    Type: Number
-    MinValue: 25
-    MaxValue: 2000
-    Default: 100
-    ConstraintDescription: Must be a value between 25 and 250
 
   # ASG
   ASGEventsTopic:
     Description: SNS topic to notify of ASG events
     Type: String
-  ASGMinSize:
-    Description: Minimum size of ECS Auto Scaling Group
+  MinInstancesPerAsg:
+    Description: Minimum number of ECS instances. This controls how we can add more capacity.
     Type: Number
-  ASGMaxSize:
-    Description: Maximum size of ECS Auto Scaling Group
-    Type: Number
-  ASGDesiredCapacity:
-    Description: Desired Capacity of the ECS Auto Scaling Group
-    Type: Number
-  RollingUpdateMinInService:
-    Description: Minimum instance in service during rolling update
-    Type: Number
+    Default: 2
+    MinValue: 2
+    MaxValue: 5
+    ConstraintDescription: Must be a number between 2 and 5.
 
   # Features
   ClusterType:
@@ -124,7 +113,7 @@ Parameters:
     Type: String
   VolumeNameTag:
     Type: String
-    Description: Tag for identifying the component the volume should be tagged with
+    Description: Tag for identifying the data volume to use for the ECS instances
 
 Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
@@ -306,7 +295,7 @@ Resources:
         'Fn::Base64': !Sub |
           #!/bin/bash
 
-          exec 2>>/var/log/user-data.log
+          exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
 
           # Increment RollingDeploymentVersion parameter to force rolling deploy
           version=${RollingDeploymentVersion}
@@ -430,6 +419,36 @@ Resources:
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/user-data.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/awslogs-config.log]
+                file = /var/log/awslogs-config.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/awslogs-config.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/data-volume.log]
+                file = /var/log/data-volume.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/data-volume.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/service-discovery.log]
+                file = /var/log/service-discovery.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/service-discovery.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/docker-mirror.log]
+                file = /var/log/docker-mirror.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/docker-mirror.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/monitoring.log]
+                file = /var/log/monitoring.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/monitoring.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
             '/etc/init/awslogs.conf':
               content: |
                 #upstart-job
@@ -438,7 +457,7 @@ Resources:
                 start on started ecs
 
                 script
-                  exec 2>>/var/log/user-data.log
+                  exec 2>>/var/log/awslogs-config.log
 
                   set -x
 
@@ -469,8 +488,7 @@ Resources:
               content: !Sub |
                 #!/bin/bash
 
-                exec 2>>/var/log/user-data.log
-
+                exec > >(tee /var/log/data-volume.log | logger -t data-volume -s 2>/dev/console) 2>&1
 
                 # Setup environment variables
 
@@ -578,7 +596,7 @@ Resources:
                 start on started ecs
 
                 script
-                  exec 2>>/var/log/user-data.log
+                  exec 2>>/var/log/service-discovery.log
                   set -x
 
                   until curl -s http://localhost:51678/v1/metadata
@@ -632,7 +650,7 @@ Resources:
                 start on started ecs
 
                 script
-                  exec 2>>/var/log/user-data.log
+                  exec 2>>/var/log/docker-mirror.log
                   set -x
 
                   until curl -s http://169.254.169.254/latest/meta-data
@@ -680,7 +698,7 @@ Resources:
               command: |
                 #!/bin/bash
 
-                exec 2>>/var/log/user-data.log
+                exec 2>>/var/log/monitoring.log
                 set -e
                 set -x
 
@@ -715,7 +733,7 @@ Resources:
       VPCZoneIdentifier: [!Select [0, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
       MinSize: 1
-      MaxSize: 1
+      MaxSize: !Ref 'MinInstancesPerAsg'
       DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
@@ -748,7 +766,7 @@ Resources:
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: !Ref 'RollingUpdateMinInService'
+        MinInstancesInService: 1
         MaxBatchSize: 1
         PauseTime: PT15M
         SuspendProcesses:
@@ -765,7 +783,7 @@ Resources:
       VPCZoneIdentifier: [!Select [1, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
       MinSize: 1
-      MaxSize: 1
+      MaxSize: !Ref 'MinInstancesPerAsg'
       DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
@@ -798,7 +816,7 @@ Resources:
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: !Ref 'RollingUpdateMinInService'
+        MinInstancesInService: 1
         MaxBatchSize: 1
         PauseTime: PT15M
         SuspendProcesses:
@@ -815,7 +833,7 @@ Resources:
       VPCZoneIdentifier: [!Select [2, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
       MinSize: 1
-      MaxSize: 1
+      MaxSize: !Ref 'MinInstancesPerAsg'
       DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
@@ -848,7 +866,7 @@ Resources:
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: !Ref 'RollingUpdateMinInService'
+        MinInstancesInService: 1
         MaxBatchSize: 1
         PauseTime: PT15M
         SuspendProcesses:
