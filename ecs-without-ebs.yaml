@@ -119,6 +119,13 @@ Parameters:
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
 
+  ParentStackName:
+    Description: Name of parent stack
+    Type: String
+  VolumeNameTag:
+    Type: String
+    Description: Tag for identifying the component the volume should be tagged with
+
 Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
   #
@@ -216,7 +223,12 @@ Resources:
               'ssm:PutConfigurePackageResult',
               'ssm:UpdateAssociationStatus',
               'ssm:UpdateInstanceAssociationStatus',
-              'ssm:UpdateInstanceInformation'
+              'ssm:UpdateInstanceInformation',
+              'ec2:DescribeInstances',
+              'ec2:DescribeTags',
+              'ec2:CreateTags',
+              'ec2:DescribeVolumes',
+              'ec2:AttachVolume'
             ]
             Effect: Allow
             Resource: '*'
@@ -283,13 +295,6 @@ Resources:
     Properties:
       AssociatePublicIpAddress: false
       EbsOptimized: !Ref 'EBSOptimizedInstance'
-      BlockDeviceMappings:
-        - DeviceName: '/dev/xvdh'
-          Ebs:
-            VolumeSize: !Ref 'EBSVolumeSize'
-            DeleteOnTermination: 'true'
-            Encrypted: 'true'
-            VolumeType: 'gp2'
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
@@ -301,7 +306,7 @@ Resources:
         'Fn::Base64': !Sub |
           #!/bin/bash
 
-          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          exec 2>>/var/log/user-data.log
 
           # Increment RollingDeploymentVersion parameter to force rolling deploy
           version=${RollingDeploymentVersion}
@@ -321,8 +326,15 @@ Resources:
           /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets $config_set
           exit_code=$?
 
-          echo "Signalling ASG..."
-          /opt/aws/bin/cfn-signal -e $exit_code --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+          if [ $exit_code == 0 ]; then
+            instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+            echo "Grabbing tag of autoscaling resource name with instance id='$instance_id'"
+            asgresourcename=$(aws ec2 describe-tags --region ${AWS::Region} --filters Name=resource-id,Values=$instance_id Name=tag-key,Values=AsgResourceName | jq -r '.Tags[0].Value')
+          fi
+
+          echo "Signalling ASG with resource name='$asgresourcename'"
+          /opt/aws/bin/cfn-signal -e $exit_code --region ${AWS::Region} --stack ${AWS::StackName} --resource $asgresourcename
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
@@ -455,19 +467,94 @@ Resources:
               owner: root
               group: root
               content: !Sub |
-                #!/bin/bash -e
+                #!/bin/bash
 
-                exec > >(tee /var/log/user-data.log|logger -t setup-data-volume -s 2>/dev/console) 2>&1
+                exec 2>>/var/log/user-data.log
 
-                echo "Creating XFS file system on /dev/xvdh..."
-                mkfs.xfs -f /dev/xvdh
 
-                echo "Setting up mount point for data volume on ${EBSMountPath}..."
+                # Setup environment variables
+
+                export instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                export az=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+                export AWS_DEFAULT_REGION=${AWS::Region}
+
+                #export asg_name=$(aws ec2 describe-tags --filters Name=resource-id,Values=$instance_id Name=tag-key,Values=AsgName | jq -r '.Tags[0].Value')
+
+                # This script will find next available volume in the instance's availability zone and attach it. It will
+                # initialize the file system if it is the first time it attaches; this is determined by existence of the
+                # InstanceId tag (initially it is not present). Finally it will mount the file system and add the
+                # InstanceId tag of current instance.
+
+                # Find a volume in the availability zone to attach with Name ${ParentStackName}-${VolumeNameTag}
+                status=
+                volume_id=
+                while [[ "$status" != "attached" ]]; do
+                  echo "Searching for available volumes in '$az'"
+                  ids=($(aws ec2 describe-volumes --filters Name=status,Values=available Name=availability-zone,Values=$az Name=tag-key,Values=Name Name=tag-value,Values=${ParentStackName}-${VolumeNameTag} | jq -r '.Volumes[].VolumeId'))
+
+                  if [[ ${!#ids[@]} -gt 0 ]]; then
+                    # Try first volume. If for some reason there is a race condition, next time around we try it should pick
+                    # a different available volume. Number of volumes match the ensemble and availability zones so unless
+                    # something really bad happened, this should succeed at most once.
+                    echo "Attaching volume id ${!ids[0]}..."
+                    status=$(aws ec2 attach-volume --device /dev/xvdh --instance-id $instance_id --volume-id ${!ids[0]} | jq -r '.State')
+
+                    if [[ -z $status ]]; then
+                      echo "Waiting for data volumes to become available..."
+                    elif [[ "$status" -eq "attaching" ]]; then
+                      while [[ "$status" != "attached" ]]; do
+                         echo "Waiting for data volume ${!ids[0]} to be attached..."
+                         status=$(aws ec2 describe-volumes --volume-id ${!ids[0]} | jq -r '.Volumes[0].Attachments[0].State')
+                         sleep 10
+                      done
+
+                      echo "Successfully attached data volume ${!ids[0]}"
+                      volume_id=${!ids[0]}
+                    elif [[ "$status" -eq "attached" ]]; then
+                      echo "Successfully attached data volume ${!ids[0]}"
+                      volume_id=${!ids[0]}
+                    else
+                      echo "Volume ${!ids[0]} status is '$status'. Waiting for volumes to become available..."
+                      sleep 10
+                    fi
+                  else
+                    echo "Waiting for volumes to become available..."
+                    sleep 10
+                  fi
+                done
+
+                # Check volume's tag to see if it belonged to another instance so we don't reformat it
+                attached_instance_id=$(aws ec2 describe-tags --filters Name=resource-id,Values=$volume_id Name=tag-key,Values=InstanceId | jq -r '.Tags[].Value')
+                if [[ -z $attached_instance_id ]]; then
+                  echo "First time attachment. Creating XFS file system..."
+                  mkfs.xfs -f /dev/xvdh
+                fi
+
+                # Setup and mount data volume
+                echo "Setting up mount point for data volume..."
                 mkdir -p ${EBSMountPath}
-                echo "/dev/xvdh  ${EBSMountPath}  xfs  defaults,inode64,nofail,context=system_u:object_r:var_t:s0  0 2" >> /etc/fstab
+                chown -R root:root /var/private
 
                 echo "Mounting file system..."
+                echo "/dev/xvdh  ${EBSMountPath}  xfs  defaults,inode64,nofail,context=system_u:object_r:var_t:s0  0 2" >> /etc/fstab
                 mount -v ${EBSMountPath}
+
+                # Add tag to the volume so we can identify ownership to the instance
+                echo "Setting up tag InstanceId=$instance_id for volume $volume_id..."
+                aws ec2 create-tags --resources $volume_id --tags Key=InstanceId,Value=$instance_id
+
+                # Get Broker Id from volume tag and transfer to instance
+                broker_id=$(aws ec2 describe-volumes --volume-ids $volume_id | jq -r '.Volumes[0].Tags[] | select(.Key == "BrokerId").Value')
+                echo "Setting up InstanceId=$instance_id for tag BrokerId=$broker_id..."
+                aws ec2 create-tags --resources $instance_id --tags Key=BrokerId,Value=$broker_id
+                echo $broker_id > /tmp/broker.id
+
+                # Get the Route53 recordset name
+                recordset_name=$(aws ec2 describe-volumes --volume-ids $volume_id | jq -r '.Volumes[0].Tags[] | select(.Key == "RecordSetName").Value')
+
+                # Add tag to the instance so we can identify the record set
+                echo "Setting up InstanceId=$instance_id for tag RecordSetName=$recordset_name..."
+                aws ec2 create-tags --resources $instance_id --tags Key=RecordSetName,Value=$recordset_name
           commands:
             01_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
@@ -621,15 +708,15 @@ Resources:
               mode: '000644'
               owner: root
               group: root
-  ECSAutoScalingGroup:
+  ECSAutoScalingGroup0:
     DependsOn: 'ECSLogGroup'
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: !Ref 'Subnets'
+      VPCZoneIdentifier: [!Select [0, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
-      MinSize: !Ref 'ASGMinSize'
-      MaxSize: !Ref 'ASGMaxSize'
-      DesiredCapacity: !Ref 'ASGDesiredCapacity'
+      MinSize: 1
+      MaxSize: 1
+      DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
           NotificationTypes:
@@ -652,6 +739,109 @@ Resources:
           PropagateAtLaunch: true
         - Key: Scheduler
           Value: false
+          PropagateAtLaunch: true
+        - Key: AsgResourceName
+          Value: 'ECSAutoScalingGroup0'
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref 'RollingUpdateMinInService'
+        MaxBatchSize: 1
+        PauseTime: PT15M
+        SuspendProcesses:
+          - HealthCheck
+          - ReplaceUnhealthy
+          - AZRebalance
+          - AlarmNotification
+          - ScheduledActions
+        WaitOnResourceSignals: true
+  ECSAutoScalingGroup1:
+    DependsOn: 'ECSLogGroup'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: [!Select [1, !Ref 'Subnets']]
+      LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
+      MinSize: 1
+      MaxSize: 1
+      DesiredCapacity: 1
+      NotificationConfigurations:
+        - TopicARN: !Ref 'ASGEventsTopic'
+          NotificationTypes:
+          - autoscaling:EC2_INSTANCE_TERMINATE
+      Tags:
+        - Key: Name
+          Value: !Sub 'ECS Container Instance - ${AWS::StackName}'
+          PropagateAtLaunch: true
+        - Key: Project
+          Value: !Ref 'Project'
+          PropagateAtLaunch: true
+        - Key: Team
+          Value: !Ref 'Team'
+          PropagateAtLaunch: true
+        - Key: Environment
+          Value: !Ref 'Environment'
+          PropagateAtLaunch: true
+        - Key: Component
+          Value: ecs
+          PropagateAtLaunch: true
+        - Key: Scheduler
+          Value: false
+          PropagateAtLaunch: true
+        - Key: AsgResourceName
+          Value: 'ECSAutoScalingGroup1'
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref 'RollingUpdateMinInService'
+        MaxBatchSize: 1
+        PauseTime: PT15M
+        SuspendProcesses:
+          - HealthCheck
+          - ReplaceUnhealthy
+          - AZRebalance
+          - AlarmNotification
+          - ScheduledActions
+        WaitOnResourceSignals: true
+  ECSAutoScalingGroup2:
+    DependsOn: 'ECSLogGroup'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: [!Select [2, !Ref 'Subnets']]
+      LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
+      MinSize: 1
+      MaxSize: 1
+      DesiredCapacity: 1
+      NotificationConfigurations:
+        - TopicARN: !Ref 'ASGEventsTopic'
+          NotificationTypes:
+          - autoscaling:EC2_INSTANCE_TERMINATE
+      Tags:
+        - Key: Name
+          Value: !Sub 'ECS Container Instance - ${AWS::StackName}'
+          PropagateAtLaunch: true
+        - Key: Project
+          Value: !Ref 'Project'
+          PropagateAtLaunch: true
+        - Key: Team
+          Value: !Ref 'Team'
+          PropagateAtLaunch: true
+        - Key: Environment
+          Value: !Ref 'Environment'
+          PropagateAtLaunch: true
+        - Key: Component
+          Value: ecs
+          PropagateAtLaunch: true
+        - Key: Scheduler
+          Value: false
+          PropagateAtLaunch: true
+        - Key: AsgResourceName
+          Value: 'ECSAutoScalingGroup2'
           PropagateAtLaunch: true
     CreationPolicy:
       ResourceSignal:
@@ -682,10 +872,28 @@ Resources:
               Service: autoscaling.amazonaws.com
       ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AutoScalingNotificationAccessRole']
 
-  ECSAutoScalingGroupLifecycleHook:
+  ECSAutoScalingGroupLifecycleHook0:
     Type: AWS::AutoScaling::LifecycleHook
     Properties:
-      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup'
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup0'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_TERMINATING'
+      NotificationTargetARN: !Ref 'ASGEventsTopic'
+      RoleARN: !GetAtt 'ECSAutoScalingNotificationAccessRole.Arn'
+      DefaultResult: 'ABANDON'
+      HeartbeatTimeout: '300'
+  ECSAutoScalingGroupLifecycleHook1:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup1'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_TERMINATING'
+      NotificationTargetARN: !Ref 'ASGEventsTopic'
+      RoleARN: !GetAtt 'ECSAutoScalingNotificationAccessRole.Arn'
+      DefaultResult: 'ABANDON'
+      HeartbeatTimeout: '300'
+  ECSAutoScalingGroupLifecycleHook2:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup2'
       LifecycleTransition: 'autoscaling:EC2_INSTANCE_TERMINATING'
       NotificationTargetARN: !Ref 'ASGEventsTopic'
       RoleARN: !GetAtt 'ECSAutoScalingNotificationAccessRole.Arn'
@@ -747,12 +955,18 @@ Resources:
       ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
 
 Outputs:
+  AsgName0:
+    Description: Name of first ASG created
+    Value: !Ref 'ECSAutoScalingGroup0'
+  AsgName1:
+    Description: Name of second ASG created
+    Value: !Ref 'ECSAutoScalingGroup1'
+  AsgName2:
+    Description: Name of third ASG created
+    Value: !Ref 'ECSAutoScalingGroup2'
   ClusterName:
     Description: A reference to the ECS cluster
     Value: !Ref 'ECSCluster'
-  AutoScalingGroupName:
-    Description: A reference to ECS AutoScaling Group Name
-    Value: !Ref 'ECSAutoScalingGroup'
   ServiceAutoScalingRole:
     Description: A reference to ECS service auto scaling role
     Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'

@@ -30,6 +30,9 @@ Parameters:
   Subnets:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
+  AvailabilityZones:
+    Description: Comma-separated list of three availability zones this cluster should be deployed to - must be in the same corresponding order as the Subnets parameter
+    Type: CommaDelimitedList
   BastionSG:
     Description: Security group used to whitelist for SSH access
     Type: AWS::EC2::SecurityGroup::Id
@@ -157,7 +160,7 @@ Resources:
   ECSBrokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ecs.yaml
+      TemplateURL: ./ecs-without-ebs.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
@@ -179,6 +182,45 @@ Resources:
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
+        ParentStackName: !Ref 'AWS::StackName'
+        VolumeNameTag: 'brokerdata'
+    DependsOn: ['EBSBrokers0','EBSBrokers1','EBSBrokers2']
+  EBSBrokers0:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref BrokerDataVolumeSize
+        DataVolumeIOPS: ''
+        AvailabilityZone:  !Select [0, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
+  EBSBrokers1:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref BrokerDataVolumeSize
+        DataVolumeIOPS: ''
+        AvailabilityZone: !Select [1, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
+  EBSBrokers2:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref BrokerDataVolumeSize
+        DataVolumeIOPS: ''
+        AvailabilityZone: !Select [2, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -204,7 +246,6 @@ Resources:
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
-
   Services:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -312,17 +353,17 @@ Outputs:
     Description: 'The URL for Kafka Schema Registry'
     Value: !GetAtt 'Services.Outputs.SchemaRegistryURL'
     Export:
-      Name: !Sub '${AWS::StackName}-SchemaRegistryURL'      
+      Name: !Sub '${AWS::StackName}-SchemaRegistryURL'
   SchemaRegistryUIURL:
     Description: 'The URL for Kafka Schema Registry'
     Value: !GetAtt 'Services.Outputs.SchemaRegistryUIURL'
     Export:
-      Name: !Sub '${AWS::StackName}-SchemaRegistryUIURL'      
+      Name: !Sub '${AWS::StackName}-SchemaRegistryUIURL'
   RestProxyURL:
     Description: 'The URL for Kafka Rest Proxy'
     Value: !GetAtt 'Services.Outputs.KafkaRestURL'
     Export:
-      Name: !Sub '${AWS::StackName}-KafkaRestURL'      
+      Name: !Sub '${AWS::StackName}-KafkaRestURL'
   VpcId:
     Description: "Cluster's VPC Id"
     Value: !Ref 'VPCId'
