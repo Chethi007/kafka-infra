@@ -320,23 +320,23 @@ Resources:
             instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 
             echo "Grabbing tag of autoscaling resource name with instance id='$instance_id'"
-            asgresourcename=$(aws ec2 describe-tags --region ${AWS::Region} --filters Name=resource-id,Values=$instance_id Name=tag-key,Values=AsgResourceName | jq -r '.Tags[0].Value')
+            asg_resource_name=$(aws ec2 describe-tags --region ${AWS::Region} --filters Name=resource-id,Values=$instance_id Name=tag-key,Values=AsgResourceName | jq -r '.Tags[0].Value')
           fi
 
-          echo "Signalling ASG with resource name='$asgresourcename'"
-          /opt/aws/bin/cfn-signal -e $exit_code --region ${AWS::Region} --stack ${AWS::StackName} --resource $asgresourcename
+          echo "Signalling ASG with resource name='$asg_resource_name'"
+          /opt/aws/bin/cfn-signal -e $exit_code --region ${AWS::Region} --stack ${AWS::StackName} --resource $asg_resource_name
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
           general:
-          - install_logging
-          - install_data_volume
-          - install_ecs
-          - install_monitoring
-          - install_service_discovery
+            - install_logging
+            - install_ecs_instance
+            - install_ecs
+            - install_monitoring
+            - install_service_discovery
           services:
-          - ConfigSet: general
-          - install_docker_mirror
+            - ConfigSet: general
+            - install_docker_mirror
 
         # Configure and install aws logs agent
         install_logging:
@@ -450,6 +450,12 @@ Resources:
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/monitoring.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/setup-tags.log]
+                file = /var/log/setup-tags.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/setup-tags.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
             '/etc/init/awslogs.conf':
               content: |
                 #upstart-job
@@ -480,14 +486,36 @@ Resources:
                   chkconfig awslogs on
                 end script
 
-        install_data_volume:
+        install_ecs_instance:
           files:
+            '/usr/local/share/setup-tags':
+              mode: '000744'
+              owner: root
+              group: root
+              content: !Sub |
+                #!/bin/bash -e
+
+                # Tag this instance's related resources before attaching other resources that might have tags
+                # we shouldn't override.
+
+                exec > >(tee /var/log/setup-tags.log | logger -t setup-tags -s 2>/dev/console) 2>&1
+
+                # Setup environment variables
+                export instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                export AWS_DEFAULT_REGION=${AWS::Region}
+
+                network_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].NetworkInterfaces[].NetworkInterfaceId'))
+                volume_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].BlockDeviceMappings[].Ebs.VolumeId'))
+
+                echo "Setting up tags for '$instance_id'; resources=[${!volume_ids[@]} ${!network_ids[@]}]..."
+                tags="Key=Name,Value=$instance_name Key=Project,Value=${Project} Key=Team,Value=${Team} Key=Environment,Value=${Environment}"
+                aws ec2 create-tags --resources ${!volume_ids[@]} ${!network_ids[@]} --tags "$tags"
             '/usr/local/share/setup-data-volume':
               mode: '000744'
               owner: root
               group: root
               content: !Sub |
-                #!/bin/bash
+                #!/bin/bash -e
 
                 exec > >(tee /var/log/data-volume.log | logger -t data-volume -s 2>/dev/console) 2>&1
 
@@ -496,8 +524,6 @@ Resources:
                 export instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
                 export az=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
                 export AWS_DEFAULT_REGION=${AWS::Region}
-
-                #export asg_name=$(aws ec2 describe-tags --filters Name=resource-id,Values=$instance_id Name=tag-key,Values=AsgName | jq -r '.Tags[0].Value')
 
                 # This script will find next available volume in the instance's availability zone and attach it. It will
                 # initialize the file system if it is the first time it attaches; this is determined by existence of the
@@ -566,9 +592,10 @@ Resources:
                 echo "Setting up InstanceId=$instance_id for tag BrokerId=$broker_id..."
                 aws ec2 create-tags --resources $instance_id --tags Key=BrokerId,Value=$broker_id
                 echo $broker_id > /tmp/broker.id
-
           commands:
-            01_setup_ebs_volume:
+            01_setup_tags:
+              command: '/usr/local/share/setup-tags'
+            02_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
 
         # Let ecs agent know which cluster to join

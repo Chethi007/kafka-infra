@@ -327,14 +327,14 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           general:
-          - install_logging
-          - install_data_volume
-          - install_ecs
-          - install_monitoring
-          - install_service_discovery
+            - install_logging
+            - install_ecs_instance
+            - install_ecs
+            - install_monitoring
+            - install_service_discovery
           services:
-          - ConfigSet: general
-          - install_docker_mirror
+           - ConfigSet: general
+           - install_docker_mirror
 
         # Configure and install aws logs agent
         install_logging:
@@ -448,6 +448,12 @@ Resources:
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/monitoring.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                [/var/log/setup-tags.log]
+                file = /var/log/setup-tags.log
+                log_group_name = {cluster}
+                log_stream_name = {instance_id}/setup-tags.log
+                datetime_format = %Y-%m-%dT%H:%M:%SZ
             '/etc/init/awslogs.conf':
               content: |
                 #upstart-job
@@ -478,8 +484,30 @@ Resources:
                   chkconfig awslogs on
                 end script
 
-        install_data_volume:
+        install_ecs_instance:
           files:
+            '/usr/local/share/setup-tags':
+              mode: '000744'
+              owner: root
+              group: root
+              content: !Sub |
+                #!/bin/bash -e
+
+                # Tag this instance's related resources before attaching other resources that might have tags
+                # we shouldn't override.
+
+                exec > >(tee /var/log/setup-tags.log | logger -t setup-tags -s 2>/dev/console) 2>&1
+
+                # Setup environment variables
+                export instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                export AWS_DEFAULT_REGION=${AWS::Region}
+
+                network_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].NetworkInterfaces[].NetworkInterfaceId'))
+                volume_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].BlockDeviceMappings[].Ebs.VolumeId'))
+
+                echo "Setting up tags for '$instance_id'; resources=[${!volume_ids[@]} ${!network_ids[@]}]..."
+                tags="Key=Name,Value=$instance_name Key=Project,Value=${Project} Key=Team,Value=${Team} Key=Environment,Value=${Environment}"
+                aws ec2 create-tags --resources ${!volume_ids[@]} ${!network_ids[@]} --tags "$tags"
             '/usr/local/share/setup-data-volume':
               mode: '000744'
               owner: root
@@ -499,6 +527,8 @@ Resources:
                 echo "Mounting file system..."
                 mount -v ${EBSMountPath}
           commands:
+            01_setup_tags:
+              command: '/usr/local/share/setup-tags'
             01_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
 
