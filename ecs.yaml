@@ -506,12 +506,13 @@ Resources:
 
                 instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
                 instance_data=$(aws ec2 describe-instances --instance-id $instance_id)
+                instance_name=$(echo "$instance_data" | jq -r '.Reservations[0].Instances[0].Tags[] | select(.Key=="Name").Value')
                 network_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].NetworkInterfaces[].NetworkInterfaceId'))
                 volume_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].BlockDeviceMappings[].Ebs.VolumeId'))
 
                 echo "Setting up tags for '$instance_id'; resources=[${!volume_ids[@]} ${!network_ids[@]}]..."
-                tags="Key=Name,Value=$instance_name Key=Project,Value=${Project} Key=Team,Value=${Team} Key=Environment,Value=${Environment}"
-                aws ec2 create-tags --resources ${!volume_ids[@]} ${!network_ids[@]} --tags "$tags"
+                tags="'Key=Name,Value=\"${!instance_name}\"' 'Key=Project,Value=${Project}' 'Key=Team,Value=${Team}' 'Key=Environment,Value=${Environment}'"
+                eval aws ec2 create-tags --resources ${!volume_ids[@]} ${!network_ids[@]} --tags $tags
             '/usr/local/share/setup-data-volume':
               mode: '000744'
               owner: root
