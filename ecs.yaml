@@ -216,7 +216,10 @@ Resources:
               'ssm:PutConfigurePackageResult',
               'ssm:UpdateAssociationStatus',
               'ssm:UpdateInstanceAssociationStatus',
-              'ssm:UpdateInstanceInformation'
+              'ssm:UpdateInstanceInformation',
+              'ec2:DescribeInstances',
+              'ec2:DescribeTags',
+              'ec2:CreateTags'
             ]
             Effect: Allow
             Resource: '*'
@@ -499,9 +502,10 @@ Resources:
                 exec > >(tee /var/log/setup-tags.log | logger -t setup-tags -s 2>/dev/console) 2>&1
 
                 # Setup environment variables
-                export instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
                 export AWS_DEFAULT_REGION=${AWS::Region}
 
+                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                instance_data=$(aws ec2 describe-instances --instance-id $instance_id)
                 network_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].NetworkInterfaces[].NetworkInterfaceId'))
                 volume_ids=($(echo $instance_data | jq -r '.Reservations[0].Instances[0].BlockDeviceMappings[].Ebs.VolumeId'))
 
