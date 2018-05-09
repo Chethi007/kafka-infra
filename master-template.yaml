@@ -180,8 +180,8 @@ Resources:
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'brokerdata'
-    DependsOn: ['EBSBrokers0','EBSBrokers1','EBSBrokers2']
-  EBSBrokers0:
+    DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
+  EBSBrokerVolume1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ebs.yaml
@@ -193,7 +193,8 @@ Resources:
         Team: !Ref Team
         Environment: !Ref Environment
         VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
-  EBSBrokers1:
+        BrokerId: '1'
+  EBSBrokerVolume2:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ebs.yaml
@@ -205,7 +206,8 @@ Resources:
         Team: !Ref Team
         Environment: !Ref Environment
         VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
-  EBSBrokers2:
+        BrokerId: '2'
+  EBSBrokerVolume3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ebs.yaml
@@ -217,6 +219,7 @@ Resources:
         Team: !Ref Team
         Environment: !Ref Environment
         VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
+        BrokerId: '3'
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:

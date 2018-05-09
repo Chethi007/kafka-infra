@@ -41,6 +41,9 @@ Parameters:
   VolumeNameTag:
     Type: String
     Description: Tag for identifying the component the volume should be tagged with
+  BrokerId:
+    Type: String
+    Description: Tag for identifying the broker id the volume belongs to
 Conditions:
   UseIO1DataVolume: !Equals [!Ref DataVolumeType, 'io1']
 
@@ -64,3 +67,5 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: ebs
+        - Key: BrokerId
+          Value: !Ref BrokerId

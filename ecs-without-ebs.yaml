@@ -552,7 +552,6 @@ Resources:
                 # Setup and mount data volume
                 echo "Setting up mount point for data volume..."
                 mkdir -p ${EBSMountPath}
-                chown -R root:root /var/private
 
                 echo "Mounting file system..."
                 echo "/dev/xvdh  ${EBSMountPath}  xfs  defaults,inode64,nofail,context=system_u:object_r:var_t:s0  0 2" >> /etc/fstab
@@ -568,12 +567,6 @@ Resources:
                 aws ec2 create-tags --resources $instance_id --tags Key=BrokerId,Value=$broker_id
                 echo $broker_id > /tmp/broker.id
 
-                # Get the Route53 recordset name
-                recordset_name=$(aws ec2 describe-volumes --volume-ids $volume_id | jq -r '.Volumes[0].Tags[] | select(.Key == "RecordSetName").Value')
-
-                # Add tag to the instance so we can identify the record set
-                echo "Setting up InstanceId=$instance_id for tag RecordSetName=$recordset_name..."
-                aws ec2 create-tags --resources $instance_id --tags Key=RecordSetName,Value=$recordset_name
           commands:
             01_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
