@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Creates an EBS volumes
+Description: Creates a EBS volume with predefined tags that can be used to attach to ECS cluster for data
 
 Parameters:
   DataVolumeSize:
@@ -41,9 +41,10 @@ Parameters:
   VolumeNameTag:
     Type: String
     Description: Tag for identifying the component the volume should be tagged with
-  BrokerId:
+  NodeId:
     Type: String
-    Description: Tag for identifying the broker id the volume belongs to
+    Description: Tag for identifying the node for the volume
+
 Conditions:
   UseIO1DataVolume: !Equals [!Ref DataVolumeType, 'io1']
 
@@ -67,5 +68,5 @@ Resources:
           Value: !Ref 'Environment'
         - Key: Component
           Value: ebs
-        - Key: BrokerId
-          Value: !Ref BrokerId
+        - Key: NodeId
+          Value: !Ref NodeId

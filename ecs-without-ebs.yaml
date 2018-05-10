@@ -40,12 +40,6 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
-  EBSOptimizedInstance:
-    Description: Enable EBS optimized flag. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
   AdditionalSecurityGroup:
     Type: String
     Description: Additional security group to add ECS instances to
@@ -112,6 +106,7 @@ Parameters:
   ParentStackName:
     Description: Name of parent stack
     Type: String
+
   VolumeNameTag:
     Type: String
     Description: Tag for identifying the data volume to use for the ECS instances
@@ -284,7 +279,7 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
-      EbsOptimized: !Ref 'EBSOptimizedInstance'
+      EbsOptimized: true
       IamInstanceProfile: !Ref 'ECSInstanceProfile'
       ImageId:  !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref 'InstanceType'
@@ -589,11 +584,10 @@ Resources:
                 echo "Setting up tag InstanceId=$instance_id for volume $volume_id..."
                 aws ec2 create-tags --resources $volume_id --tags Key=InstanceId,Value=$instance_id
 
-                # Get Broker Id from volume tag and transfer to instance
-                broker_id=$(aws ec2 describe-volumes --volume-ids $volume_id | jq -r '.Volumes[0].Tags[] | select(.Key == "BrokerId").Value')
-                echo "Setting up InstanceId=$instance_id for tag BrokerId=$broker_id..."
-                aws ec2 create-tags --resources $instance_id --tags Key=BrokerId,Value=$broker_id
-                echo $broker_id > /tmp/broker.id
+                # Get NodeId from volume tag and transfer to instance
+                node_id=$(aws ec2 describe-volumes --volume-ids $volume_id | jq -r '.Volumes[0].Tags[] | select(.Key == "NodeId").Value')
+                echo "Setting up InstanceId=$instance_id for tag NodeId=$node_id..."
+                aws ec2 create-tags --resources $instance_id --tags Key=NodeId,Value=$node_id
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'

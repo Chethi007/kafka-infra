@@ -157,6 +157,7 @@ Parameters:
     Description: Name of the CF stack used to create the Kinesis stream
 
 Resources:
+  # Create a 3-node ECS cluster for Kafka brokers
   ECSBrokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -164,9 +165,8 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'BrokerInstanceType'
-        EBSOptimizedInstance: 'true'
         MinInstancesPerAsg: 2
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
@@ -174,77 +174,118 @@ Resources:
         Environment: !Ref 'Environment'
         ClusterType: kafka
         HostedZoneId: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
+          'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
-        VolumeNameTag: 'brokerdata'
+        VolumeNameTag: 'broker-data'
     DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
   EBSBrokerVolume1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ebs.yaml
       Parameters:
-        DataVolumeSize: !Ref BrokerDataVolumeSize
+        DataVolumeSize: !Ref 'BrokerDataVolumeSize'
         DataVolumeIOPS: ''
         AvailabilityZone:  !Select [0, !Ref 'AvailabilityZones']
         Project: !Ref Project
         Team: !Ref Team
         Environment: !Ref Environment
-        VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
-        BrokerId: '1'
+        VolumeNameTag: !Sub ${AWS::StackName}-broker-data
+        NodeId: '1'
   EBSBrokerVolume2:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ebs.yaml
       Parameters:
-        DataVolumeSize: !Ref BrokerDataVolumeSize
+        DataVolumeSize: !Ref 'BrokerDataVolumeSize'
         DataVolumeIOPS: ''
         AvailabilityZone: !Select [1, !Ref 'AvailabilityZones']
         Project: !Ref Project
         Team: !Ref Team
         Environment: !Ref Environment
-        VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
-        BrokerId: '2'
+        VolumeNameTag: !Sub '${AWS::StackName}-broker-data'
+        NodeId: '2'
   EBSBrokerVolume3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ebs.yaml
       Parameters:
-        DataVolumeSize: !Ref BrokerDataVolumeSize
+        DataVolumeSize: !Ref 'BrokerDataVolumeSize'
         DataVolumeIOPS: ''
         AvailabilityZone: !Select [2, !Ref 'AvailabilityZones']
         Project: !Ref Project
         Team: !Ref Team
         Environment: !Ref Environment
-        VolumeNameTag: !Sub ${AWS::StackName}-brokerdata
-        BrokerId: '3'
+        VolumeNameTag: !Sub '${AWS::StackName}-broker-data'
+        NodeId: '3'
+
+  # Create a 3-node ECS cluster for Zookeeper nodes
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ecs.yaml
+      TemplateURL: ./ecs-without-ebs.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'ZookeeperInstanceType'
-        EBSOptimizedInstance: 'true'
-        ASGMinSize: 3
-        ASGMaxSize: 3
-        ASGDesiredCapacity: 3
-        RollingUpdateMinInService: !Ref 'RollingUpdateMinInService'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
+        MinInstancesPerAsg: 2
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
         ClusterType: kafka
         HostedZoneId: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneId"
-        EBSVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+          'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
+        ParentStackName: !Ref 'AWS::StackName'
+        VolumeNameTag: 'zk-data'
+    DependsOn: ['EBSZKVolume1','EBSZKVolume2','EBSZKVolume3']
+  EBSZKVolume1:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        DataVolumeIOPS: ''
+        AvailabilityZone:  !Select [0, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
+        NodeId: '1'
+  EBSZKVolume2:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        DataVolumeIOPS: ''
+        AvailabilityZone: !Select [1, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
+        NodeId: '2'
+  EBSZKVolume3:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        DataVolumeIOPS: ''
+        AvailabilityZone: !Select [2, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
+        NodeId: '3'
+
+  # Create an autoscaling ECS cluster for services like Schema Registry, Kafka Connect and Rest Proxy
   Services:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -252,9 +293,8 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        PrivateSubnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        PrivateSubnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         InstanceType: !Ref 'ServicesInstanceType'
-        EBSOptimizedInstance: 'true'
         EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
         ASGMinSize: !Ref 'ServicesASGMinSize'
         ASGMaxSize: !Ref 'ServicesASGMaxSize'
@@ -280,6 +320,7 @@ Resources:
         BastionSG: !Ref 'BastionSG'
     DependsOn: 'ECSBrokers'
 
+  # The Zookeeper Cluster
   Zookeeper:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -288,16 +329,17 @@ Resources:
         Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneName"
+          'Fn::Sub': '${HostedZoneStackName}-ZoneName'
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: 'ECSZK'
 
+  # The Kafka Cluster
   Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -306,18 +348,19 @@ Resources:
         Cluster: !GetAtt 'ECSBrokers.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [",", [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
         ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
         ZookeeperSecurityGroup: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
         DomainName: !ImportValue
-          'Fn::Sub': "${HostedZoneStackName}-ZoneName"
+          'Fn::Sub': '${HostedZoneStackName}-ZoneName'
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 
+  # Security group to allow internal communications for this stack.
   InternalSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -325,7 +368,7 @@ Resources:
       GroupDescription: Allow connections from vpc
       SecurityGroupEgress:
         IpProtocol: -1
-        CidrIp: "0.0.0.0/0"
+        CidrIp: '0.0.0.0/0'
 
 Outputs:
   ClientKafkaSG:

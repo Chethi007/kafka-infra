@@ -38,12 +38,6 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
-  EBSOptimizedInstance:
-    Description: Enable EBS optimized flag. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
   AdditionalSecurityGroup:
     Type: String
     Description: Additional security group to add ECS instances to
@@ -285,7 +279,7 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
-      EbsOptimized: !Ref 'EBSOptimizedInstance'
+      EbsOptimized: true
       BlockDeviceMappings:
         - DeviceName: '/dev/xvdh'
           Ebs:

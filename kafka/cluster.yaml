@@ -188,7 +188,7 @@ Resources:
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
-    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker1']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -209,7 +209,7 @@ Resources:
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
-    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker2']
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
 
 Outputs:
   ClientKafkaSG:

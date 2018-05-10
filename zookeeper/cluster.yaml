@@ -199,7 +199,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZKNode1']
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZKNode3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -220,7 +220,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZKNode2']
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
 
 Outputs:
   ClientZKSG:
