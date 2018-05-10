@@ -50,12 +50,6 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
-  EBSOptimizedInstance:
-    Description: Enable EBS optimized flag. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
   EBSVolumeSize:
     Description: Data volume size in GB for ECS instances. These will be exposed via EBSMountPath to containers.
     Type: Number
@@ -162,7 +156,6 @@ Resources:
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
         InstanceType: !Ref 'InstanceType'
-        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
         EBSVolumeSize: !Ref 'EBSVolumeSize'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
