@@ -162,7 +162,7 @@ Resources:
   ECSBrokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ecs-without-ebs.yaml
+      TemplateURL: ./ecs-kafka.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
@@ -227,7 +227,7 @@ Resources:
   ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ecs-without-ebs.yaml
+      TemplateURL: ./ecs-kafka.yaml
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'

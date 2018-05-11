@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Creates an ECS cluster that attaches a secondary data volume to each ECS instance.
+Description: Creates an ECS cluster that uses a second encrypted data volume for each ECS instance.
 
 Parameters:
   # Networking
