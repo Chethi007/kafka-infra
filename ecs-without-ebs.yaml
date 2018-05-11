@@ -77,6 +77,9 @@ Parameters:
   HostedZoneId:
     Description: The ID of the Hosted Zone in which to register services for service discovery
     Type: String
+  KinesisStackName:
+    Type: String
+    Description: Name of the CF stack used to create the Kinesis stream
 
   # Parameter to force a rolling deployment
   RollingDeploymentVersion:
@@ -137,6 +140,18 @@ Resources:
     Properties:
       LogGroupName: !Ref 'AWS::StackName'
       RetentionInDays: 3
+  SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    DependsOn:
+      - ECSLogGroup
+    Properties:
+      RoleArn: !ImportValue
+        Fn::Sub: ${KinesisStackName}-Role-Arn
+      LogGroupName: !Ref 'ECSLogGroup'
+      FilterPattern: ''
+      DestinationArn: !ImportValue
+        Fn::Sub: ${KinesisStackName}-Stream-Arn
+
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -289,9 +304,9 @@ Resources:
         - !Ref 'AdditionalSecurityGroup'
       UserData:
         'Fn::Base64': !Sub |
-          #!/bin/bash
+          #!/bin/bash -e
 
-          exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
+          exec >> /var/log/user-data.log 2>&1
 
           # Increment RollingDeploymentVersion parameter to force rolling deploy
           version=${RollingDeploymentVersion}
@@ -326,7 +341,6 @@ Resources:
           general:
             - install_logging
             - install_ecs_instance
-            - install_ecs
             - install_monitoring
             - install_service_discovery
           services:
@@ -369,7 +383,7 @@ Resources:
                 datetime_format = %Y-%m-%dT%H:%M:%S.%f
 
                 [/var/log/ecs/ecs-init.log]
-                file = /var/log/ecs/ecs-init.log.*
+                file = /var/log/ecs/ecs-init.log
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/ecs-init.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
@@ -378,12 +392,6 @@ Resources:
                 file = /var/log/ecs/ecs-agent.log.*
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/ecs-agent.log
-                datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-                [/var/log/ecs/audit.log]
-                file = /var/log/ecs/audit.log.*
-                log_group_name = {cluster}
-                log_stream_name = {instance_id}/audit.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
 
                 [/var/log/cloud-init.log]
@@ -422,12 +430,6 @@ Resources:
                 log_stream_name = {instance_id}/awslogs-config.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
 
-                [/var/log/data-volume.log]
-                file = /var/log/data-volume.log
-                log_group_name = {cluster}
-                log_stream_name = {instance_id}/data-volume.log
-                datetime_format = %Y-%m-%dT%H:%M:%SZ
-
                 [/var/log/service-discovery.log]
                 file = /var/log/service-discovery.log
                 log_group_name = {cluster}
@@ -439,18 +441,6 @@ Resources:
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/docker-mirror.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-                [/var/log/monitoring.log]
-                file = /var/log/monitoring.log
-                log_group_name = {cluster}
-                log_stream_name = {instance_id}/monitoring.log
-                datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-                [/var/log/setup-tags.log]
-                file = /var/log/setup-tags.log
-                log_group_name = {cluster}
-                log_stream_name = {instance_id}/setup-tags.log
-                datetime_format = %Y-%m-%dT%H:%M:%SZ
             '/etc/init/awslogs.conf':
               content: |
                 #upstart-job
@@ -459,8 +449,8 @@ Resources:
                 start on started ecs
 
                 script
-                  exec 2>>/var/log/awslogs-config.log
-
+                  exec >> /var/log/awslogs-config.log 2>&1
+                  set -e
                   set -x
 
                   until curl -s http://localhost:51678/v1/metadata
@@ -493,7 +483,7 @@ Resources:
                 # Tag this instance's related resources before attaching other resources that might have tags
                 # we shouldn't override.
 
-                exec > >(tee /var/log/setup-tags.log | logger -t setup-tags -s 2>/dev/console) 2>&1
+                exec >> /var/log/user-data.log 2>&1
 
                 # Setup environment variables
                 export AWS_DEFAULT_REGION=${AWS::Region}
@@ -514,7 +504,7 @@ Resources:
               content: !Sub |
                 #!/bin/bash -e
 
-                exec > >(tee /var/log/data-volume.log | logger -t data-volume -s 2>/dev/console) 2>&1
+                exec >> /var/log/user-data.log 2>&1
 
                 # Setup environment variables
 
@@ -593,11 +583,8 @@ Resources:
               command: '/usr/local/share/setup-tags'
             02_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
-
-        # Let ecs agent know which cluster to join
-        install_ecs:
-          commands:
-            01_add_instance_to_cluster:
+            03_add_instance_to_cluster:
+              # Let ecs agent know which cluster to join
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
 
         install_service_discovery:
@@ -613,7 +600,8 @@ Resources:
                 start on started ecs
 
                 script
-                  exec 2>>/var/log/service-discovery.log
+                  exec >> /var/log/service-discovery.log 2>&1
+                  set -e
                   set -x
 
                   until curl -s http://localhost:51678/v1/metadata
@@ -667,7 +655,8 @@ Resources:
                 start on started ecs
 
                 script
-                  exec 2>>/var/log/docker-mirror.log
+                  exec >> /var/log/docker-mirror.log 2>&1
+                  set -e
                   set -x
 
                   until curl -s http://169.254.169.254/latest/meta-data
@@ -713,9 +702,9 @@ Resources:
           commands:
             01_install_disk_mem_monitoring:
               command: |
-                #!/bin/bash
+                #!/bin/bash -e
 
-                exec 2>>/var/log/monitoring.log
+                exec >> /var/log/user-data.log 2>&1
                 set -e
                 set -x
 

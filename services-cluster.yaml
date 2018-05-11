@@ -172,6 +172,7 @@ Resources:
         AdditionalSecurityGroup: !Ref 'InternalSG'
         BastionSG: !Ref 'BastionSG'
         ELBSecurityGroupId: !GetAtt 'ELB.Outputs.ELBSecurityGroupId'
+        KinesisStackName: !Ref 'KinesisStackName'
     DependsOn: 'ELB'
 
   SchemaRegistry:

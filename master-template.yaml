@@ -2,9 +2,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Description: >
-  This template deploys a highly available ECS cluster using an AutoScaling Group, with
-  ECS hosts distributed across multiple Availability Zones. It then deploys a Zookeeper
-  cluster from containers published in Docker Hub.
+  This template deploys a highly available ECS cluster using an AutoScaling Group, with ECS hosts distributed across
+  3 availability zones. It then deploys a Zookeeper cluster from containers published in Docker Hub.
 
 Parameters:
   # Parameter to force a rolling deployment
@@ -31,7 +30,9 @@ Parameters:
     Description: Choose three private subnets this cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
   AvailabilityZones:
-    Description: Comma-separated list of three availability zones this cluster should be deployed to - must be in the same corresponding order as the Subnets parameter
+    Description: >
+      Comma-separated list of 3 availability zones this cluster should be deployed to - must be in the same
+      corresponding order as the Subnets parameter.
     Type: CommaDelimitedList
   BastionSG:
     Description: Security group used to whitelist for SSH access
@@ -165,7 +166,7 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', !Ref 'Subnets']
         InstanceType: !Ref 'BrokerInstanceType'
         MinInstancesPerAsg: 2
         ASGEventsTopic: !Ref 'ASGEventsTopic'
@@ -180,6 +181,7 @@ Resources:
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'broker-data'
+        KinesisStackName: !Ref 'KinesisStackName'
     DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
   EBSBrokerVolume1:
     Type: 'AWS::CloudFormation::Stack'
@@ -229,7 +231,7 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', !Ref 'Subnets']
         InstanceType: !Ref 'ZookeeperInstanceType'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         MinInstancesPerAsg: 2
@@ -244,6 +246,7 @@ Resources:
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'zk-data'
+        KinesisStackName: !Ref 'KinesisStackName'
     DependsOn: ['EBSZKVolume1','EBSZKVolume2','EBSZKVolume3']
   EBSZKVolume1:
     Type: 'AWS::CloudFormation::Stack'
@@ -293,7 +296,7 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        PrivateSubnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        PrivateSubnets: !Join [',', !Ref 'Subnets']
         InstanceType: !Ref 'ServicesInstanceType'
         EBSVolumeSize: !Ref 'ServicesDataVolumeSize'
         ASGMinSize: !Ref 'ServicesASGMinSize'
@@ -329,7 +332,7 @@ Resources:
         Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', !Ref 'Subnets']
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
@@ -337,6 +340,7 @@ Resources:
           'Fn::Sub': '${HostedZoneStackName}-ZoneName'
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+        KinesisStackName: !Ref 'KinesisStackName'
     DependsOn: 'ECSZK'
 
   # The Kafka Cluster
@@ -348,7 +352,7 @@ Resources:
         Cluster: !GetAtt 'ECSBrokers.Outputs.ClusterName'
         StackName: !Ref 'AWS::StackName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [',', [!Select [0, !Ref 'Subnets'], !Select [1, !Ref 'Subnets'], !Select [2, !Ref 'Subnets']]]
+        Subnets: !Join [',', !Ref 'Subnets']
         ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
         ZookeeperSecurityGroup: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
         Project: !Ref 'Project'
@@ -358,6 +362,7 @@ Resources:
           'Fn::Sub': '${HostedZoneStackName}-ZoneName'
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+        KinesisStackName: !Ref 'KinesisStackName'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 
   # Security group to allow internal communications for this stack.
