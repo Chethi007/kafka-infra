@@ -15,14 +15,22 @@ Parameters:
     Type: Number
     Description: Port the app runs on in the image
     Default: '8081'
-  Memory:
+  ServiceMemory:
     Type: Number
     Description: Soft memory on container
-    Default: '1280'
-  Cpu:
+    Default: '1024'
+  ServiceCpu:
     Type: Number
-    Description: cpu units on container
-    Default: '100'
+    Description: cpu unites on container
+    Default: '128'
+  JmxtransMemory:
+    Type: Number
+    Description: Soft memory on container
+    Default: '512'
+  JmxtransCpu:
+    Type: Number
+    Description: cpu unites on container
+    Default: '128'
   AppDesiredCount:
     Type: Number
     Description: Number of instances of the service to run
@@ -167,13 +175,13 @@ Resources:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
           Image: loyaltyone/cp-schema-registry:0.1-beta
-          Cpu: !Ref 'Cpu'
+          Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
               HostPort: 0
             - ContainerPort: !Ref 'JMXPort'
               HostPort: !Ref 'JMXPort'
-          MemoryReservation: !Ref 'Memory'
+          MemoryReservation: !Ref 'ServiceMemory'
           Essential: 'true'
           LogConfiguration:
             LogDriver: awslogs
@@ -198,8 +206,8 @@ Resources:
               Value: 3
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.1-beta
-          Cpu: '512'
-          MemoryReservation: '2048'
+          Cpu: !Ref 'JmxtransCpu'
+          MemoryReservation: !Ref 'JmxtransMemory'
           Links: [!Ref 'AppName']
           Environment:
             - Name: SECONDS_BETWEEN_RUNS
@@ -245,14 +253,14 @@ Resources:
       ContainerDefinitions:
         - Name: !Sub '${AppName}-ui'
           Image: !Sub 'landoop/schema-registry-ui'
-          Cpu: '100'
+          Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: 8000
               HostPort: 0
           Environment:
             - Name: SCHEMAREGISTRY_URL
               Value: !Sub 'https://${DNSRecordUI}'
-          MemoryReservation: '512'
+          MemoryReservation: !Ref 'ServiceMemory'
           Essential: 'true'
           LogConfiguration:
             LogDriver: awslogs

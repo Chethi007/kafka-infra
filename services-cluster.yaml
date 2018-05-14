@@ -192,6 +192,7 @@ Resources:
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        JMXPort: 8990
     DependsOn: 'ECS'
 
   RestProxy:
@@ -212,6 +213,7 @@ Resources:
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         KafkaConnectionString: !Ref 'KafkaConnectionString'
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
+        JMXPort: 8991
     DependsOn: 'SchemaRegistry'
 
   Connect:
@@ -232,6 +234,7 @@ Resources:
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         KafkaConnectionString: !Ref 'KafkaConnectionString'
+        JMXPort: 8992
     DependsOn: 'SchemaRegistry'
 
 Outputs:

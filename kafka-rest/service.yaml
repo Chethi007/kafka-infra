@@ -18,14 +18,22 @@ Parameters:
     Type: String
     Description: Name of app
     Default: cp-kafka-rest  
-  Memory:
+  ServiceMemory:
     Type: Number
     Description: Soft memory on container
-    Default: '1280'
-  Cpu:
+    Default: '1024'
+  ServiceCpu:
     Type: Number
     Description: cpu unites on container
-    Default: '100'
+    Default: '128'
+  JmxtransMemory:
+    Type: Number
+    Description: Soft memory on container
+    Default: '512'
+  JmxtransCpu:
+    Type: Number
+    Description: cpu unites on container
+    Default: '128'
   AppDesiredCount:
     Type: Number
     Description: Number of instances of the service to run
@@ -137,13 +145,13 @@ Resources:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
           Image: loyaltyone/cp-kafka-rest:0.1-beta
-          Cpu: !Ref 'Cpu'
+          Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
               HostPort: 0
             - ContainerPort: !Ref 'JMXPort'
               HostPort: !Ref 'JMXPort'
-          MemoryReservation: !Ref 'Memory'
+          MemoryReservation: !Ref 'ServiceMemory'
           Essential: 'true'
           LogConfiguration:
             LogDriver: awslogs
@@ -166,8 +174,8 @@ Resources:
               Value: !Ref 'JMXPort'
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.1-beta
-          Cpu: '512'
-          MemoryReservation: '2048'
+          Cpu: !Ref 'JmxtransCpu'
+          MemoryReservation: !Ref 'JmxtransMemory'
           Links: [!Ref 'AppName']
           Environment:
             - Name: SECONDS_BETWEEN_RUNS
