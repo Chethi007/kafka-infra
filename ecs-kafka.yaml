@@ -58,8 +58,10 @@ Parameters:
   ASGEventsTopic:
     Description: SNS topic to notify of ASG events
     Type: String
-  MinInstancesPerAsg:
-    Description: Minimum number of ECS instances. This controls how we can add more capacity.
+  MaxInstancesPerAsg:
+    Description: >
+      Maximum number of ECS instances. This controls how we can add more capacity and should be 1 more
+      than intended maximum so there is room to do rolling deployment.
     Type: Number
     Default: 2
     MinValue: 2
@@ -67,14 +69,6 @@ Parameters:
     ConstraintDescription: Must be a number between 2 and 5.
 
   # Features
-  ClusterType:
-    Type: String
-    Description: This will configure the ECS cluster for either running servics or kafka
-    AllowedValues: [service,kafka]
-    Default: service
-    ConstraintDescription: |
-      Must be either 'service' (schema registry, kafka connect, rest proxy, prometheus, etc)
-      or 'kafka' (zookeeper and brokers)
   HostedZoneId:
     Description: The ID of the Hosted Zone in which to register services for service discovery
     Type: String
@@ -131,9 +125,6 @@ Mappings:
       AMI: ami-cad827b7
     ca-central-1:
       AMI: ami-db48cfbf
-
-Conditions:
-  IsClusterTypeService: !Equals [!Ref 'ClusterType', 'service']
 
 Resources:
   ECSLogGroup:
@@ -241,21 +232,6 @@ Resources:
       Roles:
         - !Ref 'ECSInstanceRole'
 
-  EcsServiceRole:
-    Condition: IsClusterTypeService
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Sid: ''
-          Effect: Allow
-          Principal:
-            Service: ecs.amazonaws.com
-          Action: sts:AssumeRole
-      Path: /
-      ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
-
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -280,16 +256,6 @@ Resources:
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
-
-  ECSELBSecurityGroupIngress:
-    Condition: IsClusterTypeService
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !GetAtt ECSSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: '32768'
-      ToPort: '65535'
-      SourceSecurityGroupId: !Ref 'ELBSecurityGroupId'
 
   ECSLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -319,11 +285,6 @@ Resources:
           echo "Initializing Instance"
           config_set="general"
 
-          if [ "${ClusterType}" == "service" ]; then
-            echo "Enabling docker-mirror..."
-            config_set="services"
-          fi
-
           /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets $config_set
           exit_code=$?
 
@@ -344,9 +305,6 @@ Resources:
             - install_ecs_instance
             - install_monitoring
             - install_service_discovery
-          services:
-            - ConfigSet: general
-            - install_docker_mirror
 
         # Configure and install aws logs agent
         install_logging:
@@ -435,12 +393,6 @@ Resources:
                 file = /var/log/service-discovery.log
                 log_group_name = {cluster}
                 log_stream_name = {instance_id}/service-discovery.log
-                datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-                [/var/log/docker-mirror.log]
-                file = /var/log/docker-mirror.log
-                log_group_name = {cluster}
-                log_stream_name = {instance_id}/docker-mirror.log
                 datetime_format = %Y-%m-%dT%H:%M:%SZ
             '/etc/init/awslogs.conf':
               content: |
@@ -643,59 +595,6 @@ Resources:
                     --log-opt tag='{{.Name}}/{{.ID}}' \
                     $docker_image --hostedZoneId=${HostedZoneId}
                 end script
-        install_docker_mirror:
-          files:
-            '/etc/init/docker_mirror.conf':
-              mode: '000644'
-              owner: root
-              group: root
-              content: |
-                #upstart-job
-                description "Retrieve instances's private ip to store in /etc/hostip and start docker mirror container"
-                author "LoyaltyOne"
-                start on started ecs
-
-                script
-                  exec >> /var/log/docker-mirror.log 2>&1
-                  set -e
-                  set -x
-
-                  until curl -s http://169.254.169.254/latest/meta-data
-                  do
-                      sleep 1
-                  done
-
-                  # Grab the ip of this instance
-                  ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-                  echo $ip > /etc/hostip
-
-                  # Pull docker image. Try up to 3 times before giving up.
-                  docker_image=loyaltyone/docker-mirror:0.1.2
-                  count=3
-                  while [[ $count -gt 0 ]]; do
-                    echo "Fetching docker image '$docker_image'..."
-                    docker pull $docker_image
-                    if [[ "$?" -gt 0 ]]; then
-                      count=$(($count - 1))
-                      echo "Problem fetching docker image '$docker_image'."
-                      echo "Taking a nap for 5 seconds..."
-                      sleep 5
-                    else
-                      echo "Fetched docker image for '$docker_image'."
-                      count=0
-                    fi
-                  done
-
-                  # Start docker mirror
-                  echo "Starting docker mirror..."
-                  docker run -d \
-                    --name docker-mirror \
-                    -p 9001:9000 \
-                    --restart always \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v /etc/hostip:/etc/hostip \
-                    $docker_image
-                end script
         install_monitoring:
           packages:
             yum:
@@ -740,7 +639,7 @@ Resources:
       VPCZoneIdentifier: [!Select [0, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
       MinSize: 1
-      MaxSize: !Ref 'MinInstancesPerAsg'
+      MaxSize: !Ref 'MaxInstancesPerAsg'
       DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
@@ -790,7 +689,7 @@ Resources:
       VPCZoneIdentifier: [!Select [1, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
       MinSize: 1
-      MaxSize: !Ref 'MinInstancesPerAsg'
+      MaxSize: !Ref 'MaxInstancesPerAsg'
       DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
@@ -840,7 +739,7 @@ Resources:
       VPCZoneIdentifier: [!Select [2, !Ref 'Subnets']]
       LaunchConfigurationName: !Ref 'ECSLaunchConfiguration'
       MinSize: 1
-      MaxSize: !Ref 'MinInstancesPerAsg'
+      MaxSize: !Ref 'MaxInstancesPerAsg'
       DesiredCapacity: 1
       NotificationConfigurations:
         - TopicARN: !Ref 'ASGEventsTopic'
@@ -925,60 +824,6 @@ Resources:
       DefaultResult: 'ABANDON'
       HeartbeatTimeout: '300'
 
-  # unused but exported by
-  # awslabs/ecs-refarch-cloudformation/master/infrastructure/ecs-cluster.yaml
-  ECSServiceAutoScalingRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          Action: 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service: application-autoscaling.amazonaws.com
-      Policies:
-      - PolicyName: ecs-service-autoscaling
-        PolicyDocument:
-          Statement:
-            Action:
-            - application-autoscaling:DeleteScalingPolicy
-            - application-autoscaling:DeleteScheduledAction
-            - application-autoscaling:DeregisterScalableTarget
-            - application-autoscaling:DescribeScalableTargets
-            - application-autoscaling:DescribeScalingActivities
-            - application-autoscaling:DescribeScalingPolicies
-            - application-autoscaling:DescribeScheduledActions
-            - application-autoscaling:PutScalingPolicy
-            - application-autoscaling:PutScheduledAction
-            - application-autoscaling:RegisterScalableTarget
-            - cloudwatch:DescribeAlarms
-            - cloudwatch:PutMetricAlarm
-            - ecs:DescribeServices
-            - ecs:UpdateService
-            Effect: Allow
-            Resource: '*'
-
-  # unused but exported by, not sure if we need this since we don't use LBs?
-  # LoyaltyOne/apollo-platform/blob/master/common/ecs/Cluster-with-ALB-CPU-Scaling.yml
-  # The Amazon ECS service scheduler makes calls to the Amazon EC2 and Elastic Load Balancing APIs on your behalf
-  # to register and deregister container instances with your load balancers. Before you can attach a load balancer
-  # to an Amazon ECS service, you must create an IAM role for your services to use before you start them.
-  # This requirement applies to any Amazon ECS service that you plan to use with a load balancer.
-  EcsServiceSchedulerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Action: 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service: ecs.amazonaws.com
-      ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
-
 Outputs:
   AsgName0:
     Description: Name of first ASG created
@@ -992,22 +837,12 @@ Outputs:
   ClusterName:
     Description: A reference to the ECS cluster
     Value: !Ref 'ECSCluster'
-  ServiceAutoScalingRole:
-    Description: A reference to ECS service auto scaling role
-    Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'
-  ServiceSchedulerRole:
-    Description: A reference to ECS service load balancing role
-    Value: !GetAtt 'EcsServiceSchedulerRole.Arn'
   InstanceSecurityGroup:
     Description: The ID of the ecs container instance security group created
     Value: !GetAtt [ECSSecurityGroup, GroupId]
   VpcId:
     Description: "Cluster's VPC Id"
     Value: !Ref 'VPCId'
-  ServiceRole:
-    Condition: IsClusterTypeService
-    Description: The ARN of the ECS service role
-    Value: !GetAtt [EcsServiceRole, Arn]
   EBSMountPath:
     Description: Path at which to create the mount for the EBS data volume
     Value: !Ref 'EBSMountPath'

@@ -168,12 +168,11 @@ Resources:
         VPCId: !Ref 'VPCId'
         Subnets: !Join [',', !Ref 'Subnets']
         InstanceType: !Ref 'BrokerInstanceType'
-        MinInstancesPerAsg: 2
+        MaxInstancesPerAsg: 2
         ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
-        ClusterType: kafka
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
@@ -234,11 +233,10 @@ Resources:
         Subnets: !Join [',', !Ref 'Subnets']
         InstanceType: !Ref 'ZookeeperInstanceType'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
-        MinInstancesPerAsg: 2
+        MaxInstancesPerAsg: 2
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
-        ClusterType: kafka
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
