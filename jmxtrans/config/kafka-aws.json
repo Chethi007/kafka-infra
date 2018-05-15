@@ -763,6 +763,24 @@
           ]
         },
         {
+          "obj": "kafka.controller:type=KafkaController,name=OfflinePartitionsCount",
+          "resultAlias": "kafka-controller",
+          "attr": ["Value"],
+          "outputWriters": [
+            {
+              "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
+              "settings": {
+                "namespace": "Kafka",
+                "dimensions": [
+                  {"name": "HostName", "value": "{ALIAS}"},
+                  {"name": "MetricType", "value": "KafkaController"},
+                  {"name": "Metric", "value": "OfflinePartitionsCount"}
+                ]
+              }
+            }
+          ]
+        },
+        {
           "obj": "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs",
           "resultAlias": "kafka-controller",
           "attr": [
