@@ -85,7 +85,7 @@
     },
     "Environment": {
       "Type": "String",
-      "AllowedValues": ["dev","sandbox","prod"],
+      "AllowedValues": ["dev", "sandbox", "prod"],
       "Default": "dev",
       "Description": "Environment",
       "ConstraintDescription": "Must be one of dev|sandbox|prod"
@@ -100,40 +100,49 @@
         "HealthCheckTimeoutSeconds": 5,
         "HealthCheckPath": "/status",
         "HealthyThresholdCount": 2,
-        "HealthCheckPort": { "Ref": "AppContainerPort" },
+        "HealthCheckPort": {
+          "Ref": "AppContainerPort"
+        },
         "Matcher": {
           "HttpCode": "200-299"
         },
-        "Port": { "Ref": "AppContainerPort" },
+        "Port": {
+          "Ref": "AppContainerPort"
+        },
         "Protocol": "HTTP",
-        "TargetGroupAttributes": [
-          {
-            "Key": "deregistration_delay.timeout_seconds",
-            "Value": "300"
-          }
-        ],
+        "TargetGroupAttributes": [{
+          "Key": "deregistration_delay.timeout_seconds",
+          "Value": "300"
+        }],
         "UnhealthyThresholdCount": 3,
         "VpcId": {
           "Fn::ImportValue": {
             "Fn::Sub": "${ClusterStackName}-VpcId"
           }
         },
-        "Tags": [
-          {
+        "Tags": [{
             "Key": "Name",
-            "Value": {"Fn::Sub": "ECS Target Group - ${AWS::StackName}"}
+            "Value": {
+              "Fn::Sub": "ECS Target Group - ${AWS::StackName}"
+            }
           },
           {
             "Key": "Project",
-            "Value": {"Ref": "Project"}
+            "Value": {
+              "Ref": "Project"
+            }
           },
           {
             "Key": "Team",
-            "Value": {"Ref": "Team"}
+            "Value": {
+              "Ref": "Team"
+            }
           },
           {
             "Key": "Environment",
-            "Value": {"Ref": "Environment"}
+            "Value": {
+              "Ref": "Environment"
+            }
           },
           {
             "Key": "Component",
@@ -153,24 +162,18 @@
         "Priority": {
           "Ref": "Priority"
         },
-        "Conditions": [
-          {
-            "Field": "host-header",
-            "Values": [
-              {
-                "Ref": "DNSRecord"
-              }
-            ]
-          }
-        ],
-        "Actions": [
-          {
-            "TargetGroupArn": {
-              "Ref": "TargetGroup"
-            },
-            "Type": "forward"
-          }
-        ]
+        "Conditions": [{
+          "Field": "host-header",
+          "Values": [{
+            "Ref": "DNSRecord"
+          }]
+        }],
+        "Actions": [{
+          "TargetGroupArn": {
+            "Ref": "TargetGroup"
+          },
+          "Type": "forward"
+        }]
       }
     },
     "EcsTaskRole": {
@@ -178,16 +181,14 @@
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Sid": "",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "ecs-tasks.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
-          ]
+          "Statement": [{
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }]
         },
         "Path": "/",
         "Policies": []
@@ -196,52 +197,62 @@
     "TaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties": {
-        "ContainerDefinitions": [
-          {
-            "Name": { "Ref": "AppName" },
-            "Image": { "Fn::Sub": "${ImageRepository}/${AppName}:${AppVersion}" },
-            "Cpu": { "Ref": "Cpu" },
-            "User": "root",
-            "PortMappings": [
-              {
-                "ContainerPort": { "Ref": "AppContainerPort" },
-                "HostPort": { "Ref": "AppContainerPort" }
-              }
-            ],
-            "MountPoints": [
-              {
-                "SourceVolume": "data",
-                "ContainerPath": "/usr/local/share/data"
-              }
-            ],
-            "MemoryReservation": { "Ref": "Memory" },
-            "Essential": "true",
-            "LogConfiguration": {
-              "LogDriver": "awslogs",
-              "Options": {
-                "awslogs-group": { "Ref": "LogGroup" },
-                "awslogs-region": { "Ref": "AWS::Region" },
-                "awslogs-stream-prefix": "ecs"
-              }
+        "ContainerDefinitions": [{
+          "Name": {
+            "Ref": "AppName"
+          },
+          "Image": {
+            "Fn::Sub": "${ImageRepository}/${AppName}:${AppVersion}"
+          },
+          "Cpu": {
+            "Ref": "Cpu"
+          },
+          "User": "root",
+          "PortMappings": [{
+            "ContainerPort": {
+              "Ref": "AppContainerPort"
             },
-            "Command": [
-              "--config.file=/etc/prometheus/prometheus.yml",
-              "--storage.tsdb.path=/usr/local/share/data",
-              "--storage.tsdb.min-block-duration=30m",
-              "--storage.tsdb.max-block-duration=1d",
-              "--web.console.libraries=/usr/share/prometheus/console_libraries",
-              "--web.console.templates=/usr/share/prometheus/consoles"
-            ]
-          }
-        ],
-        "Volumes": [
-          {
-            "Name": "data",
-            "Host": {
-             "SourcePath": { "Fn::Sub": "${EFSMountPath}/${AWS::StackName}/prometheus/data" }
+            "HostPort": {
+              "Ref": "AppContainerPort"
+            }
+          }],
+          "MountPoints": [{
+            "SourceVolume": "data",
+            "ContainerPath": "/usr/local/share/data"
+          }],
+          "MemoryReservation": {
+            "Ref": "Memory"
+          },
+          "Essential": "true",
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-group": {
+                "Ref": "LogGroup"
+              },
+              "awslogs-region": {
+                "Ref": "AWS::Region"
+              },
+              "awslogs-stream-prefix": "ecs"
+            }
+          },
+          "Command": [
+            "--config.file=/etc/prometheus/prometheus.yml",
+            "--storage.tsdb.path=/usr/local/share/data",
+            "--storage.tsdb.min-block-duration=30m",
+            "--storage.tsdb.max-block-duration=1d",
+            "--web.console.libraries=/usr/share/prometheus/console_libraries",
+            "--web.console.templates=/usr/share/prometheus/consoles"
+          ]
+        }],
+        "Volumes": [{
+          "Name": "data",
+          "Host": {
+            "SourcePath": {
+              "Fn::Sub": "${EFSMountPath}/${AWS::StackName}/prometheus/data"
             }
           }
-        ],
+        }],
         "Family": {
           "Ref": "AWS::StackName"
         },
@@ -264,26 +275,23 @@
           "Ref": "TaskDefinition"
         },
         "DesiredCount": 1,
-        "LoadBalancers": [
-          {
-            "TargetGroupArn": {
-              "Ref": "TargetGroup"
-            },
-            "ContainerPort": {
-              "Ref": "AppContainerPort"
-            },
-            "ContainerName": {
-              "Ref": "AppName"
-            }
+        "LoadBalancers": [{
+          "TargetGroupArn": {
+            "Ref": "TargetGroup"
+          },
+          "ContainerPort": {
+            "Ref": "AppContainerPort"
+          },
+          "ContainerName": {
+            "Ref": "AppName"
           }
-        ],
+        }],
         "Cluster": {
           "Fn::ImportValue": {
             "Fn::Sub": "${ClusterStackName}-ClusterName"
           }
         },
-        "PlacementStrategies": [
-          {
+        "PlacementStrategies": [{
             "Field": "attribute:ecs.availability-zone",
             "Type": "spread"
           },
@@ -336,15 +344,13 @@
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "application-autoscaling.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
-          ]
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "application-autoscaling.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }]
         },
         "Path": "/",
         "ManagedPolicyArns": [
@@ -367,9 +373,9 @@
             }
           }
         },
-        "HostedZoneName": {
+        "HostedZoneId": {
           "Fn::ImportValue": {
-            "Fn::Sub": "${HostedZoneStackName}-ZoneName"
+            "Fn::Sub": "${HostedZoneStackName}-ZoneId"
           }
         },
         "SetIdentifier": {

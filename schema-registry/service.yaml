@@ -413,8 +413,8 @@ Resources:
       AliasTarget:
         HostedZoneId: !Ref 'LoadBalancerCanonicalHostedZoneID'
         DNSName: !Ref 'LoadBalancerDNSName'
-      HostedZoneName: !ImportValue
-        Fn::Sub: ${HostedZoneStackName}-ZoneName
+      HostedZoneId: !ImportValue
+        Fn::Sub: ${HostedZoneStackName}-ZoneId
       SetIdentifier: !Ref 'AWS::StackName'
       Weight: 50
       Name: !Sub
@@ -429,8 +429,8 @@ Resources:
       AliasTarget:
         HostedZoneId: !Ref 'LoadBalancerCanonicalHostedZoneID'
         DNSName: !Ref 'LoadBalancerDNSName'
-      HostedZoneName: !ImportValue
-        Fn::Sub: ${HostedZoneStackName}-ZoneName
+      HostedZoneId: !ImportValue
+        Fn::Sub: ${HostedZoneStackName}-ZoneId
       SetIdentifier: !Ref 'AWS::StackName'
       Weight: 50
       Name: !Sub

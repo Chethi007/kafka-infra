@@ -70,7 +70,7 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   EcsServiceRole:
     Description: The Service role used by ECS
-    Type: String        
+    Type: String
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
@@ -79,7 +79,7 @@ Parameters:
     Description: The Hosted Zone stack name to create the service's record set in
   Listener:
     Description: ARN of the listener
-    Type: String    
+    Type: String
   LoadBalancerCanonicalHostedZoneID:
     Description: Hosted Zone ID for the load balancer
     Type: String
@@ -94,8 +94,8 @@ Parameters:
     Type: String
   SchemaRegistryUrl:
     Description: 'URL of the Kafka Schema Registry. Must include protocol'
-    Type: String  
-        
+    Type: String
+
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -331,8 +331,8 @@ Resources:
       AliasTarget:
         HostedZoneId: !Ref 'LoadBalancerCanonicalHostedZoneID'
         DNSName: !Ref 'LoadBalancerDNSName'
-      HostedZoneName: !ImportValue
-        Fn::Sub: ${HostedZoneStackName}-ZoneName
+      HostedZoneId: !ImportValue
+        Fn::Sub: ${HostedZoneStackName}-ZoneId
       SetIdentifier: !Ref 'AWS::StackName'
       Weight: 50
       Name: !Sub
