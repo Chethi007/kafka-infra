@@ -25,10 +25,6 @@ Parameters:
     Description: Kafka client port
     Type: Number
     Default: 9092
-  JMXPort:
-    Description: JMX Port to expose metrics on
-    Type: Number
-    Default: 8989
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
     Type: String
@@ -38,14 +34,22 @@ Parameters:
   InternalSG:
     Description: Security Group ID of the ECS Instances to allow JMX and client port ingress for this component
     Type: String
-  Cpu:
-    Description: Amount of CPU to reserve
+  ServiceCpu:
+    Description: CPU (1024 = 1 core)
     Type: Number
-    Default: 1024
-  Memory:
-    Description: Amount of Memory to reserve
+    Default: 896
+  ServiceMemory:
+    Description: Memory
     Type: Number
     Default: 4096
+  JmxtransCpu:
+    Description: CPU (1024 = 1 core)
+    Type: Number
+    Default: 128
+  JmxtransMemory:
+    Description: Memory
+    Type: Number
+    Default: 512
   Project:
     Description: Project tag
     Type: String
@@ -65,6 +69,9 @@ Parameters:
   DomainName:
     Description: The domain name for Kafka brokers
     Type: String
+  KinesisStackName:
+    Type: String
+    Description: Name of the CF stack used to create the Kinesis stream
 
 Resources:
   BrokersLogGroup:
@@ -72,6 +79,18 @@ Resources:
     Properties:
       LogGroupName: !Sub '${StackName}/kafka'
       RetentionInDays: 1
+  SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    DependsOn:
+      - BrokersLogGroup
+    Properties:
+      RoleArn: !ImportValue
+        Fn::Sub: ${KinesisStackName}-Role-Arn
+      LogGroupName: !Ref 'BrokersLogGroup'
+      FilterPattern: ''
+      DestinationArn: !ImportValue
+        Fn::Sub: ${KinesisStackName}-Stream-Arn
+
   ClientKafkaSG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -127,16 +146,16 @@ Resources:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'JMXPort'
-      ToPort: !Ref 'JMXPort'
+      FromPort: 8990
+      ToPort: 8992
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalKafkaSG'
   InternalSGIngressJMXRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'JMXPort'
-      ToPort: !Ref 'JMXPort'
+      FromPort: 8990
+      ToPort: 8992
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalSG'
   InternalSGClientIngressRule:
@@ -154,8 +173,10 @@ Resources:
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
-        Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
+        ServiceCpu: !Ref 'ServiceCpu'
+        ServiceMemory: !Ref 'ServiceMemory'
+        JmxtransCpu: !Ref 'JmxtransCpu'
+        JmxtransMemory: !Ref 'JmxtransMemory'
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
@@ -163,10 +184,10 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        JMXPort: !Ref 'JMXPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
+        JMXPort: 8990
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker2:
     Type: 'AWS::CloudFormation::Stack'
@@ -175,8 +196,10 @@ Resources:
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
-        Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
+        ServiceCpu: !Ref 'ServiceCpu'
+        ServiceMemory: !Ref 'ServiceMemory'
+        JmxtransCpu: !Ref 'JmxtransCpu'
+        JmxtransMemory: !Ref 'JmxtransMemory'
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
@@ -184,11 +207,11 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        JMXPort: !Ref 'JMXPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
-    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker1']
+        JMXPort: 8991
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -196,8 +219,10 @@ Resources:
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
-        Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
+        ServiceCpu: !Ref 'ServiceCpu'
+        ServiceMemory: !Ref 'ServiceMemory'
+        JmxtransCpu: !Ref 'JmxtransCpu'
+        JmxtransMemory: !Ref 'JmxtransMemory'
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
@@ -205,11 +230,11 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
-        JMXPort: !Ref 'JMXPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
-    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker2']
+        JMXPort: 8992
+    DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
 
 Outputs:
   ClientKafkaSG:

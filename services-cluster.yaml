@@ -50,12 +50,6 @@ Parameters:
     ]
     Default: m5.large
     ConstraintDescription: Must be a valid EC2 instance type
-  EBSOptimizedInstance:
-    Description: Enable EBS optimized flag. This will only work for instances that support it.
-    Type: String
-    AllowedValues: ['true', 'false']
-    Default: true
-    ConstraintDescription: Must be either 'true' or 'false'
   EBSVolumeSize:
     Description: Data volume size in GB for ECS instances. These will be exposed via EBSMountPath to containers.
     Type: Number
@@ -162,7 +156,6 @@ Resources:
         VPCId: !Ref 'VPCId'
         Subnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
         InstanceType: !Ref 'InstanceType'
-        EBSOptimizedInstance: !Ref 'EBSOptimizedInstance'
         EBSVolumeSize: !Ref 'EBSVolumeSize'
         ASGMinSize: !Ref 'ASGMinSize'
         ASGMaxSize: !Ref 'ASGMaxSize'
@@ -179,6 +172,7 @@ Resources:
         AdditionalSecurityGroup: !Ref 'InternalSG'
         BastionSG: !Ref 'BastionSG'
         ELBSecurityGroupId: !GetAtt 'ELB.Outputs.ELBSecurityGroupId'
+        KinesisStackName: !Ref 'KinesisStackName'
     DependsOn: 'ELB'
 
   SchemaRegistry:
@@ -198,6 +192,7 @@ Resources:
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
+        JMXPort: 8990
     DependsOn: 'ECS'
 
   RestProxy:
@@ -218,6 +213,7 @@ Resources:
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         KafkaConnectionString: !Ref 'KafkaConnectionString'
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
+        JMXPort: 8991
     DependsOn: 'SchemaRegistry'
 
   Connect:
@@ -238,6 +234,7 @@ Resources:
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         KafkaConnectionString: !Ref 'KafkaConnectionString'
+        JMXPort: 8992
     DependsOn: 'SchemaRegistry'
 
 Outputs:
@@ -278,11 +275,6 @@ Outputs:
     Value: !Sub '${AWS::StackName}'
     Export:
       Name: !Sub '${AWS::StackName}-ClusterName'
-  AutoScalingGroupName:
-    Description: A reference to ECS AutoScaling Group Name
-    Value: !GetAtt 'ECS.Outputs.AutoScalingGroupName'
-    Export:
-      Name: !Sub '${AWS::StackName}-AutoScalingGroupName'
   ServiceAutoScalingRole:
     Description: A reference to ECS service auto scaling role
     Value: !GetAtt 'ECS.Outputs.ServiceAutoScalingRole'
