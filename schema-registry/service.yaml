@@ -34,7 +34,7 @@ Parameters:
   AppDesiredCount:
     Type: Number
     Description: Number of instances of the service to run
-    Default: '1'
+    Default: '2'
   UIDesiredCount:
     Type: Number
     Description: Number of instances of the service to run

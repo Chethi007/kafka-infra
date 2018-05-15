@@ -36,7 +36,7 @@ Parameters:
   AppDesiredCount:
     Type: Number
     Description: Number of instances of the service to run
-    Default: '1'
+    Default: '2'
   AppMaxCount:
     Type: Number
     Description: Max number of instances of the service to scale out to

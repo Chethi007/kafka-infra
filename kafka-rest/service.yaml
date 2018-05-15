@@ -1,5 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates a service / task def for Kafka REST Proxy
+Description: >
+  Creates a service / task def for Kafka REST Proxy.
+  Note that if you use more than 1 node, there will be issues using the cluster as a consumer
+  group. The REST Proxy requires using individual nodes directly which not possible in this setup.
 Parameters:
   Cluster:
     Description: Name of an active CloudFormation stack that contains an ECS cluster
