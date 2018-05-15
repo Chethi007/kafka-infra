@@ -25,10 +25,6 @@ Parameters:
     Description: Zookeeper client port
     Type: Number
     Default: 2181
-  JMXPort:
-    Description: JMX Port to expose metrics on
-    Type: Number
-    Default: 8989
   PeerPortOne:
     Description: Zookeeper first peer port
     Type: Number
@@ -37,14 +33,22 @@ Parameters:
     Description: Zookeeper second peer port
     Type: Number
     Default: 3888
-  Cpu:
-    Description: Amount of CPU to reserve
+  ServiceCpu:
+    Description: CPU (1024 = 1 core)
     Type: Number
-    Default: 1024
-  Memory:
-    Description: Amount of Memory to reserve
+    Default: 896
+  ServiceMemory:
+    Description: Memory
     Type: Number
     Default: 4096
+  JmxtransCpu:
+    Description: CPU (1024 = 1 core)
+    Type: Number
+    Default: 128
+  JmxtransMemory:
+    Description: Memory
+    Type: Number
+    Default: 512
   InternalSG:
     Description: Security Group ID of the ECS Instances to allow JMX and client port ingress for this component
     Type: String
@@ -153,16 +157,16 @@ Resources:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'JMXPort'
-      ToPort: !Ref 'JMXPort'
+      FromPort: 8990
+      ToPort: 8992
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalZKSG'
   InternalSGIngressJMXRule:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       IpProtocol: tcp
-      FromPort: !Ref 'JMXPort'
-      ToPort: !Ref 'JMXPort'
+      FromPort: 8990
+      ToPort: 8992
       GroupId: !Ref 'InternalZKSG'
       SourceSecurityGroupId: !Ref 'InternalSG'
   InternalSGClientIngressRule:
@@ -180,8 +184,10 @@ Resources:
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
-        Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
+        ServiceCpu: !Ref 'ServiceCpu'
+        ServiceMemory: !Ref 'ServiceMemory'
+        JmxtransCpu: !Ref 'JmxtransCpu'
+        JmxtransMemory: !Ref 'JmxtransMemory'
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ServerId: 1
         ServerName: !Sub '${StackName}-zk1'
@@ -193,6 +199,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
+        JMXPort: 8990
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZKNode2:
     Type: 'AWS::CloudFormation::Stack'
@@ -201,8 +208,10 @@ Resources:
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
-        Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
+        ServiceCpu: !Ref 'ServiceCpu'
+        ServiceMemory: !Ref 'ServiceMemory'
+        JmxtransCpu: !Ref 'JmxtransCpu'
+        JmxtransMemory: !Ref 'JmxtransMemory'
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ServerId: 2
         ServerName: !Sub '${StackName}-zk2'
@@ -214,6 +223,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
+        JMXPort: 8991
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
   ZKNode3:
     Type: 'AWS::CloudFormation::Stack'
@@ -222,8 +232,10 @@ Resources:
       Parameters:
         Cluster: !Ref 'Cluster'
         StackName: !Ref 'StackName'
-        Cpu: !Ref 'Cpu'
-        Memory: !Ref 'Memory'
+        ServiceCpu: !Ref 'ServiceCpu'
+        ServiceMemory: !Ref 'ServiceMemory'
+        JmxtransCpu: !Ref 'JmxtransCpu'
+        JmxtransMemory: !Ref 'JmxtransMemory'
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ServerId: 3
         ServerName: !Sub '${StackName}-zk3'
@@ -235,6 +247,7 @@ Resources:
         SecurityGroup: !Ref 'InternalZKSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
+        JMXPort: 8992
     DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
 
 Outputs:

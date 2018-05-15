@@ -10,14 +10,22 @@ Parameters:
   StackName:
     Description: The Parent Stack Name
     Type: String
-  Cpu:
+  ServiceCpu:
     Description: CPU (1024 = 1 core)
     Type: Number
-    Default: 1024
-  Memory:
+    Default: 896
+  ServiceMemory:
     Description: Memory
     Type: Number
     Default: 4096
+  JmxtransCpu:
+    Description: CPU (1024 = 1 core)
+    Type: Number
+    Default: 128
+  JmxtransMemory:
+    Description: Memory
+    Type: Number
+    Default: 512
   DataVolumeMountPath:
     Description: Path to directory for mounting data
     Type: String
@@ -64,8 +72,8 @@ Resources:
       ContainerDefinitions:
       - Name: broker
         Image: loyaltyone/cp-kafka:0.1-beta
-        Cpu: !Ref 'Cpu'
-        MemoryReservation: !Ref 'Memory'
+        Cpu: !Ref 'ServiceCpu'
+        MemoryReservation: !Ref 'ServiceMemory'
         User: root
         DockerLabels:
           'discovery.service.name': !Sub '${BrokerName}${BrokerId}'
@@ -102,8 +110,8 @@ Resources:
             awslogs-stream-prefix: !Sub 'broker${BrokerId}'
       - Name: jmxtrans
         Image: loyaltyone/jmxtrans:0.1-beta
-        Cpu: '512'
-        MemoryReservation: '2048'
+        Cpu: !Ref 'JmxtransCpu'
+        MemoryReservation: !Ref 'JmxtransMemory'
         Environment:
           - Name: SECONDS_BETWEEN_RUNS
             Value: 60
