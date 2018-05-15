@@ -20,8 +20,10 @@ ENV JMXTRANS_ALIASES=zookeeper
 COPY config/*.json /usr/local/share/config/
 COPY bootstrap /usr/local/bin/
 
-# Load a JMX client
-RUN wget -P /usr/local/share http://crawler.archive.org/cmdline-jmxclient/cmdline-jmxclient-0.10.3.jar
+# Install jq and load a JMX client
+RUN apk update && \
+    apk add jq && \
+    wget -P /usr/local/share http://crawler.archive.org/cmdline-jmxclient/cmdline-jmxclient-0.10.3.jar
 
 # Execute our bootstrap before jmxtrans' entry point before starting the container.
 ENTRYPOINT ["/usr/local/bin/bootstrap", "/docker-entrypoint.sh"]
