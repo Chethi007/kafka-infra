@@ -154,7 +154,7 @@ Resources:
       Parameters:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
-        Subnets: !Join [",", [!Select [0, !Ref 'PrivateSubnets'], !Select [1, !Ref 'PrivateSubnets'], !Select [2, !Ref 'PrivateSubnets']]]
+        Subnets: !Join [',', !Ref 'PrivateSubnets']
         InstanceType: !Ref 'InstanceType'
         EBSVolumeSize: !Ref 'EBSVolumeSize'
         ASGMinSize: !Ref 'ASGMinSize'
