@@ -21,6 +21,22 @@ echo "JMXTRANS_ALIASES='${JMXTRANS_ALIASES}'"
 export SECONDS_BETWEEN_RUNS=${SECONDS_BETWEEN_RUNS:-10}
 echo "SECONDS_BETWEEN_RUNS='${SECONDS_BETWEEN_RUNS}'"
 
+# If ECS_SIDECAR is enabled, assume we will be monitoring a single host.
+# The DockerId of the container being monitored will replace the aliases.
+if [[ "$ECS_SIDECAR" == "true" ]]; then
+    # Figure out the docker host so we can use the AWS Agent Introspection API.
+    docker_host=$(/sbin/ip route | awk '/default/ { print $3 }')
+
+    # Look for the container that the one we're in is monitoring.
+    docker_id=$(curl -s http://${docker_host}:51678/v1/tasks?dockerid=$HOSTNAME | jq '.Containers[]' | \
+        jq -r "select(.DockerId | contains(\"$HOSTNAME\") | not).DockerId")
+
+    echo "Located DockerId='${docker_id}'"
+
+    docker_id=${docker_id:0:12}
+    echo "Truncated DockerId='${docker_id}'"
+fi
+
 echo ""
 
 # Retrieve individual host groups
@@ -79,12 +95,14 @@ for i in ${!host_groups[@]}; do
         # Copy the template
         cp ${src_config} ${dest_config}
 
-        # Replace the HOSTNAME placeholder in destination config
+        # Replace the placeholders in destination config. If placeholders, don't exist
+        # the substitution won't occur.
         sed -i \
             -e "s/{ALIAS}/${host_alias}/g" \
             -e "s/{HOSTNAME}/${host_name}/g" \
             -e "s/{HOSTPORT}/${host_port}/g" \
             -e "s/{AZ}/${host_az}/g" \
+            -e "s/{CONTAINER_ID}/${docker_id}/g" \
             ${dest_config}
     done;
 done;

@@ -501,8 +501,9 @@
           ]
         },
         {
-          "obj": "kafka.controller:type=KafkaController,name=ActiveControllerCount",
+          "obj": "kafka.controller:type=KafkaController,name=*",
           "resultAlias": "kafka-controller",
+          "typeNames": ["name"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
@@ -514,21 +515,9 @@
           ]
         },
         {
-          "obj": "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs",
+          "obj": "kafka.controller:type=ControllerStats,name=*",
           "resultAlias": "kafka-controller",
-          "outputWriters": [
-            {
-              "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",
-              "outputFile" : "/tmp/kafka.controller.txt",
-              "maxLogFileSize" : "10MB",
-              "maxLogBackupFiles" : 200,
-              "delimiter" : "\t"
-            }
-          ]
-        },
-        {
-          "obj": "kafka.controller:type=ControllerStats,name=UncleanLeaderElectionsPerSec",
-          "resultAlias": "kafka-controller",
+          "typeNames": ["name"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.KeyOutWriter",

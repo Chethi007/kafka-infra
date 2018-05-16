@@ -20,7 +20,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "AdminClientNodeMetrics"}
                 ]
               }
@@ -43,7 +43,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "AdminClientMetrics"}
                 ]
               }
@@ -64,7 +64,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerNodeMetrics"}
                 ]
               }
@@ -86,7 +86,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerCoordinatorMetrics"}
                 ]
               }
@@ -109,7 +109,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerMetrics"}
                 ]
               }
@@ -127,7 +127,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
@@ -148,7 +148,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerNodeMetrics"}
                 ]
               }
@@ -166,7 +166,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerTopicMetrics"}
                 ]
               }
@@ -189,7 +189,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -211,7 +211,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -233,7 +233,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProdcuerMetrics"}
                 ]
               }
@@ -255,7 +255,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "JerseyMetrics"}
                 ]
               }
@@ -273,7 +273,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"}
                 ]
               }
             }
@@ -290,7 +290,7 @@
                 "namespace": "Kafka Rest Proxy",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"}
                 ]
               }
             }
