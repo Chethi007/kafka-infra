@@ -216,6 +216,8 @@ Resources:
               Value: !Sub 'kafka-connect#${AppName}:${JMXPort}'
             - Name: JMXTRANS_ALIASES
               Value: !Ref 'AppName'
+            - Name: ECS_SIDECAR
+              Value: true
           LogConfiguration:
             LogDriver: awslogs
             Options:

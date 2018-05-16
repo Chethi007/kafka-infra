@@ -21,7 +21,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConnectCoordinatorMetrics"}
                 ]
               }
@@ -42,7 +42,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConnectMetrics"}
                 ]
               }
@@ -63,7 +63,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConnectMetrics"}
                 ]
               }
@@ -84,7 +84,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerMetrics"}
                 ]
               }
@@ -105,7 +105,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerMetrics"}
                 ]
               }
@@ -126,7 +126,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerMetrics"}
                 ]
               }
@@ -145,7 +145,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
@@ -164,7 +164,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
@@ -183,7 +183,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
@@ -202,7 +202,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
@@ -220,7 +220,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerTopicMetrics"}
                 ]
               }
@@ -241,7 +241,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -262,7 +262,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -283,7 +283,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -304,7 +304,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -325,7 +325,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -346,7 +346,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -368,7 +368,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "JerseyMetrics"}
                 ]
               }
@@ -386,7 +386,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"}
                 ]
               }
             }
@@ -403,7 +403,7 @@
                 "namespace": "Kafka Connect",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"}
                 ]
               }
             }

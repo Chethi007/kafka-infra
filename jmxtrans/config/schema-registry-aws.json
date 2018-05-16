@@ -20,7 +20,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerNodeMetrics"}
                 ]
               }
@@ -41,7 +41,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerCoordinatorMetrics"}
                 ]
               }
@@ -63,7 +63,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerMetrics"}
                 ]
               }
@@ -80,7 +80,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ConsumerFetchManagerMetrics"}
                 ]
               }
@@ -101,7 +101,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerNodeMetrics"}
                 ]
               }
@@ -119,7 +119,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerTopicMetrics"}
                 ]
               }
@@ -142,7 +142,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -164,7 +164,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -186,7 +186,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "ProducerMetrics"}
                 ]
               }
@@ -208,7 +208,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"},
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"},
                   {"name": "MetricType", "value": "JerseyMetrics"}
                 ]
               }
@@ -226,7 +226,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"}
                 ]
               }
             }
@@ -243,7 +243,7 @@
                 "namespace": "Schema Registry",
                 "dimensions": [
                   {"name": "HostName", "value": "{ALIAS}"},
-                  {"name": "AvailabilityZone", "value": "{AZ}"}
+                  {"name": "ContainerId", "value": "{CONTAINER_ID}"}
                 ]
               }
             }
