@@ -33,7 +33,7 @@
       "name": "VAR_HOST_NAME",
       "type": "constant",
       "label": "HostName",
-      "value": "dev-kafka-schema-registry",
+      "value": "dev-kafka-connect",
       "description": ""
     }
   ],
@@ -74,7 +74,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1526567160869,
+  "iteration": 1526567267723,
   "links": [],
   "panels": [
     {
@@ -135,7 +135,7 @@
             "MetricType": "$metric_type"
           },
           "metricName": "request-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -224,7 +224,7 @@
             "MetricType": "$metric_type"
           },
           "metricName": "response-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -313,7 +313,7 @@
             "MetricType": "$metric_type"
           },
           "metricName": "select-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -402,7 +402,7 @@
             "MetricType": "$metric_type"
           },
           "metricName": "io-ratio",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -457,7 +457,7 @@
       },
       "id": 216,
       "panels": [],
-      "title": "ConsumerCoordinatorMetrics",
+      "title": "ConnectCoordinatorMetrics",
       "type": "row"
     },
     {
@@ -501,10 +501,10 @@
           "dimensions": {
             "ContainerId": "$container_id",
             "HostName": "$host_name",
-            "MetricType": "ConsumerCoordinatorMetrics"
+            "MetricType": "ConnectCoordinatorMetrics"
           },
           "metricName": "sync-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -590,10 +590,10 @@
           "dimensions": {
             "ContainerId": "$container_id",
             "HostName": "$host_name",
-            "MetricType": "ConsumerCoordinatorMetrics"
+            "MetricType": "ConnectCoordinatorMetrics"
           },
           "metricName": "join-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -679,10 +679,10 @@
           "dimensions": {
             "ContainerId": "$container_id",
             "HostName": "$host_name",
-            "MetricType": "ConsumerCoordinatorMetrics"
+            "MetricType": "ConnectCoordinatorMetrics"
           },
           "metricName": "commit-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -768,10 +768,10 @@
           "dimensions": {
             "ContainerId": "$container_id",
             "HostName": "$host_name",
-            "MetricType": "ConsumerCoordinatorMetrics"
+            "MetricType": "ConnectCoordinatorMetrics"
           },
           "metricName": "commit-latency-avg",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -873,7 +873,7 @@
             "MetricType": "ConsumerFetchManagerMetrics"
           },
           "metricName": "records-consumed-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -962,7 +962,7 @@
             "MetricType": "ConsumerFetchManagerMetrics"
           },
           "metricName": "records-consumed-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1051,7 +1051,7 @@
             "MetricType": "ConsumerFetchManagerMetrics"
           },
           "metricName": "bytes-consumed-total",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1140,7 +1140,7 @@
             "MetricType": "ConsumerFetchManagerMetrics"
           },
           "metricName": "bytes-consumed-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1242,7 +1242,7 @@
             "MetricType": "ProducerTopicMetrics"
           },
           "metricName": "byte-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1331,7 +1331,7 @@
             "MetricType": "ProducerTopicMetrics"
           },
           "metricName": "record-error-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1420,7 +1420,7 @@
             "MetricType": "ProducerTopicMetrics"
           },
           "metricName": "record-retry-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1509,7 +1509,7 @@
             "MetricType": "ProducerTopicMetrics"
           },
           "metricName": "record-send-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1611,7 +1611,7 @@
             "MetricType": "JerseyMetrics"
           },
           "metricName": "request-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1700,7 +1700,7 @@
             "MetricType": "JerseyMetrics"
           },
           "metricName": "response-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -1789,7 +1789,7 @@
             "MetricType": "JerseyMetrics"
           },
           "metricName": "request-error-rate",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -2440,7 +2440,7 @@
             "HostName": "$host_name"
           },
           "metricName": "HeapMemoryUsage_init",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -2455,7 +2455,7 @@
             "HostName": "$host_name"
           },
           "metricName": "HeapMemoryUsage_committed",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "B",
           "region": "$region",
@@ -2470,7 +2470,7 @@
             "HostName": "$host_name"
           },
           "metricName": "HeapMemoryUsage_used",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "C",
           "region": "$region",
@@ -2485,7 +2485,7 @@
             "HostName": "$host_name"
           },
           "metricName": "HeapMemoryUsage_max",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "D",
           "region": "$region",
@@ -2588,7 +2588,7 @@
             "HostName": "$host_name"
           },
           "metricName": "NonHeapMemoryUsage_init",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "A",
           "region": "$region",
@@ -2603,7 +2603,7 @@
             "HostName": "$host_name"
           },
           "metricName": "NonHeapMemoryUsage_committed",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "B",
           "region": "$region",
@@ -2618,7 +2618,7 @@
             "HostName": "$host_name"
           },
           "metricName": "NonHeapMemoryUsage_used",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "C",
           "region": "$region",
@@ -2633,7 +2633,7 @@
             "HostName": "$host_name"
           },
           "metricName": "NonHeapMemoryUsage_max",
-          "namespace": "Schema Registry",
+          "namespace": "Kafka Connect",
           "period": "",
           "refId": "D",
           "region": "$region",
@@ -2783,7 +2783,7 @@
         "multi": true,
         "name": "container_id",
         "options": [],
-        "query": "dimension_values($region, Schema Registry, HeapMemoryUsage_init, ContainerId)",
+        "query": "dimension_values($region, Kafka Connect, HeapMemoryUsage_init, ContainerId)",
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -2803,7 +2803,7 @@
         "multi": false,
         "name": "metric_type",
         "options": [],
-        "query": "dimension_values($region, Schema Registry, request-total, MetricType)",
+        "query": "dimension_values($region, Kafka Connect, request-total, MetricType)",
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -2845,6 +2845,6 @@
     ]
   },
   "timezone": "",
-  "title": "Schema Registry - dev-kafka - US N. Virginia",
-  "version": 34
+  "title": "Kafka Connect - dev-kafka - US N. Virginia",
+  "version": 7
 }
