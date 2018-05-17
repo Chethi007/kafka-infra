@@ -74,7 +74,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1526567267723,
+  "iteration": 1526568480400,
   "links": [],
   "panels": [
     {
@@ -2846,5 +2846,5 @@
   },
   "timezone": "",
   "title": "Kafka Connect - dev-kafka - US N. Virginia",
-  "version": 7
+  "version": 10
 }
