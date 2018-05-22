@@ -72,7 +72,16 @@ Parameters:
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
-
+  KafkaKeyPass:
+    Description: Password for the kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaTrustPass:
+    Description: Password for the kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 Resources:
   BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -188,6 +197,8 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         JMXPort: 8990
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
+        KafkaTrustPass: !Ref 'KafkaTrustPass'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker2:
     Type: 'AWS::CloudFormation::Stack'
@@ -211,6 +222,8 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         JMXPort: 8991
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
+        KafkaTrustPass: !Ref 'KafkaTrustPass'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
@@ -234,6 +247,8 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         JMXPort: 8992
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
+        KafkaTrustPass: !Ref 'KafkaTrustPass'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
 
 Outputs:

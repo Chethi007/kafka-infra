@@ -39,13 +39,13 @@ Parameters:
     Type: String
   DomainName:
     Description: The domain under which the broker will register its advertised address. (HostedZoneName)
-    Type: String 
+    Type: String
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
     Type: String
   ZookeeperSecurityGroup:
     Description: Security Group to allow access to ZK
-    Type: String  
+    Type: String
   ClientPort:
     Description: Kafka client port
     Type: Number
@@ -63,6 +63,16 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
+  KafkaKeyPass:
+    Description: Password for the kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaTrustPass:
+    Description: Password for the kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 
 Resources:
   BrokerNodeTaskDefinition:
@@ -92,6 +102,12 @@ Resources:
             Value: !Ref 'JMXPort'
           - Name: KAFKA_LOG4J_LOGGERS
             Value: 'kafka.controller=WARN,state.change.logger=WARN'
+          - Name: KAFKA_SSL_DIR
+            Value: '/var/private/ssl'
+          - Name: KAFKA_KEY_PASS
+            Value: !Ref 'KafkaKeyPass'
+          - Name: KAFKA_TRUST_PASS
+            Value: !Ref 'KafkaTrustPass'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
@@ -102,6 +118,8 @@ Resources:
             ContainerPath: /var/lib/kafka/data
           - SourceVolume: secrets
             ContainerPath: /etc/kafka/secrets
+          - SourceVolume: ssl
+            ContainerPath: /var/private/ssl
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -136,6 +154,9 @@ Resources:
         - Name: secrets
           Host:
             SourcePath: !Sub '${DataVolumeMountPath}/broker/${BrokerId}/secrets'
+        - Name: ssl
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/ssl'
       Family: !Sub '${StackName}-broker-${BrokerId}'
   BrokerNodeService:
     Type: 'AWS::ECS::Service'
@@ -155,7 +176,7 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
-        
+
 Outputs:
   ConnectionString:
     Description: The connection string for this broker

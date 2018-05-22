@@ -19,4 +19,12 @@ then
 fi
 echo "KAFKA_BROKER_RACK: ${KAFKA_BROKER_RACK}"
 
+if [ -z "${KAFKA_SSL_DIR}" ];
+then
+    # If SSL directory env variable is set, generate keystore and truststore
+    keytool -import -alias ca -file ${KAFKA_SSL_DIR}/ca_cert.crt -keystore ${KAFKA_SSL_DIR}/kafka.truststore.jks -storepass ${KAFKA_TRUST_PASS} -noprompt
+    keytool -import -alias broker -file ${KAFKA_SSL_DIR}/broker_key.key -keystore ${KAFKA_SSL_DIR}/kafka.keystore.jks -storepass ${KAFKA_KEY_PASS} -noprompt
+    keytool -import -alias broker -file ${KAFKA_SSL_DIR}/broker_cert.crt -keystore ${KAFKA_SSL_DIR}/kafka.truststore.jks -storepass ${KAFKA_TRUST_PASS} -noprompt
+fi
+
 exec "$@"
