@@ -126,7 +126,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupName: !Sub '${AWS::StackName}-internal-kafka-sg'
-      GroupDescription: Allows Internal Access to Zookeeper Nodes
+      GroupDescription: Allows Internal Access to Kafka Brokers
       SecurityGroupIngress:
         - SourceSecurityGroupId: !Ref 'ClientKafkaSG'
           IpProtocol: tcp
