@@ -97,7 +97,7 @@ Resources:
           - Name: KAFKA_ZOOKEEPER_CONNECT
             Value: !Ref 'ZookeeperConnectionString'
           - Name: KAFKA_ADVERTISED_LISTENERS
-            Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+            Value: !Sub 'SSL://${BrokerName}${BrokerId}.internal.loyalty.com:${ClientSSLPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
           - Name: KAFKA_JMX_HOSTNAME
@@ -132,14 +132,6 @@ Resources:
             Value: 'SSL'
           - Name: KAFKA_SSL_CLIENT_AUTH
             Value: 'required'
-          - Name: DUMMY_VARIABLE
-            Value: 'blah'
-          - Name: KAFKA_LOG4J_LOGGERS
-            Value: 'kafka.network.RequestChannel=DEBUG'
-          - Name: KAFKA_LOG4J_ROOT_LOGLEVEL
-            Value: 'DEBUG'
-          - Name: KAFKA_TOOLS_LOG4J_LOGLEVEL
-            Value: 'DEBUG'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
