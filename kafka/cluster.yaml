@@ -150,15 +150,15 @@ Resources:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
     DependsOn: 'ClientKafkaSG'
-  InternalKafkaSGIngress:
-    Type: 'AWS::EC2::SecurityGroupIngress'
-    Properties:
-      IpProtocol: tcp
-      FromPort: !Ref 'ClientPort'
-      ToPort: !Ref 'ClientPort'
-      GroupId: !Ref 'InternalKafkaSG'
-      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
-    DependsOn: 'InternalKafkaSG'
+#  InternalKafkaSGIngress:
+#    Type: 'AWS::EC2::SecurityGroupIngress'
+#    Properties:
+#      IpProtocol: tcp
+#      FromPort: !Ref 'ClientPort'
+#      ToPort: !Ref 'ClientPort'
+#      GroupId: !Ref 'InternalKafkaSG'
+#      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
+#    DependsOn: 'InternalKafkaSG'
   InternalSSLKafkaSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:

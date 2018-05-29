@@ -131,7 +131,7 @@ Resources:
           - Name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
             Value: 'SSL'
           - Name: KAFKA_SSL_CLIENT_AUTH
-            Value: 'none'
+            Value: 'required'
           - Name: DUMMY_VARIABLE
             Value: 'blah'
           - Name: KAFKA_LOG4J_LOGGERS
