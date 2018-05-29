@@ -207,6 +207,7 @@ Resources:
               'route53:ListHostedZonesByName',
               's3:PutObject',
               's3:AbortMultipartUpload',
+              's3:GetObject',
               'ssm:DescribeAssociation',
               'ssm:GetDeployablePatchSnapshotForInstance',
               'ssm:GetDocument',
@@ -558,12 +559,12 @@ Resources:
 
                 domain_name=${ParentStackName}-broker.kafka.com
                 # get ca cert
-                aws acm-pca get-certificate-authority-certificate --region ${AWS::Region} --certificate-authority-arn ${PrivateCaArn}  | jq -r '.Certificate' > ${EBSMountPath}/ssl/ca_cert.crt
+                aws acm-pca get-certificate-authority-certificate --region ${AWS::Region} --certificate-authority-arn ${PrivateCaArn}  | jq -r '.Certificate' > ${EBSMountPath}/ssl/ca.crt
 
                 # generate private key
                 # should change CN to param
 
-                openssl req -new -sha256 -nodes -out ${EBSMountPath}/ssl/broker.internal.loyalty.com.csr -newkey rsa:2048 -keyout ${EBSMountPath}/ssl/broker.internal.loyalty.com.key -config <(
+                openssl req -new -sha256 -nodes -out ${EBSMountPath}/ssl/broker.csr -newkey rsa:2048 -keyout ${EBSMountPath}/ssl/broker.key -config <(
                 cat <<-EOF
                 [req]
                 default_bits = 2048
@@ -593,7 +594,7 @@ Resources:
                 # have aws private ca issue cert
                 certificate_arn=$(aws acm-pca issue-certificate --region ${AWS::Region} \
                   --certificate-authority-arn ${PrivateCaArn} \
-                  --csr file://${EBSMountPath}/ssl/broker.internal.loyalty.com.csr \
+                  --csr file://${EBSMountPath}/ssl/broker.csr \
                   --signing-algorithm "SHA256WITHRSA" \
                   --validity Value=365,Type="DAYS" \
                   --idempotency-token 1234 | jq -r '.CertificateArn')
@@ -602,7 +603,14 @@ Resources:
                 sleep 30
                 echo "cert arn:" + $certificate_arn
 
-                aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/broker_cert.crt
+                aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/broker.crt
+
+                # fetch loissuingca root cert
+                aws s3 cp s3://dev-kafka-artifacts/certs/loissuingca.pem ${EBSMountPath}/ssl/loissuingca.pem --region us-east-1
+                cat ${EBSMountPath}/ssl/loissuingca.pem >> ${EBSMountPath}/ssl/ca.crt
+
+                # create PKCS12 format to allow importing into keystore
+                openssl pkcs12 -export -in ${EBSMountPath}/ssl/broker.crt -inkey ${EBSMountPath}/ssl/broker.key -out ${EBSMountPath}/ssl/broker.p12 -name broker -CAfile ${EBSMountPath}/ssl/ca.crt -caname root -password pass:changeme
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'

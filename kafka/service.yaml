@@ -50,6 +50,10 @@ Parameters:
     Description: Kafka client port
     Type: Number
     Default: 9092
+  ClientSSLPort:
+    Description: Kafka client SSL port
+    Type: Number
+    Default: 9093
   JMXPort:
     Description: JMX Port to expose metrics on
     Type: Number
@@ -81,7 +85,7 @@ Resources:
       NetworkMode: awsvpc
       ContainerDefinitions:
       - Name: broker
-        Image: loyaltyone/cp-kafka:0.1-beta
+        Image: loyaltyone/cp-kafka:0.11-beta
         Cpu: !Ref 'ServiceCpu'
         MemoryReservation: !Ref 'ServiceMemory'
         User: root
@@ -93,7 +97,7 @@ Resources:
           - Name: KAFKA_ZOOKEEPER_CONNECT
             Value: !Ref 'ZookeeperConnectionString'
           - Name: KAFKA_ADVERTISED_LISTENERS
-            Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+            Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
           - Name: KAFKA_JMX_HOSTNAME
@@ -104,13 +108,43 @@ Resources:
             Value: 'kafka.controller=WARN,state.change.logger=WARN'
           - Name: KAFKA_SSL_DIR
             Value: '/var/private/ssl'
-          - Name: KAFKA_KEY_PASS
+          - Name: KAFKA_SSL_KEYSTORE_LOCATION
+            Value: '/var/private/ssl/kafka.keystore.jks'
+          - Name: KAFKA_SSL_KEYSTORE_FILENAME
+            Value: 'kafka.keystore.jks'
+          - Name: KAFKA_SSL_KEYSTORE_PASSWORD
             Value: !Ref 'KafkaKeyPass'
-          - Name: KAFKA_TRUST_PASS
+          - Name: KAFKA_SSL_KEY_PASSWORD
+            Value: !Ref 'KafkaKeyPass'
+          - Name: KAFKA_SSL_KEY_CREDENTIALS
+            Value: 'broker_sslkey_creds'
+          - Name: KAFKA_SSL_KEYSTORE_CREDENTIALS
+            Value: 'broker_keystore_creds'
+          - Name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
+            Value: 'broker_truststore_creds'
+          - Name: KAFKA_SSL_TRUSTSTORE_LOCATION
+            Value: '/var/private/ssl/kafka.truststore.jks'
+          - Name: KAFKA_SSL_TRUSTSTORE_FILENAME
+            Value: 'kafka.truststore.jks'
+          - Name: KAFKA_SSL_TRUSTSTORE_PASSWORD
             Value: !Ref 'KafkaTrustPass'
+          - Name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
+            Value: 'SSL'
+          - Name: KAFKA_SSL_CLIENT_AUTH
+            Value: 'none'
+          - Name: DUMMY_VARIABLE
+            Value: 'blah'
+          - Name: KAFKA_LOG4J_LOGGERS
+            Value: 'kafka.network.RequestChannel=DEBUG'
+          - Name: KAFKA_LOG4J_ROOT_LOGLEVEL
+            Value: 'DEBUG'
+          - Name: KAFKA_TOOLS_LOG4J_LOGLEVEL
+            Value: 'DEBUG'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
+          - ContainerPort: !Ref 'ClientSSLPort'
+            HostPort: !Ref 'ClientSSLPort'
           - ContainerPort: !Ref 'JMXPort'
             HostPort: !Ref 'JMXPort'
         MountPoints:
@@ -181,3 +215,6 @@ Outputs:
   ConnectionString:
     Description: The connection string for this broker
     Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+  SSLConnectionString:
+    Description: The connection string for this broker
+    Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort}'

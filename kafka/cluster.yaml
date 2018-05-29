@@ -25,6 +25,10 @@ Parameters:
     Description: Kafka client port
     Type: Number
     Default: 9092
+  ClientSSLPort:
+    Description: Kafka client SSL port
+    Type: Number
+    Default: 9093
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
     Type: String
@@ -128,6 +132,10 @@ Resources:
           IpProtocol: tcp
           FromPort: !Ref 'ClientPort'
           ToPort: !Ref 'ClientPort'
+        - SourceSecurityGroupId: !Ref 'ClientKafkaSG'
+          IpProtocol: tcp
+          FromPort: !Ref 'ClientSSLPort'
+          ToPort: !Ref 'ClientSSLPort'
       VpcId: !Ref 'VPCId'
       Tags:
         - Key: Project
@@ -148,6 +156,15 @@ Resources:
       IpProtocol: tcp
       FromPort: !Ref 'ClientPort'
       ToPort: !Ref 'ClientPort'
+      GroupId: !Ref 'InternalKafkaSG'
+      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
+    DependsOn: 'InternalKafkaSG'
+  InternalSSLKafkaSGIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'ClientSSLPort'
+      ToPort: !Ref 'ClientSSLPort'
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalKafkaSG'
     DependsOn: 'InternalKafkaSG'
@@ -175,6 +192,14 @@ Resources:
       ToPort: !Ref 'ClientPort'
       GroupId: !Ref 'InternalKafkaSG'
       SourceSecurityGroupId: !Ref 'InternalSG'
+  InternalSGClientSSLIngressRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'ClientSSLPort'
+      ToPort: !Ref 'ClientSSLPort'
+      GroupId: !Ref 'InternalKafkaSG'
+      SourceSecurityGroupId: !Ref 'InternalSG'
   Broker1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -193,6 +218,7 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
+        ClientSSLPort: !Ref 'ClientSSLPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
@@ -218,6 +244,7 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
+        ClientSSLPort: !Ref 'ClientSSLPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
@@ -243,6 +270,7 @@ Resources:
         BrokerName: !Sub '${StackName}-broker'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
+        ClientSSLPort: !Ref 'ClientSSLPort'
         LogGroup: !Ref 'BrokersLogGroup'
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
