@@ -120,18 +120,18 @@ Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
   #
   #   amzn-ami-2017.09.l-amazon-ecs-optimized
-  #   ECS agent:    1.17.3
+  #   ECS agent:    1.18.0
   #   Docker:       17.12.1-ce
-  #   ecs-init:     1.17.3-1
+  #   ecs-init:     1.18.0-1
   #
   # You can find the latest available on this page of our documentation:
   # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
   # (note the AMI identifier is region specific)
   AWSRegionToAMI:
     us-east-1:
-      AMI: ami-aff65ad2
+      AMI: ami-5253c32d
     ca-central-1:
-      AMI: ami-897ff9ed
+      AMI: ami-da6cecbe
 
 Conditions:
   IsClusterTypeService: !Equals [!Ref 'ClusterType', 'service']

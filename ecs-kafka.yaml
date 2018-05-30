@@ -24,6 +24,11 @@ Parameters:
     Description: Security group used to whitelist elb access
     Type: String
     Default: ''
+  DomainName:
+    Description: >
+      The domain under which the Kafka and Zookeeper nodes will register their advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
 
   # Instances
   InstanceType:
@@ -75,6 +80,17 @@ Parameters:
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
+  SetupBrokerCerts:
+    Type: String
+    Default: 'no'
+    AllowedValues: ['yes','no']
+    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
+  NodeCount:
+    Type: Number
+    MinValue: 1
+    Default: 3
+    Description: The total number of nodes in the cluster.
+    ConstraintDescription: Must be a value >= 1
 
   # Parameter to force a rolling deployment
   RollingDeploymentVersion:
@@ -117,18 +133,18 @@ Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
   #
   #   amzn-ami-2017.09.l-amazon-ecs-optimized
-  #   ECS agent:    1.17.3
+  #   ECS agent:    1.18.0
   #   Docker:       17.12.1-ce
-  #   ecs-init:     1.17.3-1
+  #   ecs-init:     1.18.0-1
   #
   # You can find the latest available on this page of our documentation:
   # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
   # (note the AMI identifier is region specific)
   AWSRegionToAMI:
     us-east-1:
-      AMI: ami-aff65ad2
+      AMI: ami-5253c32d
     ca-central-1:
-      AMI: ami-897ff9ed
+      AMI: ami-da6cecbe
 
 Resources:
   ECSLogGroup:
@@ -548,7 +564,12 @@ Resources:
 
                 exec >> /var/log/user-data.log 2>&1
 
-                echo "Beginning setup of SSL configuration"
+                if [[ "${SetupBrokerCerts}" == "no" ]]; then
+                  echo "Skipping Broker SSL configuration."
+                  exit 0
+                fi
+
+                echo "Beginning Broker SSL configuration"
 
                 cd /tmp/
                 curl -O https://bootstrap.pypa.io/get-pip.py
@@ -557,13 +578,17 @@ Resources:
 
                 mkdir -p ${EBSMountPath}/ssl
 
-                domain_name=${ParentStackName}-broker.kafka.com
-                # get ca cert
+                # Get CA certificate
                 aws acm-pca get-certificate-authority-certificate --region ${AWS::Region} --certificate-authority-arn ${PrivateCaArn}  | jq -r '.Certificate' > ${EBSMountPath}/ssl/ca.crt
 
-                # generate private key
-                # should change CN to param
+                # Generate SAN
+                alt_names=""
+                for i in $(seq 1 ${NodeCount}); do
+                  alt_names=$(echo -e "${!alt_names}\nDNS.${!i} = ${ParentStackName}-broker${!i}.${DomainName}")
+                done
+                alt_names=$(echo "$alt_names" | sed -e '/^$/d')
 
+                # Generate private key
                 openssl req -new -sha256 -nodes -out ${EBSMountPath}/ssl/broker.csr -newkey rsa:2048 -keyout ${EBSMountPath}/ssl/broker.key -config <(
                 cat <<-EOF
                 [req]
@@ -574,20 +599,18 @@ Resources:
                 distinguished_name = dn
 
                 [ dn ]
-                C=CA
-                ST=Ontario
-                L=Toronto
-                O=LoyaltyOne, Co.
-                OU=IT
-                CN = $domain_name
+                C = CA
+                ST = Ontario
+                L = Toronto
+                O = LoyaltyOne, Co.
+                OU = IT
+                CN = ${ParentStackName}-broker.${DomainName}
 
                 [ req_ext ]
                 subjectAltName = @alt_names
 
                 [ alt_names ]
-                DNS.1 = broker1.internal.loyalty.com
-                DNS.2 = broker2.internal.loyalty.com
-                DNS.3 = broker3.internal.loyalty.com
+                $alt_names
                 EOF
                 )
 

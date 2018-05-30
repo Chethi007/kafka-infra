@@ -70,7 +70,9 @@ Parameters:
     Type: Number
     Default: 9404
   DomainName:
-    Description: The domain name for Zookeeper hosts
+    Description: >
+      The domain under which the zookeeper node will register its advertised address.
+      Note: This is the HostedZoneName without the period suffix.
     Type: String
 Resources:
   ZkNodeTaskDefinition:

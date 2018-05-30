@@ -71,7 +71,9 @@ Parameters:
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
   DomainName:
-    Description: The domain name for Kafka brokers
+    Description: >
+      The domain under which the broker will register its advertised address.
+      Note: This is the HostedZoneName without the period suffix.
     Type: String
   KinesisStackName:
     Type: String
@@ -150,15 +152,15 @@ Resources:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
     DependsOn: 'ClientKafkaSG'
-#  InternalKafkaSGIngress:
-#    Type: 'AWS::EC2::SecurityGroupIngress'
-#    Properties:
-#      IpProtocol: tcp
-#      FromPort: !Ref 'ClientPort'
-#      ToPort: !Ref 'ClientPort'
-#      GroupId: !Ref 'InternalKafkaSG'
-#      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
-#    DependsOn: 'InternalKafkaSG'
+  InternalKafkaSGIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      IpProtocol: tcp
+      FromPort: !Ref 'ClientPort'
+      ToPort: !Ref 'ClientPort'
+      GroupId: !Ref 'InternalKafkaSG'
+      SourceSecurityGroupId: !Ref 'InternalKafkaSG'
+    DependsOn: 'InternalKafkaSG'
   InternalSSLKafkaSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
@@ -290,3 +292,10 @@ Outputs:
       - Broker1: !GetAtt 'Broker1.Outputs.ConnectionString'
         Broker2: !GetAtt 'Broker2.Outputs.ConnectionString'
         Broker3: !GetAtt 'Broker3.Outputs.ConnectionString'
+  SSLConnectionString:
+    Description: SSL connection string to connect to kafka brokers
+    Value: !Sub
+      - '${Broker1},${Broker2},${Broker3}'
+      - Broker1: !GetAtt 'Broker1.Outputs.SSLConnectionString'
+        Broker2: !GetAtt 'Broker2.Outputs.SSLConnectionString'
+        Broker3: !GetAtt 'Broker3.Outputs.SSLConnectionString'

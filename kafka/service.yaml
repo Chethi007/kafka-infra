@@ -38,7 +38,9 @@ Parameters:
     Description: The name of the broker. Used to register a dns entry in route53
     Type: String
   DomainName:
-    Description: The domain under which the broker will register its advertised address. (HostedZoneName)
+    Description: >
+      The domain under which the broker will register its advertised address.
+      Note: This is the HostedZoneName without the period suffix.
     Type: String
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
@@ -97,7 +99,7 @@ Resources:
           - Name: KAFKA_ZOOKEEPER_CONNECT
             Value: !Ref 'ZookeeperConnectionString'
           - Name: KAFKA_ADVERTISED_LISTENERS
-            Value: !Sub 'SSL://${BrokerName}${BrokerId}.internal.loyalty.com:${ClientSSLPort}'
+            Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
           - Name: KAFKA_JMX_HOSTNAME
@@ -132,9 +134,17 @@ Resources:
             Value: 'SSL'
           - Name: KAFKA_SSL_CLIENT_AUTH
             Value: 'required'
+          - Name: KAFKA_SSL_SECURE_RANDOM_IMPLEMENTATION
+            Value: 'SHA1PRNG'
+          #- Name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+          #  Value: 'HTTPS'
+          #- Name: KAFKA_LOG4J_LOGGERS
+          #  Value: 'kafka.network.RequestChannel=DEBUG'
+          #- Name: KAFKA_LOG4J_ROOT_LOGLEVEL
+          #  Value: 'DEBUG'
+          #- Name: KAFKA_TOOLS_LOG4J_LOGLEVEL
+          #  Value: 'DEBUG'
         PortMappings:
-          - ContainerPort: !Ref 'ClientPort'
-            HostPort: !Ref 'ClientPort'
           - ContainerPort: !Ref 'ClientSSLPort'
             HostPort: !Ref 'ClientSSLPort'
           - ContainerPort: !Ref 'JMXPort'
@@ -208,5 +218,5 @@ Outputs:
     Description: The connection string for this broker
     Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
   SSLConnectionString:
-    Description: The connection string for this broker
+    Description: The SSL connection string for this broker
     Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort}'

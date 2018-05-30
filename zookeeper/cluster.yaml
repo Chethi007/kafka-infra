@@ -69,7 +69,9 @@ Parameters:
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
   DomainName:
-    Description: The domain name for Zookeeper hosts
+    Description: >
+      The domain under which the zookeeper node will register its advertised address.
+      Note: This is the HostedZoneName without the period suffix.
     Type: String
   KinesisStackName:
     Type: String
