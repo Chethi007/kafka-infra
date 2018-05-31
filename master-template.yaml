@@ -163,6 +163,7 @@ Parameters:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
 
+  # Certificate information
   PrivateCaArn:
     Type: String
     Description: the ARN of the Private CA that signs the broker certificate
@@ -176,6 +177,24 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+  CertificateCountry:
+    Description: The country to use in the certificate (usually 2 character country code like CA)
+    Type: String
+  CertificateState:
+    Description: The state or province to use in the certificate
+    Type: String
+  CertificateLocalityName:
+    Description: The locality name to use in the certificate
+    Type: String
+  CertificateOrganizationName:
+    Description: The organization name to use in the certificate
+    Type: String
+  CertificateOrganizationUnit:
+    Description: The organization unit to use in the certificate
+    Type: String
+  IssuingCaS3Path:
+    Description: The S3 path for the Issuing CA's certificate
+    Type: String
 
 Resources:
   # Create a 3-node ECS cluster for Kafka brokers
@@ -196,6 +215,13 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         DomainName: !Ref 'DomainName'
+        CertificateCountry: !Ref 'CertificateCountry'
+        CertificateState: !Ref 'CertificateState'
+        CertificateLocalityName: !Ref 'CertificateLocalityName'
+        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
+        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
+        IssuingCaS3Path: !Ref 'IssuingCaS3Path'
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
@@ -264,6 +290,13 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         DomainName: !Ref 'DomainName'
+        CertificateCountry: !Ref 'CertificateCountry'
+        CertificateState: !Ref 'CertificateState'
+        CertificateLocalityName: !Ref 'CertificateLocalityName'
+        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
+        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
+        IssuingCaS3Path: !Ref 'IssuingCaS3Path'
+        KafkaKeyPass: ''
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
