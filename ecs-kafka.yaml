@@ -588,8 +588,17 @@ Resources:
                 done
                 alt_names=$(echo "$alt_names" | sed -e '/^$/d')
 
+                echo "The SAN configuration is:"
+                echo -e "$alt_names"
+
                 # Generate private key
-                openssl req -new -sha256 -nodes -out ${EBSMountPath}/ssl/broker.csr -newkey rsa:2048 -keyout ${EBSMountPath}/ssl/broker.key -config <(
+                openssl req -new \
+                  -sha256 \
+                  -nodes \
+                  -out ${EBSMountPath}/ssl/broker.csr \
+                  -newkey rsa:2048 \
+                  -keyout ${EBSMountPath}/ssl/broker.key \
+                  -config <(
                 cat <<-EOF
                 [req]
                 default_bits = 2048

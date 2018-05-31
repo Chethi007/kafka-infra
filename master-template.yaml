@@ -167,12 +167,12 @@ Parameters:
     Type: String
     Description: the ARN of the Private CA that signs the broker certificate
   KafkaKeyPass:
-    Description: Password for the kafka keystore
+    Description: Password for the Kafka keystore
     Type: String
     NoEcho: true
     Default: ''
   KafkaTrustPass:
-    Description: Password for the kafka keystore
+    Description: Password for the Kafka truststore
     Type: String
     NoEcho: true
     Default: ''
@@ -195,7 +195,7 @@ Resources:
         Environment: !Ref 'Environment'
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
-        DomainName: '${DomainName}'
+        DomainName: !Ref 'DomainName'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
@@ -263,7 +263,7 @@ Resources:
         Environment: !Ref 'Environment'
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
-        DomainName: '${DomainName}'
+        DomainName: !Ref 'DomainName'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
