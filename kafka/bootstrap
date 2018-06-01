@@ -19,4 +19,25 @@ then
 fi
 echo "KAFKA_BROKER_RACK: ${KAFKA_BROKER_RACK}"
 
+if [ -n "${KAFKA_SSL_DIR}" ];
+then
+  # If SSL directory env variable is set, generate keystore and truststore
+  if [ ! -f ${KAFKA_SSL_DIR}/kafka.truststore.jks ];
+  then
+    # If truststore doesn't exist, generate truststore
+    keytool -import -alias ca -file ${KAFKA_SSL_DIR}/ca.crt -keystore ${KAFKA_SSL_DIR}/kafka.truststore.jks -storepass ${KAFKA_SSL_TRUSTSTORE_PASSWORD} -noprompt
+    keytool -import -alias broker -file ${KAFKA_SSL_DIR}/broker.crt -keystore ${KAFKA_SSL_DIR}/kafka.truststore.jks -storepass ${KAFKA_SSL_TRUSTSTORE_PASSWORD} -noprompt
+    cp ${KAFKA_SSL_DIR}/kafka.truststore.jks /etc/kafka/secrets/kafka.truststore.jks
+  fi
+  if [ ! -f ${KAFKA_SSL_DIR}/kafka.keystore.jks ];
+  then
+    # IF keystore doesn't exist, generate keystore
+    keytool -importkeystore -deststorepass ${KAFKA_SSL_KEYSTORE_PASSWORD} -destkeypass ${KAFKA_SSL_KEY_PASSWORD} -destkeystore ${KAFKA_SSL_DIR}/kafka.keystore.jks -srckeystore ${KAFKA_SSL_DIR}/broker.p12 -srcstoretype PKCS12 -srcstorepass changeme -alias broker
+    cp ${KAFKA_SSL_DIR}/kafka.keystore.jks /etc/kafka/secrets/kafka.keystore.jks
+  fi
+  echo ${KAFKA_SSL_TRUSTSTORE_PASSWORD} > /etc/kafka/secrets/broker_truststore_creds
+  echo ${KAFKA_SSL_KEYSTORE_PASSWORD} > /etc/kafka/secrets/broker_keystore_creds
+  echo ${KAFKA_SSL_KEY_PASSWORD} > /etc/kafka/secrets/broker_sslkey_creds
+fi
+
 exec "$@"

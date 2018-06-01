@@ -38,18 +38,24 @@ Parameters:
     Description: The name of the broker. Used to register a dns entry in route53
     Type: String
   DomainName:
-    Description: The domain under which the broker will register its advertised address. (HostedZoneName)
-    Type: String 
+    Description: >
+      The domain under which the broker will register its advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
   ZookeeperConnectionString:
     Description: Connection string for Zookeeper Cluster
     Type: String
   ZookeeperSecurityGroup:
     Description: Security Group to allow access to ZK
-    Type: String  
+    Type: String
   ClientPort:
     Description: Kafka client port
     Type: Number
     Default: 9092
+  ClientSSLPort:
+    Description: Kafka client SSL port
+    Type: Number
+    Default: 9093
   JMXPort:
     Description: JMX Port to expose metrics on
     Type: Number
@@ -63,6 +69,16 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
+  KafkaKeyPass:
+    Description: Password for the kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaTrustPass:
+    Description: Password for the kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 
 Resources:
   BrokerNodeTaskDefinition:
@@ -71,7 +87,7 @@ Resources:
       NetworkMode: awsvpc
       ContainerDefinitions:
       - Name: broker
-        Image: loyaltyone/cp-kafka:0.1-beta
+        Image: loyaltyone/cp-kafka:0.11-beta
         Cpu: !Ref 'ServiceCpu'
         MemoryReservation: !Ref 'ServiceMemory'
         User: root
@@ -83,7 +99,7 @@ Resources:
           - Name: KAFKA_ZOOKEEPER_CONNECT
             Value: !Ref 'ZookeeperConnectionString'
           - Name: KAFKA_ADVERTISED_LISTENERS
-            Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+            Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
           - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
             Value: 2
           - Name: KAFKA_JMX_HOSTNAME
@@ -92,9 +108,47 @@ Resources:
             Value: !Ref 'JMXPort'
           - Name: KAFKA_LOG4J_LOGGERS
             Value: 'kafka.controller=WARN,state.change.logger=WARN'
+          - Name: KAFKA_SSL_DIR
+            Value: '/var/private/ssl'
+          - Name: KAFKA_SSL_KEYSTORE_LOCATION
+            Value: '/var/private/ssl/kafka.keystore.jks'
+          - Name: KAFKA_SSL_KEYSTORE_FILENAME
+            Value: 'kafka.keystore.jks'
+          - Name: KAFKA_SSL_KEYSTORE_PASSWORD
+            Value: !Ref 'KafkaKeyPass'
+          - Name: KAFKA_SSL_KEY_PASSWORD
+            Value: !Ref 'KafkaKeyPass'
+          - Name: KAFKA_SSL_KEY_CREDENTIALS
+            Value: 'broker_sslkey_creds'
+          - Name: KAFKA_SSL_KEYSTORE_CREDENTIALS
+            Value: 'broker_keystore_creds'
+          - Name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
+            Value: 'broker_truststore_creds'
+          - Name: KAFKA_SSL_TRUSTSTORE_LOCATION
+            Value: '/var/private/ssl/kafka.truststore.jks'
+          - Name: KAFKA_SSL_TRUSTSTORE_FILENAME
+            Value: 'kafka.truststore.jks'
+          - Name: KAFKA_SSL_TRUSTSTORE_PASSWORD
+            Value: !Ref 'KafkaTrustPass'
+          - Name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
+            Value: 'SSL'
+          - Name: KAFKA_SSL_CLIENT_AUTH
+            Value: 'required'
+          - Name: KAFKA_SSL_SECURE_RANDOM_IMPLEMENTATION
+            Value: 'SHA1PRNG'
+          - Name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+            Value: 'HTTPS'
+          - Name: KAFKA_LOG4J_LOGGERS
+            Value: 'kafka.network.RequestChannel=WARN'
+          - Name: KAFKA_LOG4J_ROOT_LOGLEVEL
+            Value: 'INFO, stdout'
+          - Name: KAFKA_TOOLS_LOG4J_LOGLEVEL
+            Value: 'WARN, stderr'
         PortMappings:
           - ContainerPort: !Ref 'ClientPort'
             HostPort: !Ref 'ClientPort'
+          - ContainerPort: !Ref 'ClientSSLPort'
+            HostPort: !Ref 'ClientSSLPort'
           - ContainerPort: !Ref 'JMXPort'
             HostPort: !Ref 'JMXPort'
         MountPoints:
@@ -102,6 +156,8 @@ Resources:
             ContainerPath: /var/lib/kafka/data
           - SourceVolume: secrets
             ContainerPath: /etc/kafka/secrets
+          - SourceVolume: ssl
+            ContainerPath: /var/private/ssl
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -136,6 +192,9 @@ Resources:
         - Name: secrets
           Host:
             SourcePath: !Sub '${DataVolumeMountPath}/broker/${BrokerId}/secrets'
+        - Name: ssl
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/ssl'
       Family: !Sub '${StackName}-broker-${BrokerId}'
   BrokerNodeService:
     Type: 'AWS::ECS::Service'
@@ -155,8 +214,11 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
-        
+
 Outputs:
   ConnectionString:
     Description: The connection string for this broker
     Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+  SSLConnectionString:
+    Description: The SSL connection string for this broker
+    Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort}'

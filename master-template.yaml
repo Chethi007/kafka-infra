@@ -37,6 +37,12 @@ Parameters:
   BastionSG:
     Description: Security group used to whitelist for SSH access
     Type: AWS::EC2::SecurityGroup::Id
+  DomainName:
+    Description: >
+      The domain under which the Kafka and Zookeeper nodes will register their advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
+
   BrokerInstanceType:
     Description: Which instance type should we use to build the Kafka ECS cluster
     Type: String
@@ -157,6 +163,36 @@ Parameters:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
 
+  # Certificate information
+  PrivateCaArn:
+    Type: String
+    Description: the ARN of the Private CA that signs the broker certificate
+  KafkaKeyPass:
+    Description: Password for the Kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaTrustPass:
+    Description: Password for the Kafka truststore
+    Type: String
+    NoEcho: true
+    Default: ''
+  CertificateCountry:
+    Description: The country to use in the certificate (usually 2 character country code like CA)
+    Type: String
+  CertificateState:
+    Description: The state or province to use in the certificate
+    Type: String
+  CertificateLocalityName:
+    Description: The locality name to use in the certificate
+    Type: String
+  CertificateOrganizationName:
+    Description: The organization name to use in the certificate
+    Type: String
+  CertificateOrganizationUnit:
+    Description: The organization unit to use in the certificate
+    Type: String
+
 Resources:
   # Create a 3-node ECS cluster for Kafka brokers
   ECSBrokers:
@@ -175,12 +211,22 @@ Resources:
         Environment: !Ref 'Environment'
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
+        DomainName: !Ref 'DomainName'
+        CertificateCountry: !Ref 'CertificateCountry'
+        CertificateState: !Ref 'CertificateState'
+        CertificateLocalityName: !Ref 'CertificateLocalityName'
+        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
+        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'broker-data'
         KinesisStackName: !Ref 'KinesisStackName'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        SetupBrokerCerts: 'yes'
+        NodeCount: 3
     DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
   EBSBrokerVolume1:
     Type: 'AWS::CloudFormation::Stack'
@@ -239,12 +285,22 @@ Resources:
         Environment: !Ref 'Environment'
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
+        DomainName: !Ref 'DomainName'
+        CertificateCountry: !Ref 'CertificateCountry'
+        CertificateState: !Ref 'CertificateState'
+        CertificateLocalityName: !Ref 'CertificateLocalityName'
+        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
+        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
+        KafkaKeyPass: ''
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'zk-data'
         KinesisStackName: !Ref 'KinesisStackName'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        SetupBrokerCerts: 'no'
+        NodeCount: 3
     DependsOn: ['EBSZKVolume1','EBSZKVolume2','EBSZKVolume3']
   EBSZKVolume1:
     Type: 'AWS::CloudFormation::Stack'
@@ -334,8 +390,7 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
-        DomainName: !ImportValue
-          'Fn::Sub': '${HostedZoneStackName}-ZoneName'
+        DomainName: !Ref 'DomainName'
         DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
         KinesisStackName: !Ref 'KinesisStackName'
@@ -356,11 +411,12 @@ Resources:
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
-        DomainName: !ImportValue
-          'Fn::Sub': '${HostedZoneStackName}-ZoneName'
+        DomainName: !Ref 'DomainName'
         DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
         KinesisStackName: !Ref 'KinesisStackName'
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
+        KafkaTrustPass: !Ref 'KafkaTrustPass'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 
   # Security group to allow internal communications for this stack.
@@ -394,6 +450,11 @@ Outputs:
     Value: !GetAtt 'Brokers.Outputs.ConnectionString'
     Export:
       Name: !Sub '${AWS::StackName}-KafkaConnectionString'
+  KafkaSSLConnectionString:
+    Description: 'Comma delimited list of Kafka broker addresses'
+    Value: !GetAtt 'Brokers.Outputs.SSLConnectionString'
+    Export:
+      Name: !Sub '${AWS::StackName}-KafkaSSLConnectionString'
   SchemaRegistryURL:
     Description: 'The URL for Kafka Schema Registry'
     Value: !GetAtt 'Services.Outputs.SchemaRegistryURL'
