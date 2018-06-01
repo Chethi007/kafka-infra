@@ -51,9 +51,6 @@ Parameters:
   CertificateOrganizationUnit:
     Description: The organization unit to use in the certificate
     Type: String
-  IssuingCaS3Path:
-    Description: The S3 path for the Issuing CA's certificate
-    Type: String
 
   # Instances
   InstanceType:
@@ -248,7 +245,6 @@ Resources:
               'route53:ListHostedZonesByName',
               's3:PutObject',
               's3:AbortMultipartUpload',
-              's3:GetObject',
               'ssm:DescribeAssociation',
               'ssm:GetDeployablePatchSnapshotForInstance',
               'ssm:GetDocument',
@@ -662,10 +658,6 @@ Resources:
 
                 aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
                   --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/broker.crt
-
-                # Fetch issuing CA root cert
-                aws s3 cp ${IssuingCaS3Path} ${EBSMountPath}/ssl/issuing_ca.pem --region ${AWS::Region}
-                cat ${EBSMountPath}/ssl/issuing_ca.pem >> ${EBSMountPath}/ssl/ca.crt
 
                 # Create PKCS12 format to allow importing into keystore
                 openssl pkcs12 -export \
