@@ -28,7 +28,7 @@ readonly CFNS=$(grep \
     --include="*.yaml" \
     --exclude=master.yaml \
     --exclude=efs.yaml \
-    --exclude-dir={.idea,kafka-connect,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
+    --exclude-dir={.idea,cassandra,jmxtrans} -rnwl . -e 'AWSTemplateFormatVersion')
 
 for cfn in ${CFNS}; do
     echo "Validating template ${cfn}"

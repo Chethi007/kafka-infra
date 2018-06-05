@@ -110,6 +110,11 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+  ClientKeyPass:
+    Description: Password for the Client Key
+    Type: String
+    NoEcho: true
+    Default: ''
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -194,15 +199,19 @@ Resources:
             - Name: KAFKA_REST_CLIENT_SECURITY_PROTOCOL
               Value: 'SSL'
             - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_LOCATION
-              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.truststore.jks'
+              Value: !Sub '/var/private/ssl/kafka.client.truststore.jks'
             - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD
               Value: !Ref 'KafkaRestTrustPass'
             - Name: KAFKA_REST_CLIENT_SSL_KEYSTORE_LOCATION
-              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.keystore.jks'
+              Value: !Sub '/var/private/ssl/kafka.client.keystore.jks'
             - Name: KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD
               Value: !Ref 'KafkaRestKeyPass'
             - Name: KAFKA_REST_CLIENT_SSL_KEY_PASSWORD
               Value: !Ref 'KafkaRestKeyPass'
+            - Name: KAFKA_REST_CLIENT_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+              Value: 'HTTPS'
+            - Name: CLIENT_KEY_PASS
+              Value: !Ref 'ClientKeyPass'
           MountPoints:
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl

@@ -57,7 +57,7 @@ then
         -destkeystore ${CONNECT_SSL_DIR}/kafka.client.keystore.jks \
         -srckeystore ${CONNECT_SSL_DIR}/client.p12 \
         -srcstoretype PKCS12 \
-        -srcstorepass ${CONNECT_SSL_KEY_PASSWORD} \
+        -srcstorepass ${CLIENT_KEY_PASS} \
         -alias client
   fi
 fi

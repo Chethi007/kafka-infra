@@ -123,6 +123,9 @@ Parameters:
   KafkaConnectionString:
     Description: 'Comma delimited list of Kafka broker addresses'
     Type: String
+  ServiceSSLConnectionString:
+    Description: 'Comma delimited list of Kafka broker addresses, with each address prefaced by "SSL://"'
+    Type: String
   InternalSG:
     Description: Security Group for internal access
     Type: AWS::EC2::SecurityGroup::Id
@@ -173,27 +176,32 @@ Parameters:
     NoEcho: true
     Default: ''
   ConnectTrustPass:
-    Description: Password for the connect keystore
+    Description: Password for the connect truststore
     Type: String
     NoEcho: true
     Default: ''
   SchemaRegistryKeyPass:
-    Description: Password for the SchemaRegistry keystore
+    Description: Password for the Schema Registry keystore
     Type: String
     NoEcho: true
     Default: ''
   SchemaRegistryTrustPass:
-    Description: Password for the SchemaRegistry keystore
+    Description: Password for the Schema Registry truststore
     Type: String
     NoEcho: true
     Default: ''
   KafkaRestKeyPass:
-    Description: Password for the SchemaRegistry keystore
+    Description: Password for the Kafka Rest keystore
     Type: String
     NoEcho: true
     Default: ''
   KafkaRestTrustPass:
-    Description: Password for the SchemaRegistry keystore
+    Description: Password for the Kafka Rest Truststore
+    Type: String
+    NoEcho: true
+    Default: ''
+  ClientKeyPass:
+    Description: Password for the Client Key
     Type: String
     NoEcho: true
     Default: ''
@@ -249,6 +257,7 @@ Resources:
         CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
         SetupClientCerts: !Ref 'SetupClientCerts'
         ParentStackName: !Ref 'ParentStackName'
+        ClientKeyPass: !Ref 'ClientKeyPass'
     DependsOn: 'ELB'
 
   SchemaRegistry:
@@ -272,7 +281,8 @@ Resources:
         DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
         SchemaRegistryKeyPass: !Ref 'SchemaRegistryKeyPass'
         SchemaRegistryTrustPass: !Ref 'SchemaRegistryTrustPass'
-        KafkaConnectionString: !Ref 'KafkaConnectionString'
+        ClientKeyPass: !Ref 'ClientKeyPass'
+        KafkaConnectionString: !Ref 'ServiceSSLConnectionString'
     DependsOn: 'ECS'
 
   RestProxy:
@@ -291,12 +301,13 @@ Resources:
         LoadBalancerCanonicalHostedZoneID: !GetAtt 'ELB.Outputs.LoadBalancerCanonicalHostedZoneID'
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
-        KafkaConnectionString: !Ref 'KafkaConnectionString'
+        KafkaConnectionString: !Ref 'ServiceSSLConnectionString'
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
         JMXPort: 8991
         DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
         KafkaRestTrustPass: !Ref 'KafkaRestTrustPass'
         KafkaRestKeyPass: !Ref 'KafkaRestKeyPass'
+        ClientKeyPass: !Ref 'ClientKeyPass'
     DependsOn: 'SchemaRegistry'
 
   Connect:
@@ -320,9 +331,9 @@ Resources:
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         JMXPort: 8992
         DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
-        KafkaConnectionString: !Ref 'KafkaConnectionString'
         ConnectKeyPass: !Ref 'ConnectKeyPass'
         ConnectTrustPass: !Ref 'ConnectTrustPass'
+        ClientKeyPass: !Ref 'ClientKeyPass'
     DependsOn: 'SchemaRegistry'
 
 Outputs:

@@ -90,14 +90,14 @@ Parameters:
   ZookeeperConnectionString:
     Description: 'Comma delimited list of Zookeeper node addresses'
     Type: String
+  KafkaConnectionString:
+    Description: 'Comma delimited list of Kafka broker addresses'
+    Type: String
   DataVolumeMountPath:
     Description: Path to directory for mounting data
     Type: String
     MinLength: 1
     ConstraintDescription: Must be a valid folder path
-  KafkaConnectionString:
-    Description: 'Comma delimited list of Kafka broker addresses'
-    Type: String
   SchemaRegistryKeyPass:
     Description: Password for the SchemaRegistry keystore
     Type: String
@@ -105,6 +105,11 @@ Parameters:
     Default: ''
   SchemaRegistryTrustPass:
     Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  ClientKeyPass:
+    Description: Password for the Client Key
     Type: String
     NoEcho: true
     Default: ''
@@ -221,22 +226,26 @@ Resources:
               Value: !Ref 'JMXPort'
             - Name: SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS
               Value: 3
-            - Name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
-              Value: !Ref 'KafkaConnectionString'
             - Name: SCHEMA_REGISTRY_SSL_DIR
               Value: '/var/private/ssl'
             - Name: SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL
               Value: 'SSL'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+              Value: !Ref 'KafkaConnectionString'
             - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION
-              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.truststore.jks'
+              Value: !Sub '/var/private/ssl/kafka.client.truststore.jks'
             - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD
               Value: !Ref 'SchemaRegistryTrustPass'
             - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION
-              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.keystore.jks'
+              Value: !Sub '/var/private/ssl/kafka.client.keystore.jks'
             - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD
               Value: !Ref 'SchemaRegistryKeyPass'
             - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD
               Value: !Ref 'SchemaRegistryKeyPass'
+            - Name: CLIENT_KEY_PASS
+              Value: !Ref 'ClientKeyPass'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+              Value: 'HTTPS'
           MountPoints:
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl
