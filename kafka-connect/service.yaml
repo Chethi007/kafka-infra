@@ -70,6 +70,11 @@ Parameters:
   TrustedCertsBucket:
     Type: String
     Description: The S3 bucket where the trusted certs are available
+  DataVolumeMountPath:
+    Description: Path to directory for mounting data
+    Type: String
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
   Listener:
     Description: ARN of the listener
     Type: String
@@ -91,6 +96,16 @@ Parameters:
   KafkaConnectionString:
     Description: 'Comma delimited list of Kafka broker addresses'
     Type: String
+  ConnectKeyPass:
+    Description: Password for the connect keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  ConnectTrustPass:
+    Description: Password for the connect keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 
 Resources:
   TargetGroup:
@@ -150,7 +165,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-kafka-connect:0.1-beta
+          Image: loyaltyone/cp-kafka-connect:0.11-beta
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -202,6 +217,25 @@ Resources:
               Value: !Ref 'AppName'
             - Name: KAFKA_JMX_PORT
               Value: !Ref 'JMXPort'
+            - Name: CONNECT_SSL_DIR
+              Value: '/var/private/ssl'
+            - Name: CONNECT_SECURITY_PROTOCOL
+              Value: 'SSL'
+            - Name: CONNECT_SSL_TRUSTSTORE_LOCATION
+              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.truststore.jks'
+            - Name: CONNECT_SSL_TRUSTSTORE_PASSWORD
+              Value: !Ref 'ConnectTrustPass'
+            - Name: CONNECT_SSL_KEYSTORE_LOCATION
+              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.keystore.jks'
+            - Name: CONNECT_SSL_KEYSTORE_PASSWORD
+              Value: !Ref 'ConnectKeyPass'
+            - Name: CONNECT_SSL_KEY_PASSWORD
+              Value: !Ref 'ConnectKeyPass'
+            - Name: CONNECT_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+              Value: 'HTTPS'
+          MountPoints:
+            - SourceVolume: ssl
+              ContainerPath: /var/private/ssl
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.1-beta
           Cpu: !Ref 'JmxtransCpu'
@@ -224,7 +258,10 @@ Resources:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: !Sub 'kafka-connect'
-      Volumes: []
+      Volumes:
+        - Name: ssl
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/ssl'
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'
   Service:

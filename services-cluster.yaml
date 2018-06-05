@@ -129,7 +129,74 @@ Parameters:
   BastionSG:
     Description: Security group used to whitelist for SSH access
     Type: AWS::EC2::SecurityGroup::Id
+  PrivateCaArn:
+    Type: String
+    Description: the ARN of the Private CA that signs the broker certificate
+  DomainName:
+    Description: >
+      The domain under which the Kafka and Zookeeper nodes will register their advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
+  ParentStackName:
+    Description: Name of parent stack
+    Type: String
 
+  # Certificate information
+  SetupClientCerts:
+    Type: String
+    Default: 'no'
+    AllowedValues: ['yes','no']
+    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
+  KafkaKeyPass:
+    Description: Password for the Kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  CertificateCountry:
+    Description: The country to use in the certificate (usually 2 character country code like CA)
+    Type: String
+  CertificateState:
+    Description: The state or province to use in the certificate
+    Type: String
+  CertificateLocalityName:
+    Description: The locality name to use in the certificate
+    Type: String
+  CertificateOrganizationName:
+    Description: The organization name to use in the certificate
+    Type: String
+  CertificateOrganizationUnit:
+    Description: The organization unit to use in the certificate
+    Type: String
+  ConnectKeyPass:
+    Description: Password for the connect keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  ConnectTrustPass:
+    Description: Password for the connect keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  SchemaRegistryKeyPass:
+    Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  SchemaRegistryTrustPass:
+    Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaRestKeyPass:
+    Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaRestTrustPass:
+    Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 Resources:
   ELB:
     Type: 'AWS::CloudFormation::Stack'
@@ -173,6 +240,15 @@ Resources:
         BastionSG: !Ref 'BastionSG'
         ELBSecurityGroupId: !GetAtt 'ELB.Outputs.ELBSecurityGroupId'
         KinesisStackName: !Ref 'KinesisStackName'
+        DomainName: !Ref 'DomainName'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        CertificateCountry: !Ref 'CertificateCountry'
+        CertificateState: !Ref 'CertificateState'
+        CertificateLocalityName: !Ref 'CertificateLocalityName'
+        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
+        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
+        SetupClientCerts: !Ref 'SetupClientCerts'
+        ParentStackName: !Ref 'ParentStackName'
     DependsOn: 'ELB'
 
   SchemaRegistry:
@@ -193,6 +269,10 @@ Resources:
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         JMXPort: 8990
+        DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
+        SchemaRegistryKeyPass: !Ref 'SchemaRegistryKeyPass'
+        SchemaRegistryTrustPass: !Ref 'SchemaRegistryTrustPass'
+        KafkaConnectionString: !Ref 'KafkaConnectionString'
     DependsOn: 'ECS'
 
   RestProxy:
@@ -214,6 +294,9 @@ Resources:
         KafkaConnectionString: !Ref 'KafkaConnectionString'
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
         JMXPort: 8991
+        DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
+        KafkaRestTrustPass: !Ref 'KafkaRestTrustPass'
+        KafkaRestKeyPass: !Ref 'KafkaRestKeyPass'
     DependsOn: 'SchemaRegistry'
 
   Connect:
@@ -234,7 +317,12 @@ Resources:
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         KafkaConnectionString: !Ref 'KafkaConnectionString'
+        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         JMXPort: 8992
+        DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
+        KafkaConnectionString: !Ref 'KafkaConnectionString'
+        ConnectKeyPass: !Ref 'ConnectKeyPass'
+        ConnectTrustPass: !Ref 'ConnectTrustPass'
     DependsOn: 'SchemaRegistry'
 
 Outputs:

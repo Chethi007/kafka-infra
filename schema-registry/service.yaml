@@ -90,7 +90,24 @@ Parameters:
   ZookeeperConnectionString:
     Description: 'Comma delimited list of Zookeeper node addresses'
     Type: String
-
+  DataVolumeMountPath:
+    Description: Path to directory for mounting data
+    Type: String
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
+  KafkaConnectionString:
+    Description: 'Comma delimited list of Kafka broker addresses'
+    Type: String
+  SchemaRegistryKeyPass:
+    Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  SchemaRegistryTrustPass:
+    Description: Password for the SchemaRegistry keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -174,7 +191,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-schema-registry:0.1-beta
+          Image: loyaltyone/cp-schema-registry:0.11-beta
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -204,6 +221,25 @@ Resources:
               Value: !Ref 'JMXPort'
             - Name: SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS
               Value: 3
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+              Value: !Ref 'KafkaConnectionString'
+            - Name: SCHEMA_REGISTRY_SSL_DIR
+              Value: '/var/private/ssl'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL
+              Value: 'SSL'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION
+              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.truststore.jks'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD
+              Value: !Ref 'SchemaRegistryTrustPass'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION
+              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.keystore.jks'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD
+              Value: !Ref 'SchemaRegistryKeyPass'
+            - Name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD
+              Value: !Ref 'SchemaRegistryKeyPass'
+          MountPoints:
+            - SourceVolume: ssl
+              ContainerPath: /var/private/ssl
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.1-beta
           Cpu: !Ref 'JmxtransCpu'
@@ -226,7 +262,10 @@ Resources:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: !Sub 'schema-registry'
-      Volumes: []
+      Volumes:
+        - Name: ssl
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/ssl'
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'
   Service:

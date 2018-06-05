@@ -20,7 +20,7 @@ Parameters:
   AppName:
     Type: String
     Description: Name of app
-    Default: cp-kafka-rest  
+    Default: cp-kafka-rest
   ServiceMemory:
     Type: Number
     Description: Soft memory on container
@@ -95,7 +95,21 @@ Parameters:
   SchemaRegistryUrl:
     Description: 'URL of the Kafka Schema Registry. Must include protocol'
     Type: String
-
+  DataVolumeMountPath:
+    Description: Path to directory for mounting data
+    Type: String
+    MinLength: 1
+    ConstraintDescription: Must be a valid folder path
+  KafkaRestKeyPass:
+    Description: Password for the Kafka Rest keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  KafkaRestTrustPass:
+    Description: Password for the Kafka Rest keystore
+    Type: String
+    NoEcho: true
+    Default: ''
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -147,7 +161,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-kafka-rest:0.1-beta
+          Image: loyaltyone/cp-kafka-rest:0.11-beta
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -175,6 +189,23 @@ Resources:
               Value: !Ref 'AppName'
             - Name: KAFKA_REST_JMX_PORT
               Value: !Ref 'JMXPort'
+            - Name: KAFKA_REST_CLIENT_SSL_DIR
+              Value: '/var/private/ssl'
+            - Name: KAFKA_REST_CLIENT_SECURITY_PROTOCOL
+              Value: 'SSL'
+            - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_LOCATION
+              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.truststore.jks'
+            - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD
+              Value: !Ref 'KafkaRestTrustPass'
+            - Name: KAFKA_REST_CLIENT_SSL_KEYSTORE_LOCATION
+              Value: !Sub '${DataVolumeMountPath}/ssl/kafka.client.keystore.jks'
+            - Name: KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD
+              Value: !Ref 'KafkaRestKeyPass'
+            - Name: KAFKA_REST_CLIENT_SSL_KEY_PASSWORD
+              Value: !Ref 'KafkaRestKeyPass'
+          MountPoints:
+            - SourceVolume: ssl
+              ContainerPath: /var/private/ssl
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.1-beta
           Cpu: !Ref 'JmxtransCpu'
@@ -197,7 +228,10 @@ Resources:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: !Sub 'kafka-rest-proxy'
-      Volumes: []
+      Volumes:
+        - Name: ssl
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/ssl'
       Family: !Ref 'AWS::StackName'
       TaskRoleArn: !Ref 'EcsTaskRole'
   Service:
