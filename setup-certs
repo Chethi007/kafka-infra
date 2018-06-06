@@ -1,0 +1,142 @@
+#!/bin/bash -e
+
+[[ "${DEBUG}" == 'true' ]] && set -o xtrace
+
+prg=$0
+function usage() {
+    echo "Usage:"
+    echo "  $prg <private_ca_arn> <ssl_directory> <truststore_password> <client_key_pass>"
+}
+
+private_ca_arn=$1
+if [[ -z "${private_ca_arn}" ]]; then
+    echo "Please specify the ARN of the private CA (e.g. arn:aws:acm-pca:us-east-1:12345678910:certificate-authority/12345ab-c123-1234-d123-12e34)"
+    usage
+    exit 1
+fi
+
+ssl_directory=$2
+if [[ -z "${ssl_directory}" ]]; then
+    echo "Please specify an existing path to where the certs and keys should be placed (e.g. /var/private/ssl)"
+    usage
+    exit 1
+fi
+
+truststore_password=$3
+if [[ -z "${truststore_password}" ]]; then
+    echo "Please specify a password to secure the generated truststore"
+    usage
+    exit 1
+fi
+
+client_key_pass=$4
+if [[ -z "${client_key_pass}" ]]; then
+    echo "Please specify a password to secure the generated key and keystore"
+    usage
+    exit 1
+fi
+
+# Detect region based on input ARN
+IFS=':' read -ra ARRAY <<< "$private_ca_arn"
+region=${ARRAY[3]}
+echo "Region detected as: ${region}"
+
+echo "Beginning Client SSL configuration"
+
+# If AWS CLI is out of date, uncomment below to intall/upgrade
+
+#cd /tmp/
+#curl -O https://bootstrap.pypa.io/get-pip.py
+#python /tmp/get-pip.py
+#/usr/local/bin/pip install awscli --upgrade --user
+
+# Get CA certificate
+aws acm-pca get-certificate-authority-certificate --region ${region} --certificate-authority-arn ${private_ca_arn} | jq -r '.Certificate' > ${ssl_directory}/ca.crt
+
+# Generate private key
+openssl req -new \
+  -sha256 \
+  -nodes \
+  -out ${ssl_directory}/client.csr \
+  -newkey rsa:2048 \
+  -keyout ${ssl_directory}/client.key \
+  -config <(
+cat <<-EOF
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+
+[ dn ]
+C = CA
+ST = Ontario
+L = Toronto
+O = Kafka
+OU = Kafka
+CN = kafka-client.com
+EOF
+)
+
+# Have aws private ca issue cert
+certificate_arn=$(aws acm-pca issue-certificate --region ${region} \
+  --certificate-authority-arn ${private_ca_arn} \
+  --csr file://${ssl_directory}/client.csr \
+  --signing-algorithm "SHA256WITHRSA" \
+  --validity Value=365,Type="DAYS" \
+  --idempotency-token 1234 | jq -r '.CertificateArn')
+
+echo "Sleeping for 10 seconds while cert is issued"
+sleep 10
+echo "cert arn: ${certificate_arn}"
+
+aws acm-pca get-certificate --certificate-authority-arn ${private_ca_arn} --region ${region} \
+  --certificate-arn $certificate_arn | jq -r '.Certificate' > ${ssl_directory}/client.crt
+
+# Create PKCS12 format to allow importing into keystore
+openssl pkcs12 -export \
+  -in ${ssl_directory}/client.crt \
+  -inkey ${ssl_directory}/client.key \
+  -out ${ssl_directory}/client.p12 \
+  -name client -CAfile ${ssl_directory}/ca.crt \
+  -caname root \
+  -password pass:${client_key_pass}
+
+if [ ! -f ${ssl_directory}/kafka.client.truststore.jks ]; then
+  echo "Generating Truststore..."
+  keytool -import -alias ca -file ${ssl_directory}/ca.crt \
+    -keystore ${ssl_directory}/kafka.client.truststore.jks \
+    -storepass ${truststore_password} \
+    -noprompt
+  keytool -import -alias client -file ${ssl_directory}/client.crt \
+    -keystore ${ssl_directory}/kafka.client.truststore.jks \
+    -storepass ${truststore_password} \
+    -noprompt
+else
+  echo "Truststore already exists at ${ssl_directory}/kafka.client.truststore.jks, skipping creation"
+fi
+
+if [ ! -f ${ssl_directory}/kafka.client.keystore.jks ]; then
+  echo "Generating Keystore..."
+  keytool -importkeystore \
+      -deststorepass ${client_key_pass} \
+      -destkeypass ${client_key_pass} \
+      -destkeystore ${ssl_directory}/kafka.client.keystore.jks \
+      -srckeystore ${ssl_directory}/client.p12 \
+      -srcstoretype PKCS12 \
+      -srcstorepass ${client_key_pass} \
+      -alias client
+else
+  echo "Keystore already exists at ${ssl_directory}/kafka.client.keystore.jks, skipping creation"
+fi
+
+echo "Setting up client-ssl.properties file in ${ssl_directory} directory..."
+if [ -f ${ssl_directory}/client-ssl.properties ]; then
+  echo "client-ssl.properties file already exists at ${ssl_directory}/client-ssl.properties, overwriting with current properties"
+fi
+echo "security.protocol=SSL
+ssl.truststore.location=${ssl_directory}/kafka.client.truststore.jks
+ssl.truststore.password=${truststore_password}
+ssl.keystore.location=${ssl_directory}/kafka.client.keystore.jks
+ssl.keystore.password=${client_key_pass}
+ssl.key.password=${client_key_pass}" > ${ssl_directory}/client-ssl.properties
