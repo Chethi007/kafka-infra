@@ -177,6 +177,11 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+  ClientKeyPass:
+    Description: Password for the Client Key
+    Type: String
+    NoEcho: true
+    Default: ''
   CertificateCountry:
     Description: The country to use in the certificate (usually 2 character country code like CA)
     Type: String
@@ -371,10 +376,27 @@ Resources:
         KinesisStackName: !Ref 'KinesisStackName'
         HostedZoneStackName: !Ref 'HostedZoneStackName'
         ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
-        KafkaConnectionString: !GetAtt 'Brokers.Outputs.ConnectionString'
+        KafkaConnectionString: !GetAtt 'Brokers.Outputs.SSLConnectionString'
+        ServiceSSLConnectionString: !GetAtt 'Brokers.Outputs.ServiceSSLConnectionString'
         InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
         StackName: !Ref 'AWS::StackName'
         BastionSG: !Ref 'BastionSG'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        SetupClientCerts: 'yes'
+        DomainName: !Ref 'DomainName'
+        CertificateCountry: !Ref 'CertificateCountry'
+        CertificateState: !Ref 'CertificateState'
+        CertificateLocalityName: !Ref 'CertificateLocalityName'
+        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
+        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
+        ParentStackName: !Ref 'AWS::StackName'
+        ConnectKeyPass: !Ref 'KafkaKeyPass'
+        ConnectTrustPass: !Ref 'KafkaTrustPass'
+        SchemaRegistryKeyPass: !Ref 'KafkaKeyPass'
+        SchemaRegistryTrustPass: !Ref 'KafkaTrustPass'
+        KafkaRestKeyPass: !Ref 'KafkaKeyPass'
+        KafkaRestTrustPass: !Ref 'KafkaTrustPass'
+        ClientKeyPass: !Ref 'ClientKeyPass'
     DependsOn: 'ECSBrokers'
 
   # The Zookeeper Cluster
@@ -470,6 +492,11 @@ Outputs:
     Value: !GetAtt 'Services.Outputs.KafkaRestURL'
     Export:
       Name: !Sub '${AWS::StackName}-KafkaRestURL'
+  KafkaConnectURL:
+    Description: 'The URL for Kafka Connect'
+    Value: !GetAtt 'Services.Outputs.KafkaConnectURL'
+    Export:
+      Name: !Sub '${AWS::StackName}-KafkaConnectURL'
   VpcId:
     Description: "Cluster's VPC Id"
     Value: !Ref 'VPCId'

@@ -46,4 +46,36 @@ fi
 echo "KAFKA_REST_JMX_HOSTNAME: ${KAFKA_REST_JMX_HOSTNAME}"
 echo "KAFKA_REST_JMX_PORT: ${KAFKA_REST_JMX_PORT}"
 
+if [ -n "${KAFKA_REST_CLIENT_SSL_DIR}" ];
+then
+  # If SSL directory env variable is set, generate keystore and truststore
+  if [ ! -f ${KAFKA_REST_CLIENT_SSL_DIR}/kafka.client.truststore.jks ];
+  then
+    # If truststore doesn't exist, generate truststore
+    echo "Generating Truststore..."
+    keytool -import -alias ca -file ${KAFKA_REST_CLIENT_SSL_DIR}/ca.crt \
+        -keystore ${KAFKA_REST_CLIENT_SSL_DIR}/kafka.client.truststore.jks \
+        -storepass ${KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD} \
+        -noprompt
+    keytool -import -alias client -file ${KAFKA_REST_CLIENT_SSL_DIR}/client.crt \
+        -keystore ${KAFKA_REST_CLIENT_SSL_DIR}/kafka.client.truststore.jks \
+        -storepass ${KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD} \
+        -noprompt
+  fi
+
+  if [ ! -f ${KAFKA_REST_CLIENT_SSL_DIR}/kafka.client.keystore.jks ];
+  then
+    # IF keystore doesn't exist, generate keystore
+    echo "Generating Keystore..."
+    keytool -importkeystore \
+        -deststorepass ${KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD} \
+        -destkeypass ${KAFKA_REST_CLIENT_SSL_KEY_PASSWORD} \
+        -destkeystore ${KAFKA_REST_CLIENT_SSL_DIR}/kafka.client.keystore.jks \
+        -srckeystore ${KAFKA_REST_CLIENT_SSL_DIR}/client.p12 \
+        -srcstoretype PKCS12 \
+        -srcstorepass ${CLIENT_KEY_PASS} \
+        -alias client
+  fi
+fi
+
 exec "$@"

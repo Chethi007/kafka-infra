@@ -21,6 +21,33 @@ Parameters:
     Description: Security group used to whitelist elb access
     Type: String
     Default: ''
+  DomainName:
+    Description: >
+      The domain under which the Kafka and Zookeeper nodes will register their advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
+
+  # Certificate information
+  ClientKeyPass:
+    Description: Password for the Kafka keystore
+    Type: String
+    NoEcho: true
+    Default: ''
+  CertificateCountry:
+    Description: The country to use in the certificate (usually 2 character country code like CA)
+    Type: String
+  CertificateState:
+    Description: The state or province to use in the certificate
+    Type: String
+  CertificateLocalityName:
+    Description: The locality name to use in the certificate
+    Type: String
+  CertificateOrganizationName:
+    Description: The organization name to use in the certificate
+    Type: String
+  CertificateOrganizationUnit:
+    Description: The organization unit to use in the certificate
+    Type: String
 
   # Instances
   InstanceType:
@@ -101,6 +128,15 @@ Parameters:
     Default: 0
     ConstraintDescription: Must be a non-negative number
 
+  PrivateCaArn:
+    Type: String
+    Description: the ARN of the Private CA that signs the broker certificate
+  SetupClientCerts:
+    Type: String
+    Default: 'no'
+    AllowedValues: ['yes','no']
+    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
+
   # Tags
   Project:
     Description: Project tag
@@ -115,6 +151,10 @@ Parameters:
     Type: String
     AllowedValues: ['dev','sandbox','prod']
     Default: dev
+
+  ParentStackName:
+    Description: Name of parent stack
+    Type: String
 
 Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
@@ -228,7 +268,10 @@ Resources:
               'ssm:UpdateInstanceInformation',
               'ec2:DescribeInstances',
               'ec2:DescribeTags',
-              'ec2:CreateTags'
+              'ec2:CreateTags',
+              'acm-pca:GetCertificate',
+              'acm-pca:GetCertificateAuthorityCertificate',
+              'acm-pca:IssueCertificate'
             ]
             Effect: Allow
             Resource: '*'
@@ -515,12 +558,98 @@ Resources:
 
                 echo "Mounting file system..."
                 mount -v ${EBSMountPath}
+            '/usr/local/share/setup-ssl-certs':
+              mode: '000744'
+              owner: root
+              group: root
+              content: !Sub |
+                #!/bin/bash -e
+
+                exec >> /var/log/user-data.log 2>&1
+
+                if [[ "${SetupClientCerts}" == "no" ]]; then
+                  echo "Skipping Broker SSL configuration."
+                  exit 0
+                fi
+
+                echo "Beginning Client SSL configuration"
+
+                cd /tmp/
+                curl -O https://bootstrap.pypa.io/get-pip.py
+                python /tmp/get-pip.py
+                /usr/local/bin/pip install awscli --upgrade --user
+
+                mkdir -p ${EBSMountPath}/ssl
+
+                # Get CA certificate
+                aws acm-pca get-certificate-authority-certificate --region ${AWS::Region} --certificate-authority-arn ${PrivateCaArn}  | jq -r '.Certificate' > ${EBSMountPath}/ssl/ca.crt
+
+                # Generate private key
+                openssl req -new \
+                  -sha256 \
+                  -nodes \
+                  -out ${EBSMountPath}/ssl/client.csr \
+                  -newkey rsa:2048 \
+                  -keyout ${EBSMountPath}/ssl/client.key \
+                  -config <(
+                cat <<-EOF
+                [req]
+                default_bits = 2048
+                prompt = no
+                default_md = sha256
+                req_extensions = req_ext
+                distinguished_name = dn
+
+                [ dn ]
+                C = ${CertificateCountry}
+                ST = ${CertificateState}
+                L = ${CertificateLocalityName}
+                O = ${CertificateOrganizationName}
+                OU = ${CertificateOrganizationUnit}
+                CN = ${ParentStackName}-client.${DomainName}
+
+                [ req_ext ]
+                subjectAltName = @alt_names
+
+                [ alt_names ]
+                DNS.1 = ${ParentStackName}-connect.${DomainName}
+                DNS.2 = ${ParentStackName}-rest-proxy.${DomainName}
+                DNS.3 = ${ParentStackName}-schema-registry.${DomainName}
+                DNS.4 = ${ParentStackName}-schema-registry-ui.${DomainName}
+                EOF
+                )
+
+                # Have aws private ca issue cert
+                certificate_arn=$(aws acm-pca issue-certificate --region ${AWS::Region} \
+                  --certificate-authority-arn ${PrivateCaArn} \
+                  --csr file://${EBSMountPath}/ssl/client.csr \
+                  --signing-algorithm "SHA256WITHRSA" \
+                  --validity Value=365,Type="DAYS" \
+                  --idempotency-token 1234 | jq -r '.CertificateArn')
+
+                echo "Sleeping for 30 seconds while cert is issued"
+                sleep 30
+                echo "cert arn:" + $certificate_arn
+
+                aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
+                  --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/client.crt
+
+                # Create PKCS12 format to allow importing into keystore
+                openssl pkcs12 -export \
+                  -in ${EBSMountPath}/ssl/client.crt \
+                  -inkey ${EBSMountPath}/ssl/client.key \
+                  -out ${EBSMountPath}/ssl/client.p12 \
+                  -name client -CAfile ${EBSMountPath}/ssl/ca.crt \
+                  -caname root \
+                  -password pass:${ClientKeyPass}
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'
             02_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
-            03_add_instance_to_cluster:
+            03_setup_ssl:
+              command: '/usr/local/share/setup-ssl-certs'
+            04_add_instance_to_cluster:
               # Let ecs agent know which cluster to join
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
 

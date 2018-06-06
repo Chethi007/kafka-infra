@@ -299,3 +299,10 @@ Outputs:
       - Broker1: !GetAtt 'Broker1.Outputs.SSLConnectionString'
         Broker2: !GetAtt 'Broker2.Outputs.SSLConnectionString'
         Broker3: !GetAtt 'Broker3.Outputs.SSLConnectionString'
+  ServiceSSLConnectionString:
+    Description: SSL connection string to connect to kafka brokers, with each address prefaced by "SSL://" - this format is required for Rest Proxy and Schema Registry
+    Value: !Sub
+      - 'SSL://${Broker1},SSL://${Broker2},SSL://${Broker3}'
+      - Broker1: !GetAtt 'Broker1.Outputs.SSLConnectionString'
+        Broker2: !GetAtt 'Broker2.Outputs.SSLConnectionString'
+        Broker3: !GetAtt 'Broker3.Outputs.SSLConnectionString'

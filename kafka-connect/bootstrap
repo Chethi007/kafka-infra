@@ -30,4 +30,36 @@ fi
 echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
 echo "KAFKA_JMX_PORT: ${KAFKA_JMX_PORT}"
 
+if [ -n "${CONNECT_SSL_DIR}" ];
+then
+  # If SSL directory env variable is set, generate keystore and truststore
+  if [ ! -f ${CONNECT_SSL_DIR}/kafka.client.truststore.jks ];
+  then
+    # If truststore doesn't exist, generate truststore
+    echo "Generating Truststore..."
+    keytool -import -alias ca -file ${CONNECT_SSL_DIR}/ca.crt \
+        -keystore ${CONNECT_SSL_DIR}/kafka.client.truststore.jks \
+        -storepass ${CONNECT_SSL_TRUSTSTORE_PASSWORD} \
+        -noprompt
+    keytool -import -alias client -file ${CONNECT_SSL_DIR}/client.crt \
+        -keystore ${CONNECT_SSL_DIR}/kafka.client.truststore.jks \
+        -storepass ${CONNECT_SSL_TRUSTSTORE_PASSWORD} \
+        -noprompt
+  fi
+
+  if [ ! -f ${CONNECT_SSL_DIR}/kafka.client.keystore.jks ];
+  then
+    # IF keystore doesn't exist, generate keystore
+    echo "Generating Keystore..."
+    keytool -importkeystore \
+        -deststorepass ${CONNECT_SSL_KEYSTORE_PASSWORD} \
+        -destkeypass ${CONNECT_SSL_KEY_PASSWORD} \
+        -destkeystore ${CONNECT_SSL_DIR}/kafka.client.keystore.jks \
+        -srckeystore ${CONNECT_SSL_DIR}/client.p12 \
+        -srcstoretype PKCS12 \
+        -srcstorepass ${CLIENT_KEY_PASS} \
+        -alias client
+  fi
+fi
+
 exec "$@"
