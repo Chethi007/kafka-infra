@@ -309,7 +309,7 @@ Resources:
               HostPort: 0
           Environment:
             - Name: SCHEMAREGISTRY_URL
-              Value: !Sub 'https://${DNSRecordUI}'
+              Value: !Sub 'https://${DNSRecord}'
           MemoryReservation: !Ref 'ServiceMemory'
           Essential: 'true'
           LogConfiguration:
