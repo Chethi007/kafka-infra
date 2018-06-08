@@ -46,7 +46,7 @@ aws cloudformation package --template-file master-template.yaml \
 
 echo "Deploying master template"
 params=$(jq -r '.Parameters | to_entries | map("\(.key)=\(.value|tostring)")|.[]' ${stack_config} | tr '\n' ' ')
-echo "$params"
+#echo "$params"
 aws cloudformation deploy --template-file master.yaml --stack-name "${ENV:-dev}"-${stack_suffix} \
     --capabilities CAPABILITY_IAM --parameter-overrides ${params}
 

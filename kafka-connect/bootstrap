@@ -30,36 +30,62 @@ fi
 echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
 echo "KAFKA_JMX_PORT: ${KAFKA_JMX_PORT}"
 
-if [ -n "${CONNECT_SSL_DIR}" ];
+# If SSL directory env variable is set, generate keystore and truststore
+if [ -n "${SSL_DIR}" ];
 then
-  # If SSL directory env variable is set, generate keystore and truststore
-  if [ ! -f ${CONNECT_SSL_DIR}/kafka.client.truststore.jks ];
-  then
-    # If truststore doesn't exist, generate truststore
-    echo "Generating Truststore..."
-    keytool -import -alias ca -file ${CONNECT_SSL_DIR}/ca.crt \
-        -keystore ${CONNECT_SSL_DIR}/kafka.client.truststore.jks \
-        -storepass ${CONNECT_SSL_TRUSTSTORE_PASSWORD} \
-        -noprompt
-    keytool -import -alias client -file ${CONNECT_SSL_DIR}/client.crt \
-        -keystore ${CONNECT_SSL_DIR}/kafka.client.truststore.jks \
-        -storepass ${CONNECT_SSL_TRUSTSTORE_PASSWORD} \
-        -noprompt
-  fi
+    # If KMS data key is present, decrypt it and use that to decrypt passwords.
+    if [ -n ${KMS_DATA_KEY} ]; then
+        # NOTE: Do not export plaintext KMS data key.
+        echo "Decrypting KMS data key..."
+        kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
+            --ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
+            --query Plaintext --output text)
 
-  if [ ! -f ${CONNECT_SSL_DIR}/kafka.client.keystore.jks ];
-  then
-    # IF keystore doesn't exist, generate keystore
-    echo "Generating Keystore..."
-    keytool -importkeystore \
-        -deststorepass ${CONNECT_SSL_KEYSTORE_PASSWORD} \
-        -destkeypass ${CONNECT_SSL_KEY_PASSWORD} \
-        -destkeystore ${CONNECT_SSL_DIR}/kafka.client.keystore.jks \
-        -srckeystore ${CONNECT_SSL_DIR}/client.p12 \
-        -srcstoretype PKCS12 \
-        -srcstorepass ${CLIENT_KEY_PASS} \
-        -alias client
-  fi
+        echo "Decrypting CONNECT_SSL_KEY_PASSWORD..."
+        export CONNECT_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
+            -k <(echo "${kms_data_key_plaintext}") \
+            -in <(echo "${CONNECT_SSL_KEY_PASSWORD}" | base64 -d))
+
+        echo "Decrypting CONNECT_SSL_KEYSTORE_PASSWORD..."
+        export CONNECT_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
+            -k <(echo "${kms_data_key_plaintext}") \
+            -in <(echo "${CONNECT_SSL_KEYSTORE_PASSWORD}" | base64 -d))
+
+        echo "Decrypting CONNECT_SSL_TRUSTSTORE_PASSWORD..."
+        export CONNECT_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
+            -k <(echo "${kms_data_key_plaintext}") \
+            -in <(echo "${CONNECT_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
+    fi
+
+	# TODO: Handle changes in passwords which would warrant generation of new truststore.
+
+	# If truststore doesn't exist, generate truststore
+	if [ ! -f ${SSL_DIR}/kafka.client.truststore.jks ];
+	then
+	  echo "Generating Truststore..."
+	  keytool -import -alias ca -file ${SSL_DIR}/ca.crt \
+	      -keystore ${SSL_DIR}/kafka.client.truststore.jks \
+	      -storepass ${CONNECT_SSL_TRUSTSTORE_PASSWORD} \
+	      -noprompt
+	  keytool -import -alias client -file ${SSL_DIR}/client.crt \
+	      -keystore ${SSL_DIR}/kafka.client.truststore.jks \
+	      -storepass ${CONNECT_SSL_TRUSTSTORE_PASSWORD} \
+	      -noprompt
+	fi
+
+	# If keystore doesn't exist, generate keystore
+	if [ ! -f ${SSL_DIR}/kafka.client.keystore.jks ];
+	then
+		echo "Generating Keystore..."
+		keytool -importkeystore \
+			-deststorepass ${CONNECT_SSL_KEYSTORE_PASSWORD} \
+			-destkeypass ${CONNECT_SSL_KEY_PASSWORD} \
+			-destkeystore ${SSL_DIR}/kafka.client.keystore.jks \
+			-srckeystore ${SSL_DIR}/client.p12 \
+			-srcstoretype PKCS12 \
+			-srcstorepass ${CONNECT_SSL_KEY_PASSWORD} \
+			-alias client
+	fi
 fi
 
 exec "$@"

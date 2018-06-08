@@ -69,13 +69,31 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
-  KafkaKeyPass:
-    Description: Password for the kafka keystore
+  KmsDataKey:
+    Description: >
+      The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
+      will be treated as plaintext.
     Type: String
     NoEcho: true
     Default: ''
-  KafkaTrustPass:
-    Description: Password for the kafka keystore
+  KeyPass:
+    Description: >
+      Password for the broker key. If KmsDataKey is provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+  KeystorePass:
+    Description: >
+      Password for the broker keystore. If KmsDataKey is provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+  TruststorePass:
+    Description: >
+      Password for the broker truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
@@ -86,103 +104,107 @@ Resources:
     Properties:
       NetworkMode: awsvpc
       ContainerDefinitions:
-      - Name: broker
-        Image: loyaltyone/cp-kafka:0.11-beta
-        Cpu: !Ref 'ServiceCpu'
-        MemoryReservation: !Ref 'ServiceMemory'
-        User: root
-        DockerLabels:
-          'discovery.service.name': !Sub '${BrokerName}${BrokerId}'
-        Environment:
-          - Name: KAFKA_BROKER_ID
-            Value: !Ref 'BrokerId'
-          - Name: KAFKA_ZOOKEEPER_CONNECT
-            Value: !Ref 'ZookeeperConnectionString'
-          - Name: KAFKA_ADVERTISED_LISTENERS
-            Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
-          - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-            Value: 2
-          - Name: KAFKA_JMX_HOSTNAME
-            Value: 'localhost'
-          - Name: KAFKA_JMX_PORT
-            Value: !Ref 'JMXPort'
-          - Name: KAFKA_LOG4J_LOGGERS
-            Value: 'kafka.controller=WARN,state.change.logger=WARN'
-          - Name: KAFKA_SSL_DIR
-            Value: '/var/private/ssl'
-          - Name: KAFKA_SSL_KEYSTORE_LOCATION
-            Value: '/var/private/ssl/kafka.keystore.jks'
-          - Name: KAFKA_SSL_KEYSTORE_FILENAME
-            Value: 'kafka.keystore.jks'
-          - Name: KAFKA_SSL_KEYSTORE_PASSWORD
-            Value: !Ref 'KafkaKeyPass'
-          - Name: KAFKA_SSL_KEY_PASSWORD
-            Value: !Ref 'KafkaKeyPass'
-          - Name: KAFKA_SSL_KEY_CREDENTIALS
-            Value: 'broker_sslkey_creds'
-          - Name: KAFKA_SSL_KEYSTORE_CREDENTIALS
-            Value: 'broker_keystore_creds'
-          - Name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
-            Value: 'broker_truststore_creds'
-          - Name: KAFKA_SSL_TRUSTSTORE_LOCATION
-            Value: '/var/private/ssl/kafka.truststore.jks'
-          - Name: KAFKA_SSL_TRUSTSTORE_FILENAME
-            Value: 'kafka.truststore.jks'
-          - Name: KAFKA_SSL_TRUSTSTORE_PASSWORD
-            Value: !Ref 'KafkaTrustPass'
-          - Name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
-            Value: 'SSL'
-          - Name: KAFKA_SSL_CLIENT_AUTH
-            Value: 'required'
-          - Name: KAFKA_SSL_SECURE_RANDOM_IMPLEMENTATION
-            Value: 'SHA1PRNG'
-          - Name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
-            Value: 'HTTPS'
-          - Name: KAFKA_LOG4J_LOGGERS
-            Value: 'kafka.network.RequestChannel=WARN'
-          - Name: KAFKA_LOG4J_ROOT_LOGLEVEL
-            Value: 'INFO, stdout'
-          - Name: KAFKA_TOOLS_LOG4J_LOGLEVEL
-            Value: 'WARN, stderr'
-        PortMappings:
-          - ContainerPort: !Ref 'ClientPort'
-            HostPort: !Ref 'ClientPort'
-          - ContainerPort: !Ref 'ClientSSLPort'
-            HostPort: !Ref 'ClientSSLPort'
-          - ContainerPort: !Ref 'JMXPort'
-            HostPort: !Ref 'JMXPort'
-        MountPoints:
-          - SourceVolume: data
-            ContainerPath: /var/lib/kafka/data
-          - SourceVolume: secrets
-            ContainerPath: /etc/kafka/secrets
-          - SourceVolume: ssl
-            ContainerPath: /var/private/ssl
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group: !Ref 'LogGroup'
-            awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'broker${BrokerId}'
-      - Name: jmxtrans
-        Image: loyaltyone/jmxtrans:0.1-beta
-        Cpu: !Ref 'JmxtransCpu'
-        MemoryReservation: !Ref 'JmxtransMemory'
-        Environment:
-          - Name: SECONDS_BETWEEN_RUNS
-            Value: 60
-          - Name: JMXTRANS_ENV
-            Value: aws
-          - Name: JMXTRANS_HOSTS
-            Value: !Sub 'kafka#localhost:${JMXPort}'
-          - Name: JMXTRANS_ALIASES
-            Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group: !Ref 'LogGroup'
-            awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Sub 'broker${BrokerId}'
+        - Name: broker
+          Image: loyaltyone/kafka:0.1.0
+          Cpu: !Ref 'ServiceCpu'
+          MemoryReservation: !Ref 'ServiceMemory'
+          User: root
+          DockerLabels:
+            'discovery.service.name': !Sub '${BrokerName}${BrokerId}'
+          Environment:
+            - Name: KAFKA_BROKER_ID
+              Value: !Ref 'BrokerId'
+            - Name: KAFKA_ZOOKEEPER_CONNECT
+              Value: !Ref 'ZookeeperConnectionString'
+            - Name: KAFKA_ADVERTISED_LISTENERS
+              Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+            - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              Value: 2
+            - Name: KAFKA_JMX_HOSTNAME
+              Value: 'localhost'
+            - Name: KAFKA_JMX_PORT
+              Value: !Ref 'JMXPort'
+            - Name: KAFKA_LOG4J_LOGGERS
+              Value: 'kafka.controller=WARN,state.change.logger=WARN'
+            - Name: SSL_DIR
+              Value: '/var/private/ssl'
+            - Name: KMS_DATA_KEY
+              Value: !Ref 'KmsDataKey'
+            - Name: KAFKA_SSL_KEY_PASSWORD
+              Value: !Ref 'KeyPass'
+            - Name: KAFKA_SSL_KEY_CREDENTIALS
+              Value: 'broker_sslkey_creds'
+            - Name: KAFKA_SSL_KEYSTORE_LOCATION
+              Value: '/var/private/ssl/kafka.keystore.jks'
+            - Name: KAFKA_SSL_KEYSTORE_FILENAME
+              Value: 'kafka.keystore.jks'
+            - Name: KAFKA_SSL_KEYSTORE_PASSWORD
+              Value: !Ref 'KeystorePass'
+            - Name: KAFKA_SSL_KEYSTORE_CREDENTIALS
+              Value: 'broker_keystore_creds'
+            - Name: KAFKA_SSL_TRUSTSTORE_LOCATION
+              Value: '/var/private/ssl/kafka.truststore.jks'
+            - Name: KAFKA_SSL_TRUSTSTORE_FILENAME
+              Value: 'kafka.truststore.jks'
+            - Name: KAFKA_SSL_TRUSTSTORE_PASSWORD
+              Value: !Ref 'TruststorePass'
+            - Name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
+              Value: 'broker_truststore_creds'
+            - Name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
+              Value: 'SSL'
+            - Name: KAFKA_SSL_CLIENT_AUTH
+              Value: 'required'
+            - Name: KAFKA_SSL_SECURE_RANDOM_IMPLEMENTATION
+              Value: 'SHA1PRNG'
+            - Name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+              Value: 'HTTPS'
+            - Name: KAFKA_LOG4J_LOGGERS
+              Value: 'kafka.network.RequestChannel=WARN'
+            - Name: KAFKA_LOG4J_ROOT_LOGLEVEL
+              Value: 'INFO, stdout'
+            - Name: KAFKA_TOOLS_LOG4J_LOGLEVEL
+              Value: 'WARN, stderr'
+            - Name: REGION
+              Value: !Ref 'AWS::Region'
+          PortMappings:
+            - ContainerPort: !Ref 'ClientPort'
+              HostPort: !Ref 'ClientPort'
+            - ContainerPort: !Ref 'ClientSSLPort'
+              HostPort: !Ref 'ClientSSLPort'
+            - ContainerPort: !Ref 'JMXPort'
+              HostPort: !Ref 'JMXPort'
+          MountPoints:
+            - SourceVolume: data
+              ContainerPath: /var/lib/kafka/data
+            - SourceVolume: secrets
+              ContainerPath: /etc/kafka/secrets
+            - SourceVolume: ssl
+              ContainerPath: /var/private/ssl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'LogGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Sub 'broker${BrokerId}'
+        - Name: jmxtrans
+          Image: loyaltyone/jmxtrans:0.1.0
+          Cpu: !Ref 'JmxtransCpu'
+          MemoryReservation: !Ref 'JmxtransMemory'
+          Environment:
+            - Name: SECONDS_BETWEEN_RUNS
+              Value: 60
+            - Name: JMXTRANS_ENV
+              Value: aws
+            - Name: JMXTRANS_HOSTS
+              Value: !Sub 'kafka#localhost:${JMXPort}'
+            - Name: JMXTRANS_ALIASES
+              Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'LogGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Sub 'broker${BrokerId}'
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.

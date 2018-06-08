@@ -31,8 +31,24 @@ Parameters:
     Type: String
 
   # Certificate information
+  PrivateCaArn:
+    Type: String
+    Description: The ARN of the Private CA that signs the broker certificate
+  SetupBrokerCerts:
+    Type: String
+    Default: 'no'
+    AllowedValues: ['yes','no']
+    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
+  KmsDataKey:
+    Description: The KMS Data Key Ciphertext (Base64 encoded)
+    Type: String
+    NoEcho: true
+    Default: ''
   KafkaKeyPass:
-    Description: Password for the Kafka keystore
+    Description: >
+      Password for the broker key. If KmsDataKey is provided,
+      this should be the Base64 encoded; otherwise set it to the
+      plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
@@ -80,6 +96,9 @@ Parameters:
     Default: /mnt/data
     MinLength: 1
     ConstraintDescription: Must be a valid folder path
+  VolumeNameTag:
+    Type: String
+    Description: Tag for identifying the data volume to use for the ECS instances
 
   # ASG
   ASGEventsTopic:
@@ -94,6 +113,12 @@ Parameters:
     MinValue: 2
     MaxValue: 5
     ConstraintDescription: Must be a number between 2 and 5.
+  NodeCount:
+    Type: Number
+    MinValue: 1
+    Default: 3
+    Description: The total number of nodes in the cluster.
+    ConstraintDescription: Must be a value >= 1
 
   # Features
   HostedZoneId:
@@ -102,17 +127,6 @@ Parameters:
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
-  SetupBrokerCerts:
-    Type: String
-    Default: 'no'
-    AllowedValues: ['yes','no']
-    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
-  NodeCount:
-    Type: Number
-    MinValue: 1
-    Default: 3
-    Description: The total number of nodes in the cluster.
-    ConstraintDescription: Must be a value >= 1
 
   # Parameter to force a rolling deployment
   RollingDeploymentVersion:
@@ -142,14 +156,6 @@ Parameters:
   ParentStackName:
     Description: Name of parent stack
     Type: String
-
-  VolumeNameTag:
-    Type: String
-    Description: Tag for identifying the data volume to use for the ECS instances
-
-  PrivateCaArn:
-    Type: String
-    Description: the ARN of the Private CA that signs the broker certificate
 
 Mappings:
   # These are the latest ECS optimized AMIs as of March 2018:
@@ -204,71 +210,72 @@ Resources:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Action: 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service: ec2.amazonaws.com
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
       ManagedPolicyArns: [
         'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role',
         'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
       ]
       Policies:
-      - PolicyName: ECS-Service
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Action: [
-              'cloudwatch:PutMetricData',
-              'cloudwatch:ListMetrics',
-              'cloudwatch:GetMetricStatistics',
-              'ds:CreateComputer',
-              'ds:DescribeDirectories',
-              'ec2:DescribeInstanceStatus',
-              'ec2messages:AcknowledgeMessage',
-              'ec2messages:DeleteMessage',
-              'ec2messages:FailMessage',
-              'ec2messages:GetEndpoint',
-              'ec2messages:GetMessages',
-              'ec2messages:SendReply',
-              'ecs:DescribeClusters',
-              'ecs:DescribeContainerInstances',
-              'ecs:DescribeServices',
-              'ecs:DescribeTaskDefinition',
-              'ecs:DescribeTasks',
-              'logs:CreateLogGroup',
-              'logs:DescribeLogGroups',
-              'logs:DescribeLogStreams',
-              'route53:GetHostedZone',
-              'route53:ListHostedZones',
-              'route53:ChangeResourceRecordSets',
-              'route53:ListResourceRecordSets',
-              'route53:ListHostedZonesByName',
-              's3:PutObject',
-              's3:AbortMultipartUpload',
-              'ssm:DescribeAssociation',
-              'ssm:GetDeployablePatchSnapshotForInstance',
-              'ssm:GetDocument',
-              'ssm:GetManifest',
-              'ssm:GetParameters',
-              'ssm:ListAssociations',
-              'ssm:ListInstanceAssociations',
-              'ssm:PutInventory',
-              'ssm:PutComplianceItems',
-              'ssm:PutConfigurePackageResult',
-              'ssm:UpdateAssociationStatus',
-              'ssm:UpdateInstanceAssociationStatus',
-              'ssm:UpdateInstanceInformation',
-              'ec2:DescribeInstances',
-              'ec2:DescribeTags',
-              'ec2:CreateTags',
-              'ec2:DescribeVolumes',
-              'ec2:AttachVolume',
-              'acm-pca:GetCertificate',
-              'acm-pca:GetCertificateAuthorityCertificate',
-              'acm-pca:IssueCertificate'
-            ]
-            Effect: Allow
-            Resource: '*'
+        - PolicyName: ECS-Service
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: [
+                  'cloudwatch:PutMetricData',
+                  'cloudwatch:ListMetrics',
+                  'cloudwatch:GetMetricStatistics',
+                  'ds:CreateComputer',
+                  'ds:DescribeDirectories',
+                  'ec2:DescribeInstanceStatus',
+                  'ec2messages:AcknowledgeMessage',
+                  'ec2messages:DeleteMessage',
+                  'ec2messages:FailMessage',
+                  'ec2messages:GetEndpoint',
+                  'ec2messages:GetMessages',
+                  'ec2messages:SendReply',
+                  'ecs:DescribeClusters',
+                  'ecs:DescribeContainerInstances',
+                  'ecs:DescribeServices',
+                  'ecs:DescribeTaskDefinition',
+                  'ecs:DescribeTasks',
+                  'logs:CreateLogGroup',
+                  'logs:DescribeLogGroups',
+                  'logs:DescribeLogStreams',
+                  'route53:GetHostedZone',
+                  'route53:ListHostedZones',
+                  'route53:ChangeResourceRecordSets',
+                  'route53:ListResourceRecordSets',
+                  'route53:ListHostedZonesByName',
+                  's3:PutObject',
+                  's3:AbortMultipartUpload',
+                  'ssm:DescribeAssociation',
+                  'ssm:GetDeployablePatchSnapshotForInstance',
+                  'ssm:GetDocument',
+                  'ssm:GetManifest',
+                  'ssm:GetParameters',
+                  'ssm:ListAssociations',
+                  'ssm:ListInstanceAssociations',
+                  'ssm:PutInventory',
+                  'ssm:PutComplianceItems',
+                  'ssm:PutConfigurePackageResult',
+                  'ssm:UpdateAssociationStatus',
+                  'ssm:UpdateInstanceAssociationStatus',
+                  'ssm:UpdateInstanceInformation',
+                  'ec2:DescribeInstances',
+                  'ec2:DescribeTags',
+                  'ec2:CreateTags',
+                  'ec2:DescribeVolumes',
+                  'ec2:AttachVolume',
+                  'acm-pca:GetCertificate',
+                  'acm-pca:GetCertificateAuthorityCertificate',
+                  'acm-pca:IssueCertificate',
+                  'kms:Decrypt'
+                ]
+                Effect: Allow
+                Resource: '*'
 
   ECSInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -283,21 +290,21 @@ Resources:
       VpcId: !Ref 'VPCId'
       GroupDescription: Allow connections from vpc
       SecurityGroupIngress:
-      - SourceSecurityGroupId: !Ref 'BastionSG'
-        IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
+        - SourceSecurityGroupId: !Ref 'BastionSG'
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
       Tags:
-      - Key: Name
-        Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
-      - Key: Project
-        Value: !Ref 'Project'
-      - Key: Team
-        Value: !Ref 'Team'
-      - Key: Environment
-        Value: !Ref 'Environment'
-      - Key: Component
-        Value: ecs
+        - Key: Name
+          Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: ecs
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
@@ -659,6 +666,16 @@ Resources:
                 aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
                   --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/broker.crt
 
+                echo "Decrypting KMS data key..."
+                kms_data_key_plaintext=$(aws kms decrypt --region ${AWS::Region} \
+                    --ciphertext-blob fileb://<(echo "${KmsDataKey}" | base64 -d) \
+                    --query Plaintext --output text)
+
+                echo "Decrypting broker key password..."
+                kafka_key_pass=$(openssl enc -d -aes256 \
+                    -k <(echo "${!kms_data_key_plaintext}") \
+                    -in <(echo "${KafkaKeyPass}" | base64 -d))
+
                 # Create PKCS12 format to allow importing into keystore
                 openssl pkcs12 -export \
                   -in ${EBSMountPath}/ssl/broker.crt \
@@ -666,7 +683,7 @@ Resources:
                   -out ${EBSMountPath}/ssl/broker.p12 \
                   -name broker -CAfile ${EBSMountPath}/ssl/ca.crt \
                   -caname root \
-                  -password pass:${KafkaKeyPass}
+                  -password pass:${!kafka_key_pass}
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'

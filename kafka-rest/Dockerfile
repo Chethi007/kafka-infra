@@ -2,7 +2,8 @@ FROM confluentinc/cp-kafka-rest:4.0.0-3
 
 MAINTAINER LoyaltyOne
 
-RUN wget -P /usr/local/share/ https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.3.0/jmx_prometheus_javaagent-0.3.0.jar
+RUN wget -P /usr/local/share/ https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.3.0/jmx_prometheus_javaagent-0.3.0.jar \
+    && pip install awscli
 
 COPY bootstrap /usr/local/bin/
 COPY kafka-rest-metrics.yml /usr/local/share/

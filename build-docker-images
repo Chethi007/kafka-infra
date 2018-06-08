@@ -1,0 +1,31 @@
+#!/bin/bash -e
+
+[[ "${DEBUG}" == 'true' ]] && set -o xtrace
+
+prg=$0
+function usage() {
+    echo "Usage:"
+    echo "  $prg <docker-repo> <version>"
+}
+
+docker_repo=$1
+shift
+if [[ -z "${docker_repo}" ]]; then
+    echo "Please specify the docker repo."
+    usage
+    exit 1
+fi
+
+version=$1
+shift
+if [[ -z "${version}" ]]; then
+    echo "Please specify the image version to tag with."
+    usage
+    exit 1
+fi
+
+image_names=(jmxtrans kafka zookeeper kafka-connect kafka-rest schema-registry)
+
+for image_name in ${image_names[@]}; do
+    ./build-docker-image ${docker_repo} ${image_name} ${version}
+done

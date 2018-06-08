@@ -96,21 +96,35 @@ Parameters:
   KafkaConnectionString:
     Description: 'Comma delimited list of Kafka broker addresses'
     Type: String
-  ConnectKeyPass:
-    Description: Password for the connect keystore
+  KmsDataKey:
+    Description: >
+      The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
+      will be treated as plaintext.
     Type: String
     NoEcho: true
     Default: ''
-  ConnectTrustPass:
-    Description: Password for the connect keystore
+  KeyPass:
+    Description: >
+      Password for the Kafka Connect key. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  ClientKeyPass:
-    Description: Password for the Client Key
+  KeystorePass:
+    Description: >
+      Password for the Kafka Connect keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
+  TruststorePass:
+    Description: >
+      Password for the Kafka Connect truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -164,12 +178,19 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub 'arn:aws:s3:::${TrustedCertsBucket}/*'
+        - PolicyName: ECS-Service
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: '*'
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-kafka-connect:0.11-beta
+          Image: loyaltyone/kafka-connect:0.1.0
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -221,29 +242,31 @@ Resources:
               Value: !Ref 'AppName'
             - Name: KAFKA_JMX_PORT
               Value: !Ref 'JMXPort'
-            - Name: CONNECT_SSL_DIR
+            - Name: SSL_DIR
               Value: '/var/private/ssl'
             - Name: CONNECT_SECURITY_PROTOCOL
               Value: 'SSL'
-            - Name: CONNECT_SSL_TRUSTSTORE_LOCATION
-              Value: !Sub '/var/private/ssl/kafka.client.truststore.jks'
-            - Name: CONNECT_SSL_TRUSTSTORE_PASSWORD
-              Value: !Ref 'ConnectTrustPass'
+            - Name: KMS_DATA_KEY
+              Value: !Ref 'KmsDataKey'
+            - Name: CONNECT_SSL_KEY_PASSWORD
+              Value: !Ref 'KeyPass'
             - Name: CONNECT_SSL_KEYSTORE_LOCATION
               Value: !Sub '/var/private/ssl/kafka.client.keystore.jks'
             - Name: CONNECT_SSL_KEYSTORE_PASSWORD
-              Value: !Ref 'ConnectKeyPass'
-            - Name: CONNECT_SSL_KEY_PASSWORD
-              Value: !Ref 'ConnectKeyPass'
+              Value: !Ref 'KeystorePass'
+            - Name: CONNECT_SSL_TRUSTSTORE_LOCATION
+              Value: !Sub '/var/private/ssl/kafka.client.truststore.jks'
+            - Name: CONNECT_SSL_TRUSTSTORE_PASSWORD
+              Value: !Ref 'TruststorePass'
             - Name: CONNECT_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
               Value: 'HTTPS'
-            - Name: CLIENT_KEY_PASS
-              Value: !Ref 'ClientKeyPass'
+            - Name: REGION
+              Value: !Ref 'AWS::Region'
           MountPoints:
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl
         - Name: jmxtrans
-          Image: loyaltyone/jmxtrans:0.1-beta
+          Image: loyaltyone/jmxtrans:0.1.0
           Cpu: !Ref 'JmxtransCpu'
           MemoryReservation: !Ref 'JmxtransMemory'
           Links: [!Ref 'AppName']
