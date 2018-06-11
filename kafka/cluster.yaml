@@ -78,16 +78,35 @@ Parameters:
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
-  KafkaKeyPass:
-    Description: Password for the kafka keystore
+  KmsDataKey:
+    Description: >
+      The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
+      will be treated as plaintext.
     Type: String
     NoEcho: true
     Default: ''
-  KafkaTrustPass:
-    Description: Password for the kafka keystore
+  KeyPass:
+    Description: >
+      Password for the broker key. If KmsDataKey is provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
+  KeystorePass:
+    Description: >
+      Password for the broker keystore. If KmsDataKey is provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+  TruststorePass:
+    Description: >
+      Password for the broker truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+
 Resources:
   BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -225,8 +244,10 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         JMXPort: 8990
-        KafkaKeyPass: !Ref 'KafkaKeyPass'
-        KafkaTrustPass: !Ref 'KafkaTrustPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'KeyPass'
+        KeystorePass: !Ref 'KeystorePass'
+        TruststorePass: !Ref 'TruststorePass'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker2:
     Type: 'AWS::CloudFormation::Stack'
@@ -251,8 +272,10 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         JMXPort: 8991
-        KafkaKeyPass: !Ref 'KafkaKeyPass'
-        KafkaTrustPass: !Ref 'KafkaTrustPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'KeyPass'
+        KeystorePass: !Ref 'KeystorePass'
+        TruststorePass: !Ref 'TruststorePass'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
@@ -277,8 +300,10 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         JMXPort: 8992
-        KafkaKeyPass: !Ref 'KafkaKeyPass'
-        KafkaTrustPass: !Ref 'KafkaTrustPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'KeyPass'
+        KeystorePass: !Ref 'KeystorePass'
+        TruststorePass: !Ref 'TruststorePass'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
 
 Outputs:

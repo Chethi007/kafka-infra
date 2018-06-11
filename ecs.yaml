@@ -28,8 +28,25 @@ Parameters:
     Type: String
 
   # Certificate information
-  ClientKeyPass:
-    Description: Password for the Kafka keystore
+  PrivateCaArn:
+    Type: String
+    Description: The ARN of the Private CA that signs the broker certificate
+  SetupClientCerts:
+    Type: String
+    Default: 'no'
+    AllowedValues: ['yes','no']
+    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
+  KmsDataKey:
+    Description: The KMS Data Key Ciphertext (Base64 encoded)
+    Type: String
+    NoEcho: true
+    Default: ''
+  ServicesKeyPass:
+    Description: >
+      Password for the services key used for Schema Registry,
+      Kafka Connect, Rest Proxy, etc. If KmsDataKey is provided,
+      this should be the Base64 encoded; otherwise set it to the
+      plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
@@ -128,15 +145,6 @@ Parameters:
     Default: 0
     ConstraintDescription: Must be a non-negative number
 
-  PrivateCaArn:
-    Type: String
-    Description: the ARN of the Private CA that signs the broker certificate
-  SetupClientCerts:
-    Type: String
-    Default: 'no'
-    AllowedValues: ['yes','no']
-    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
-
   # Tags
   Project:
     Description: Project tag
@@ -212,69 +220,70 @@ Resources:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Action: 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service: ec2.amazonaws.com
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
       ManagedPolicyArns: [
         'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role',
         'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
       ]
       Policies:
-      - PolicyName: ECS-Service
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Action: [
-              'cloudwatch:PutMetricData',
-              'cloudwatch:ListMetrics',
-              'cloudwatch:GetMetricStatistics',
-              'ds:CreateComputer',
-              'ds:DescribeDirectories',
-              'ec2:DescribeInstanceStatus',
-              'ec2messages:AcknowledgeMessage',
-              'ec2messages:DeleteMessage',
-              'ec2messages:FailMessage',
-              'ec2messages:GetEndpoint',
-              'ec2messages:GetMessages',
-              'ec2messages:SendReply',
-              'ecs:DescribeClusters',
-              'ecs:DescribeContainerInstances',
-              'ecs:DescribeServices',
-              'ecs:DescribeTaskDefinition',
-              'ecs:DescribeTasks',
-              'logs:CreateLogGroup',
-              'logs:DescribeLogGroups',
-              'logs:DescribeLogStreams',
-              'route53:GetHostedZone',
-              'route53:ListHostedZones',
-              'route53:ChangeResourceRecordSets',
-              'route53:ListResourceRecordSets',
-              'route53:ListHostedZonesByName',
-              's3:PutObject',
-              's3:AbortMultipartUpload',
-              'ssm:DescribeAssociation',
-              'ssm:GetDeployablePatchSnapshotForInstance',
-              'ssm:GetDocument',
-              'ssm:GetManifest',
-              'ssm:GetParameters',
-              'ssm:ListAssociations',
-              'ssm:ListInstanceAssociations',
-              'ssm:PutInventory',
-              'ssm:PutComplianceItems',
-              'ssm:PutConfigurePackageResult',
-              'ssm:UpdateAssociationStatus',
-              'ssm:UpdateInstanceAssociationStatus',
-              'ssm:UpdateInstanceInformation',
-              'ec2:DescribeInstances',
-              'ec2:DescribeTags',
-              'ec2:CreateTags',
-              'acm-pca:GetCertificate',
-              'acm-pca:GetCertificateAuthorityCertificate',
-              'acm-pca:IssueCertificate'
-            ]
-            Effect: Allow
-            Resource: '*'
+        - PolicyName: ECS-Service
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: [
+                  'cloudwatch:PutMetricData',
+                  'cloudwatch:ListMetrics',
+                  'cloudwatch:GetMetricStatistics',
+                  'ds:CreateComputer',
+                  'ds:DescribeDirectories',
+                  'ec2:DescribeInstanceStatus',
+                  'ec2messages:AcknowledgeMessage',
+                  'ec2messages:DeleteMessage',
+                  'ec2messages:FailMessage',
+                  'ec2messages:GetEndpoint',
+                  'ec2messages:GetMessages',
+                  'ec2messages:SendReply',
+                  'ecs:DescribeClusters',
+                  'ecs:DescribeContainerInstances',
+                  'ecs:DescribeServices',
+                  'ecs:DescribeTaskDefinition',
+                  'ecs:DescribeTasks',
+                  'logs:CreateLogGroup',
+                  'logs:DescribeLogGroups',
+                  'logs:DescribeLogStreams',
+                  'route53:GetHostedZone',
+                  'route53:ListHostedZones',
+                  'route53:ChangeResourceRecordSets',
+                  'route53:ListResourceRecordSets',
+                  'route53:ListHostedZonesByName',
+                  's3:PutObject',
+                  's3:AbortMultipartUpload',
+                  'ssm:DescribeAssociation',
+                  'ssm:GetDeployablePatchSnapshotForInstance',
+                  'ssm:GetDocument',
+                  'ssm:GetManifest',
+                  'ssm:GetParameters',
+                  'ssm:ListAssociations',
+                  'ssm:ListInstanceAssociations',
+                  'ssm:PutInventory',
+                  'ssm:PutComplianceItems',
+                  'ssm:PutConfigurePackageResult',
+                  'ssm:UpdateAssociationStatus',
+                  'ssm:UpdateInstanceAssociationStatus',
+                  'ssm:UpdateInstanceInformation',
+                  'ec2:DescribeInstances',
+                  'ec2:DescribeTags',
+                  'ec2:CreateTags',
+                  'acm-pca:GetCertificate',
+                  'acm-pca:GetCertificateAuthorityCertificate',
+                  'acm-pca:IssueCertificate',
+                  'kms:Decrypt'
+                ]
+                Effect: Allow
+                Resource: '*'
 
   ECSInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -304,21 +313,21 @@ Resources:
       VpcId: !Ref 'VPCId'
       GroupDescription: Allow connections from vpc
       SecurityGroupIngress:
-      - SourceSecurityGroupId: !Ref 'BastionSG'
-        IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
+        - SourceSecurityGroupId: !Ref 'BastionSG'
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
       Tags:
-      - Key: Name
-        Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
-      - Key: Project
-        Value: !Ref 'Project'
-      - Key: Team
-        Value: !Ref 'Team'
-      - Key: Environment
-        Value: !Ref 'Environment'
-      - Key: Component
-        Value: ecs
+        - Key: Name
+          Value: !Sub 'ECS Instance SG - ${AWS::StackName}'
+        - Key: Project
+          Value: !Ref 'Project'
+        - Key: Team
+          Value: !Ref 'Team'
+        - Key: Environment
+          Value: !Ref 'Environment'
+        - Key: Component
+          Value: ecs
       SecurityGroupEgress:
         IpProtocol: -1
         CidrIp: "0.0.0.0/0"
@@ -568,7 +577,7 @@ Resources:
                 exec >> /var/log/user-data.log 2>&1
 
                 if [[ "${SetupClientCerts}" == "no" ]]; then
-                  echo "Skipping Broker SSL configuration."
+                  echo "Skipping Client SSL configuration."
                   exit 0
                 fi
 
@@ -634,6 +643,16 @@ Resources:
                 aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
                   --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/client.crt
 
+                echo "Decrypting KMS data key..."
+                kms_data_key_plaintext=$(aws kms decrypt --region ${AWS::Region} \
+                    --ciphertext-blob fileb://<(echo "${KmsDataKey}" | base64 -d) \
+                    --query Plaintext --output text)
+
+                echo "Decrypting services key password..."
+                services_key_pass=$(openssl enc -d -aes256 \
+                    -k <(echo "${!kms_data_key_plaintext}") \
+                    -in <(echo "${ServicesKeyPass}" | base64 -d))
+
                 # Create PKCS12 format to allow importing into keystore
                 openssl pkcs12 -export \
                   -in ${EBSMountPath}/ssl/client.crt \
@@ -641,7 +660,7 @@ Resources:
                   -out ${EBSMountPath}/ssl/client.p12 \
                   -name client -CAfile ${EBSMountPath}/ssl/ca.crt \
                   -caname root \
-                  -password pass:${ClientKeyPass}
+                  -password pass:${!services_key_pass}
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'
@@ -883,45 +902,26 @@ Resources:
           Principal:
             Service: application-autoscaling.amazonaws.com
       Policies:
-      - PolicyName: ecs-service-autoscaling
-        PolicyDocument:
-          Statement:
-            Action:
-            - application-autoscaling:DeleteScalingPolicy
-            - application-autoscaling:DeleteScheduledAction
-            - application-autoscaling:DeregisterScalableTarget
-            - application-autoscaling:DescribeScalableTargets
-            - application-autoscaling:DescribeScalingActivities
-            - application-autoscaling:DescribeScalingPolicies
-            - application-autoscaling:DescribeScheduledActions
-            - application-autoscaling:PutScalingPolicy
-            - application-autoscaling:PutScheduledAction
-            - application-autoscaling:RegisterScalableTarget
-            - cloudwatch:DescribeAlarms
-            - cloudwatch:PutMetricAlarm
-            - ecs:DescribeServices
-            - ecs:UpdateService
-            Effect: Allow
-            Resource: '*'
-
-  # unused but exported by, not sure if we need this since we don't use LBs?
-  # LoyaltyOne/apollo-platform/blob/master/common/ecs/Cluster-with-ALB-CPU-Scaling.yml
-  # The Amazon ECS service scheduler makes calls to the Amazon EC2 and Elastic Load Balancing APIs on your behalf
-  # to register and deregister container instances with your load balancers. Before you can attach a load balancer
-  # to an Amazon ECS service, you must create an IAM role for your services to use before you start them.
-  # This requirement applies to any Amazon ECS service that you plan to use with a load balancer.
-  EcsServiceSchedulerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Action: 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service: ecs.amazonaws.com
-      ManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole']
+        - PolicyName: ecs-service-autoscaling
+          PolicyDocument:
+            Statement:
+              Action:
+                - application-autoscaling:DeleteScalingPolicy
+                - application-autoscaling:DeleteScheduledAction
+                - application-autoscaling:DeregisterScalableTarget
+                - application-autoscaling:DescribeScalableTargets
+                - application-autoscaling:DescribeScalingActivities
+                - application-autoscaling:DescribeScalingPolicies
+                - application-autoscaling:DescribeScheduledActions
+                - application-autoscaling:PutScalingPolicy
+                - application-autoscaling:PutScheduledAction
+                - application-autoscaling:RegisterScalableTarget
+                - cloudwatch:DescribeAlarms
+                - cloudwatch:PutMetricAlarm
+                - ecs:DescribeServices
+                - ecs:UpdateService
+              Effect: Allow
+              Resource: '*'
 
 Outputs:
   ClusterName:
@@ -933,9 +933,6 @@ Outputs:
   ServiceAutoScalingRole:
     Description: A reference to ECS service auto scaling role
     Value: !GetAtt 'ECSServiceAutoScalingRole.Arn'
-  ServiceSchedulerRole:
-    Description: A reference to ECS service load balancing role
-    Value: !GetAtt 'EcsServiceSchedulerRole.Arn'
   InstanceSecurityGroup:
     Description: The ID of the ecs container instance security group created
     Value: !GetAtt [ECSSecurityGroup, GroupId]

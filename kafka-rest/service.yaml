@@ -100,21 +100,35 @@ Parameters:
     Type: String
     MinLength: 1
     ConstraintDescription: Must be a valid folder path
-  KafkaRestKeyPass:
-    Description: Password for the Kafka Rest keystore
+  KmsDataKey:
+    Description: >
+      The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
+      will be treated as plaintext.
     Type: String
     NoEcho: true
     Default: ''
-  KafkaRestTrustPass:
-    Description: Password for the Kafka Rest keystore
+  KeyPass:
+    Description: >
+      Password for the Rest Proxy key. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  ClientKeyPass:
-    Description: Password for the Client Key
+  KeystorePass:
+    Description: >
+      Password for the Rest Proxy keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
+  TruststorePass:
+    Description: >
+      Password for the Rest Proxy truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -160,13 +174,20 @@ Resources:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
       Path: /
-      Policies: []
+      Policies:
+        - PolicyName: ECS-Service
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: '*'
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/cp-kafka-rest:0.11-beta
+          Image: loyaltyone/kafka-rest:0.1.0
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -194,29 +215,31 @@ Resources:
               Value: !Ref 'AppName'
             - Name: KAFKA_REST_JMX_PORT
               Value: !Ref 'JMXPort'
-            - Name: KAFKA_REST_CLIENT_SSL_DIR
+            - Name: SSL_DIR
               Value: '/var/private/ssl'
             - Name: KAFKA_REST_CLIENT_SECURITY_PROTOCOL
               Value: 'SSL'
-            - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_LOCATION
-              Value: !Sub '/var/private/ssl/kafka.client.truststore.jks'
-            - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD
-              Value: !Ref 'KafkaRestTrustPass'
+            - Name: KMS_DATA_KEY
+              Value: !Ref 'KmsDataKey'
+            - Name: KAFKA_REST_CLIENT_SSL_KEY_PASSWORD
+              Value: !Ref 'KeyPass'
             - Name: KAFKA_REST_CLIENT_SSL_KEYSTORE_LOCATION
               Value: !Sub '/var/private/ssl/kafka.client.keystore.jks'
             - Name: KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD
-              Value: !Ref 'KafkaRestKeyPass'
-            - Name: KAFKA_REST_CLIENT_SSL_KEY_PASSWORD
-              Value: !Ref 'KafkaRestKeyPass'
+              Value: !Ref 'KeystorePass'
+            - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_LOCATION
+              Value: !Sub '/var/private/ssl/kafka.client.truststore.jks'
+            - Name: KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD
+              Value: !Ref 'TruststorePass'
             - Name: KAFKA_REST_CLIENT_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
               Value: 'HTTPS'
-            - Name: CLIENT_KEY_PASS
-              Value: !Ref 'ClientKeyPass'
+            - Name: REGION
+              Value: !Ref 'AWS::Region'
           MountPoints:
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl
         - Name: jmxtrans
-          Image: loyaltyone/jmxtrans:0.1-beta
+          Image: loyaltyone/jmxtrans:0.1.0
           Cpu: !Ref 'JmxtransCpu'
           MemoryReservation: !Ref 'JmxtransMemory'
           Links: [!Ref 'AppName']

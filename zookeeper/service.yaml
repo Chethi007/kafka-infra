@@ -81,7 +81,7 @@ Resources:
       NetworkMode: awsvpc
       ContainerDefinitions:
       - Name: zookeeper
-        Image: loyaltyone/cp-zookeeper:0.1-beta
+        Image: loyaltyone/zookeeper:0.1.0
         Cpu: !Ref 'ServiceCpu'
         MemoryReservation: !Ref 'ServiceMemory'
         User: root
@@ -127,7 +127,7 @@ Resources:
             awslogs-region: !Ref 'AWS::Region'
             awslogs-stream-prefix: !Sub 'zk${ServerId}'
       - Name: jmxtrans
-        Image: loyaltyone/jmxtrans:0.1-beta
+        Image: loyaltyone/jmxtrans:0.1.0
         Cpu: !Ref 'JmxtransCpu'
         MemoryReservation: !Ref 'JmxtransMemory'
         Environment:

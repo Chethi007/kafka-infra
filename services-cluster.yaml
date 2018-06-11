@@ -170,41 +170,64 @@ Parameters:
   CertificateOrganizationUnit:
     Description: The organization unit to use in the certificate
     Type: String
-  ConnectKeyPass:
-    Description: Password for the connect keystore
+
+  KmsDataKey:
+    Description: >
+      The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
+      will be treated as plaintext.
     Type: String
     NoEcho: true
     Default: ''
-  ConnectTrustPass:
-    Description: Password for the connect truststore
+  ServicesKeyPass:
+    Description: >
+      Password for the client key used for Schema Registry, Kafka Connect, Rest Proxy, etc. If KmsDataKey
+      is provided, this should be the Base64 encoded; otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  SchemaRegistryKeyPass:
-    Description: Password for the Schema Registry keystore
+  ConnectKeystorePass:
+    Description: >
+      Password for the Kafka Connect keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  SchemaRegistryTrustPass:
-    Description: Password for the Schema Registry truststore
+  ConnectTruststorePass:
+    Description: >
+      Password for the Kafka Connect truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  KafkaRestKeyPass:
-    Description: Password for the Kafka Rest keystore
+  SchemaRegistryKeystorePass:
+    Description: >
+      Password for the Schema Registry keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  KafkaRestTrustPass:
-    Description: Password for the Kafka Rest Truststore
+  SchemaRegistryTruststorePass:
+    Description: >
+      Password for the Schema Registry truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  ClientKeyPass:
-    Description: Password for the Client Key
+  KafkaRestKeystorePass:
+    Description: >
+      Password for the Rest Proxy keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
+  KafkaRestTruststorePass:
+    Description: >
+      Password for the Rest Proxy truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+
 Resources:
   ELB:
     Type: 'AWS::CloudFormation::Stack'
@@ -257,7 +280,8 @@ Resources:
         CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
         SetupClientCerts: !Ref 'SetupClientCerts'
         ParentStackName: !Ref 'ParentStackName'
-        ClientKeyPass: !Ref 'ClientKeyPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        ServicesKeyPass: !Ref 'ServicesKeyPass'
     DependsOn: 'ELB'
 
   SchemaRegistry:
@@ -279,9 +303,10 @@ Resources:
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         JMXPort: 8990
         DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
-        SchemaRegistryKeyPass: !Ref 'SchemaRegistryKeyPass'
-        SchemaRegistryTrustPass: !Ref 'SchemaRegistryTrustPass'
-        ClientKeyPass: !Ref 'ClientKeyPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'ServicesKeyPass'
+        KeystorePass: !Ref 'SchemaRegistryKeystorePass'
+        TruststorePass: !Ref 'SchemaRegistryTruststorePass'
         KafkaConnectionString: !Ref 'ServiceSSLConnectionString'
     DependsOn: 'ECS'
 
@@ -305,9 +330,10 @@ Resources:
         SchemaRegistryUrl: !GetAtt 'SchemaRegistry.Outputs.URL'
         JMXPort: 8991
         DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
-        KafkaRestTrustPass: !Ref 'KafkaRestTrustPass'
-        KafkaRestKeyPass: !Ref 'KafkaRestKeyPass'
-        ClientKeyPass: !Ref 'ClientKeyPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'ServicesKeyPass'
+        KeystorePass: !Ref 'KafkaRestKeystorePass'
+        TruststorePass: !Ref 'KafkaRestTruststorePass'
     DependsOn: 'SchemaRegistry'
 
   Connect:
@@ -328,12 +354,12 @@ Resources:
         LoadBalancerDNSName: !GetAtt 'ELB.Outputs.LoadBalancerDNS'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         KafkaConnectionString: !Ref 'KafkaConnectionString'
-        DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         JMXPort: 8992
         DataVolumeMountPath: !GetAtt 'ECS.Outputs.EBSMountPath'
-        ConnectKeyPass: !Ref 'ConnectKeyPass'
-        ConnectTrustPass: !Ref 'ConnectTrustPass'
-        ClientKeyPass: !Ref 'ClientKeyPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'ServicesKeyPass'
+        KeystorePass: !Ref 'ConnectKeystorePass'
+        TruststorePass: !Ref 'ConnectTruststorePass'
     DependsOn: 'SchemaRegistry'
 
 Outputs:
@@ -379,11 +405,6 @@ Outputs:
     Value: !GetAtt 'ECS.Outputs.ServiceAutoScalingRole'
     Export:
       Name: !Sub '${AWS::StackName}-ServiceAutoScalingRole'
-  ServiceSchedulerRole:
-    Description: A reference to ECS service load balancing role
-    Value: !GetAtt 'ECS.Outputs.ServiceSchedulerRole'
-    Export:
-      Name: !Sub '${AWS::StackName}-ServiceSchedulerRole'
   InstanceSecurityGroup:
     Description: The ID of the ecs container instance security group created
     Value: !GetAtt 'ECS.Outputs.InstanceSecurityGroup'

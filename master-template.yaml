@@ -43,6 +43,7 @@ Parameters:
       Note: This is the HostedZoneName without the period suffix.
     Type: String
 
+  # Instance types
   BrokerInstanceType:
     Description: Which instance type should we use to build the Kafka ECS cluster
     Type: String
@@ -159,6 +160,7 @@ Parameters:
     Default: dev
     ConstraintDescription: Must be one of dev|sandbox|prod.
 
+  # Logging
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
@@ -166,19 +168,53 @@ Parameters:
   # Certificate information
   PrivateCaArn:
     Type: String
-    Description: the ARN of the Private CA that signs the broker certificate
+    Description: The ARN of the Private CA that signs the broker certificate
+  KmsDataKey:
+    Description: >
+      The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
+      will be treated as plaintext.
+    Type: String
+    NoEcho: true
+    Default: ''
   KafkaKeyPass:
-    Description: Password for the Kafka keystore
+    Description: >
+      Password for the broker key. If KmsDataKey is provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  KafkaTrustPass:
-    Description: Password for the Kafka truststore
+  KafkaKeystorePass:
+    Description: >
+      Password for the broker keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
-  ClientKeyPass:
-    Description: Password for the Client Key
+  KafkaTruststorePass:
+    Description: >
+      Password for the broker truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+  ServicesKeyPass:
+    Description: >
+      Password for the services key. If KmsDataKey is provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+  ServicesKeystorePass:
+    Description: >
+      Password for the services keystore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
+    Type: String
+    NoEcho: true
+    Default: ''
+  ServicesTruststorePass:
+    Description: >
+      Password for the services truststore. If KmsDataKey are provided, this should be the Base64 encoded;
+      otherwise set it to the plaintext password (not recommended).
     Type: String
     NoEcho: true
     Default: ''
@@ -199,8 +235,59 @@ Parameters:
     Type: String
 
 Resources:
-  # Create a 3-node ECS cluster for Kafka brokers
-  ECSBrokers:
+  # Security group to allow internal communications for this stack.
+  InternalSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref 'VPCId'
+      GroupDescription: Allow connections from vpc
+      SecurityGroupEgress:
+        IpProtocol: -1
+        CidrIp: '0.0.0.0/0'
+
+  # Create data volumes for Zookeeper nodes
+  EBSZKVolume1:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        DataVolumeIOPS: ''
+        AvailabilityZone:  !Select [0, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
+        NodeId: '1'
+  EBSZKVolume2:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        DataVolumeIOPS: ''
+        AvailabilityZone: !Select [1, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
+        NodeId: '2'
+  EBSZKVolume3:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./ebs.yaml
+      Parameters:
+        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
+        DataVolumeIOPS: ''
+        AvailabilityZone: !Select [2, !Ref 'AvailabilityZones']
+        Project: !Ref Project
+        Team: !Ref Team
+        Environment: !Ref Environment
+        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
+        NodeId: '3'
+
+  # Create a 3-node ECS cluster for Zookeeper nodes
+  ECSZK:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ecs-kafka.yaml
@@ -208,9 +295,9 @@ Resources:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         Subnets: !Join [',', !Ref 'Subnets']
-        InstanceType: !Ref 'BrokerInstanceType'
-        MaxInstancesPerAsg: 2
+        InstanceType: !Ref 'ZookeeperInstanceType'
         ASGEventsTopic: !Ref 'ASGEventsTopic'
+        MaxInstancesPerAsg: 2
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
@@ -222,17 +309,37 @@ Resources:
         CertificateLocalityName: !Ref 'CertificateLocalityName'
         CertificateOrganizationName: !Ref 'CertificateOrganizationName'
         CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
-        KafkaKeyPass: !Ref 'KafkaKeyPass'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
-        VolumeNameTag: 'broker-data'
+        VolumeNameTag: 'zk-data'
         KinesisStackName: !Ref 'KinesisStackName'
         PrivateCaArn: !Ref 'PrivateCaArn'
-        SetupBrokerCerts: 'yes'
+        SetupBrokerCerts: 'no'
         NodeCount: 3
-    DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
+    DependsOn: ['EBSZKVolume1','EBSZKVolume2','EBSZKVolume3']
+
+  # Create the cluster for Zookeeper nodes
+  Zookeeper:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./zookeeper/cluster.yaml
+      Parameters:
+        Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
+        StackName: !Ref 'AWS::StackName'
+        VPCId: !Ref 'VPCId'
+        Subnets: !Join [',', !Ref 'Subnets']
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        DomainName: !Ref 'DomainName'
+        DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+        KinesisStackName: !Ref 'KinesisStackName'
+    DependsOn: 'ECSZK'
+
+  # Create data volumes for Kafka brokers
   EBSBrokerVolume1:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -273,8 +380,8 @@ Resources:
         VolumeNameTag: !Sub '${AWS::StackName}-broker-data'
         NodeId: '3'
 
-  # Create a 3-node ECS cluster for Zookeeper nodes
-  ECSZK:
+  # Create a 3-node ECS cluster for Kafka brokers
+  ECSBrokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: ./ecs-kafka.yaml
@@ -282,9 +389,9 @@ Resources:
         KeyName: !Ref 'KeyName'
         VPCId: !Ref 'VPCId'
         Subnets: !Join [',', !Ref 'Subnets']
-        InstanceType: !Ref 'ZookeeperInstanceType'
-        ASGEventsTopic: !Ref 'ASGEventsTopic'
+        InstanceType: !Ref 'BrokerInstanceType'
         MaxInstancesPerAsg: 2
+        ASGEventsTopic: !Ref 'ASGEventsTopic'
         Project: !Ref 'Project'
         Team: !Ref 'Team'
         Environment: !Ref 'Environment'
@@ -296,56 +403,43 @@ Resources:
         CertificateLocalityName: !Ref 'CertificateLocalityName'
         CertificateOrganizationName: !Ref 'CertificateOrganizationName'
         CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
-        KafkaKeyPass: ''
+        KmsDataKey: !Ref 'KmsDataKey'
+        KafkaKeyPass: !Ref 'KafkaKeyPass'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
-        VolumeNameTag: 'zk-data'
+        VolumeNameTag: 'broker-data'
         KinesisStackName: !Ref 'KinesisStackName'
         PrivateCaArn: !Ref 'PrivateCaArn'
-        SetupBrokerCerts: 'no'
+        SetupBrokerCerts: 'yes'
         NodeCount: 3
-    DependsOn: ['EBSZKVolume1','EBSZKVolume2','EBSZKVolume3']
-  EBSZKVolume1:
+    DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
+
+  # Create the cluster for Kafka brokers
+  Brokers:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: ./ebs.yaml
+      TemplateURL: ./kafka/cluster.yaml
       Parameters:
-        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
-        DataVolumeIOPS: ''
-        AvailabilityZone:  !Select [0, !Ref 'AvailabilityZones']
-        Project: !Ref Project
-        Team: !Ref Team
-        Environment: !Ref Environment
-        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
-        NodeId: '1'
-  EBSZKVolume2:
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: ./ebs.yaml
-      Parameters:
-        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
-        DataVolumeIOPS: ''
-        AvailabilityZone: !Select [1, !Ref 'AvailabilityZones']
-        Project: !Ref Project
-        Team: !Ref Team
-        Environment: !Ref Environment
-        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
-        NodeId: '2'
-  EBSZKVolume3:
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: ./ebs.yaml
-      Parameters:
-        DataVolumeSize: !Ref 'ZookeeperDataVolumeSize'
-        DataVolumeIOPS: ''
-        AvailabilityZone: !Select [2, !Ref 'AvailabilityZones']
-        Project: !Ref Project
-        Team: !Ref Team
-        Environment: !Ref Environment
-        VolumeNameTag: !Sub '${AWS::StackName}-zk-data'
-        NodeId: '3'
+        Cluster: !GetAtt 'ECSBrokers.Outputs.ClusterName'
+        StackName: !Ref 'AWS::StackName'
+        VPCId: !Ref 'VPCId'
+        Subnets: !Join [',', !Ref 'Subnets']
+        ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
+        ZookeeperSecurityGroup: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
+        Project: !Ref 'Project'
+        Team: !Ref 'Team'
+        Environment: !Ref 'Environment'
+        DomainName: !Ref 'DomainName'
+        DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
+        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
+        KinesisStackName: !Ref 'KinesisStackName'
+        KmsDataKey: !Ref 'KmsDataKey'
+        KeyPass: !Ref 'KafkaKeyPass'
+        KeystorePass: !Ref 'KafkaKeystorePass'
+        TruststorePass: !Ref 'KafkaTruststorePass'
+    DependsOn: ['ECSBrokers', 'Zookeeper']
 
   # Create an autoscaling ECS cluster for services like Schema Registry, Kafka Connect and Rest Proxy
   Services:
@@ -390,66 +484,15 @@ Resources:
         CertificateOrganizationName: !Ref 'CertificateOrganizationName'
         CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
         ParentStackName: !Ref 'AWS::StackName'
-        ConnectKeyPass: !Ref 'KafkaKeyPass'
-        ConnectTrustPass: !Ref 'KafkaTrustPass'
-        SchemaRegistryKeyPass: !Ref 'KafkaKeyPass'
-        SchemaRegistryTrustPass: !Ref 'KafkaTrustPass'
-        KafkaRestKeyPass: !Ref 'KafkaKeyPass'
-        KafkaRestTrustPass: !Ref 'KafkaTrustPass'
-        ClientKeyPass: !Ref 'ClientKeyPass'
+        KmsDataKey: !Ref 'KmsDataKey'
+        ServicesKeyPass: !Ref 'ServicesKeyPass'
+        ConnectKeystorePass: !Ref 'ServicesKeystorePass'
+        ConnectTruststorePass: !Ref 'ServicesTruststorePass'
+        SchemaRegistryKeystorePass: !Ref 'ServicesKeystorePass'
+        SchemaRegistryTruststorePass: !Ref 'ServicesTruststorePass'
+        KafkaRestKeystorePass: !Ref 'ServicesKeystorePass'
+        KafkaRestTruststorePass: !Ref 'ServicesTruststorePass'
     DependsOn: 'ECSBrokers'
-
-  # The Zookeeper Cluster
-  Zookeeper:
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: ./zookeeper/cluster.yaml
-      Parameters:
-        Cluster: !GetAtt 'ECSZK.Outputs.ClusterName'
-        StackName: !Ref 'AWS::StackName'
-        VPCId: !Ref 'VPCId'
-        Subnets: !Join [',', !Ref 'Subnets']
-        Project: !Ref 'Project'
-        Team: !Ref 'Team'
-        Environment: !Ref 'Environment'
-        DomainName: !Ref 'DomainName'
-        DataVolumeMountPath: !GetAtt 'ECSZK.Outputs.EBSMountPath'
-        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
-        KinesisStackName: !Ref 'KinesisStackName'
-    DependsOn: 'ECSZK'
-
-  # The Kafka Cluster
-  Brokers:
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: ./kafka/cluster.yaml
-      Parameters:
-        Cluster: !GetAtt 'ECSBrokers.Outputs.ClusterName'
-        StackName: !Ref 'AWS::StackName'
-        VPCId: !Ref 'VPCId'
-        Subnets: !Join [',', !Ref 'Subnets']
-        ZookeeperConnectionString: !GetAtt 'Zookeeper.Outputs.ConnectionString'
-        ZookeeperSecurityGroup: !GetAtt 'Zookeeper.Outputs.ClientZKSG'
-        Project: !Ref 'Project'
-        Team: !Ref 'Team'
-        Environment: !Ref 'Environment'
-        DomainName: !Ref 'DomainName'
-        DataVolumeMountPath: !GetAtt 'ECSBrokers.Outputs.EBSMountPath'
-        InternalSG: !GetAtt 'InternalSecurityGroup.GroupId'
-        KinesisStackName: !Ref 'KinesisStackName'
-        KafkaKeyPass: !Ref 'KafkaKeyPass'
-        KafkaTrustPass: !Ref 'KafkaTrustPass'
-    DependsOn: ['ECSBrokers', 'Zookeeper']
-
-  # Security group to allow internal communications for this stack.
-  InternalSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      VpcId: !Ref 'VPCId'
-      GroupDescription: Allow connections from vpc
-      SecurityGroupEgress:
-        IpProtocol: -1
-        CidrIp: '0.0.0.0/0'
 
 Outputs:
   ClientKafkaSG:
