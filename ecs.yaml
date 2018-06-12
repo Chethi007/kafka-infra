@@ -636,31 +636,13 @@ Resources:
                   --validity Value=365,Type="DAYS" \
                   --idempotency-token 1234 | jq -r '.CertificateArn')
 
-                echo "Sleeping for 30 seconds while cert is issued"
+                echo "Sleeping for 30 seconds while certificate is issued..."
                 sleep 30
                 echo "cert arn:" + $certificate_arn
 
+                echo "Storing certificate for containers..."
                 aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
                   --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/client.crt
-
-                echo "Decrypting KMS data key..."
-                kms_data_key_plaintext=$(aws kms decrypt --region ${AWS::Region} \
-                    --ciphertext-blob fileb://<(echo "${KmsDataKey}" | base64 -d) \
-                    --query Plaintext --output text)
-
-                echo "Decrypting services key password..."
-                services_key_pass=$(openssl enc -d -aes256 \
-                    -k <(echo "${!kms_data_key_plaintext}") \
-                    -in <(echo "${ServicesKeyPass}" | base64 -d))
-
-                # Create PKCS12 format to allow importing into keystore
-                openssl pkcs12 -export \
-                  -in ${EBSMountPath}/ssl/client.crt \
-                  -inkey ${EBSMountPath}/ssl/client.key \
-                  -out ${EBSMountPath}/ssl/client.p12 \
-                  -name client -CAfile ${EBSMountPath}/ssl/ca.crt \
-                  -caname root \
-                  -password pass:${!services_key_pass}
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'

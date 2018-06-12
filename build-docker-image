@@ -9,28 +9,28 @@ function usage() {
 }
 
 docker_repo=$1
-shift
 if [[ -z "${docker_repo}" ]]; then
     echo "Please specify the docker repo."
     usage
     exit 1
 fi
+shift
 
 image_name=$1
-shift
 if [[ -z "${image_name}" ]]; then
     echo "Please specify the image name."
     usage
     exit 1
 fi
+shift
 
 version=$1
-shift
 if [[ -z "${version}" ]]; then
     echo "Please specify the image version to tag with."
     usage
     exit 1
 fi
+shift
 
 pushd ${image_name}
 docker build . -t ${docker_repo}/${image_name}:${version}

@@ -2,51 +2,65 @@
 
 set -e
 
+function cleanup() {
+	echo "Removing PKCS key..."
+	rm -f /tmp/broker.p12
+}
+trap cleanup EXIT
+
 if [ -n "${KAFKA_JMX_PORT}" ] || [ -n "${KAFKA_JMX_HOSTNAME}" ] || [ -n "${KAFKA_JMX_OPTS}" ];
 then
-    # JMX agent complains about malformed URLs and is not able to resolve ECS container
-    # short hostnames. This will take care of the problem.
-    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+	# JMX agent complains about malformed URLs and is not able to resolve ECS container
+	# short hostnames. This will take care of the problem.
+	echo "127.0.0.1	 $HOSTNAME" | tee -a /etc/hosts
 fi
 echo "KAFKA_JMX_HOSTNAME: ${KAFKA_JMX_HOSTNAME}"
 echo "KAFKA_JMX_PORT: ${KAFKA_JMX_PORT}"
 
 if [ -z "${KAFKA_BROKER_RACK}" ];
 then
-    # Assume AWS environment and use the AZ as the rack name. This will help with spreading replicas of the same
-    # partition across different AZs.
-    export KAFKA_BROKER_RACK=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
+	# Assume AWS environment and use the AZ as the rack name. This will help with spreading replicas of the same
+	# partition across different AZs.
+	export KAFKA_BROKER_RACK=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
 fi
 echo "KAFKA_BROKER_RACK: ${KAFKA_BROKER_RACK}"
 
 # If SSL directory env variable is set we will build the keystore and truststore.
 if [ -n "${SSL_DIR}" ];
 then
-    # If KMS data key is present, decrypt it and use that to decrypt passwords.
-    if [ -n ${KMS_DATA_KEY} ]; then
-        # NOTE: Do not export plaintext KMS data key.
-        echo "Decrypting KMS data key..."
-        kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
-            --ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
-            --query Plaintext --output text)
+	# If KMS data key is present, decrypt it and use that to decrypt passwords.
+	if [ -n ${KMS_DATA_KEY} ]; then
+		# NOTE: Do not export plaintext KMS data key.
+		echo "Decrypting KMS data key..."
+		kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
+			--ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
+			--query Plaintext --output text)
 
-        echo "Decrypting KAFKA_SSL_KEY_PASSWORD..."
-        export KAFKA_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${KAFKA_SSL_KEY_PASSWORD}" | base64 -d))
+		echo "Decrypting KAFKA_SSL_KEY_PASSWORD..."
+		export KAFKA_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${KAFKA_SSL_KEY_PASSWORD}" | base64 -d))
 
-        echo "Decrypting KAFKA_SSL_KEYSTORE_PASSWORD..."
-        export KAFKA_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${KAFKA_SSL_KEYSTORE_PASSWORD}" | base64 -d))
+		echo "Decrypting KAFKA_SSL_KEYSTORE_PASSWORD..."
+		export KAFKA_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${KAFKA_SSL_KEYSTORE_PASSWORD}" | base64 -d))
 
-        echo "Decrypting KAFKA_SSL_TRUSTSTORE_PASSWORD..."
-        export KAFKA_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${KAFKA_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
-    fi
+		echo "Decrypting KAFKA_SSL_TRUSTSTORE_PASSWORD..."
+		export KAFKA_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${KAFKA_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
+	fi
 
-    # TODO: Handle changes in passwords which would warrant generation of new keystore and truststore.
+	# Create PKCS12 format to allow importing into keystore
+	echo "Creating PKCS12 key..."
+	openssl pkcs12 -export \
+		-in ${SSL_DIR}/broker.crt \
+		-inkey ${SSL_DIR}/broker.key \
+		-out /tmp/broker.p12 \
+		-name broker -CAfile ${SSL_DIR}/ca.crt \
+		-caname root \
+		-password pass:${KAFKA_SSL_KEY_PASSWORD}
 
 	# If truststore doesn't exist, generate truststore
 	if [ ! -f ${SSL_DIR}/kafka.truststore.jks ];
@@ -71,21 +85,17 @@ then
 			-deststorepass ${KAFKA_SSL_KEYSTORE_PASSWORD} \
 			-destkeypass ${KAFKA_SSL_KEY_PASSWORD} \
 			-destkeystore ${SSL_DIR}/kafka.keystore.jks \
-			-srckeystore ${SSL_DIR}/broker.p12 \
+			-srckeystore /tmp/broker.p12 \
 			-srcstoretype PKCS12 \
 			-srcstorepass ${KAFKA_SSL_KEY_PASSWORD} \
 			-alias broker
 		cp ${SSL_DIR}/kafka.keystore.jks /etc/kafka/secrets/kafka.keystore.jks
 	fi
 
-    export KAFKA_SSL_TRUSTSTORE_CREDENTIALS=${KAFKA_SSL_TRUSTSTORE_CREDENTIALS:-broker_truststore_creds}
-    export KAFKA_SSL_KEYSTORE_CREDENTIALS=${KAFKA_SSL_KEYSTORE_CREDENTIALS:-broker_keystore_creds}
-    export KAFKA_SSL_KEY_CREDENTIALS=${KAFKA_SSL_KEY_CREDENTIALS:-broker_sslkey_creds}
-
-    echo "Writing passwords to credential files..."
-    echo "KAFKA_SSL_TRUSTSTORE_CREDENTIALS: ${KAFKA_SSL_TRUSTSTORE_CREDENTIALS}"
-    echo "KAFKA_SSL_KEYSTORE_CREDENTIALS: ${KAFKA_SSL_KEYSTORE_CREDENTIALS}"
-    echo "KAFKA_SSL_KEY_CREDENTIALS: ${KAFKA_SSL_KEY_CREDENTIALS}"
+	echo "Writing passwords to credential files..."
+	echo "KAFKA_SSL_TRUSTSTORE_CREDENTIALS: ${KAFKA_SSL_TRUSTSTORE_CREDENTIALS}"
+	echo "KAFKA_SSL_KEYSTORE_CREDENTIALS: ${KAFKA_SSL_KEYSTORE_CREDENTIALS}"
+	echo "KAFKA_SSL_KEY_CREDENTIALS: ${KAFKA_SSL_KEY_CREDENTIALS}"
 
 	echo ${KAFKA_SSL_TRUSTSTORE_PASSWORD} > /etc/kafka/secrets/${KAFKA_SSL_TRUSTSTORE_CREDENTIALS}
 	echo ${KAFKA_SSL_KEYSTORE_PASSWORD} > /etc/kafka/secrets/${KAFKA_SSL_KEYSTORE_CREDENTIALS}

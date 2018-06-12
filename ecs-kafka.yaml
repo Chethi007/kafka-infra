@@ -659,31 +659,13 @@ Resources:
                   --validity Value=365,Type="DAYS" \
                   --idempotency-token 1234 | jq -r '.CertificateArn')
 
-                echo "Sleeping for 30 seconds while cert is issued"
+                echo "Sleeping for 30 seconds while certificate is issued..."
                 sleep 30
                 echo "cert arn:" + $certificate_arn
 
+                echo "Storing certificate for containers..."
                 aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
                   --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/broker.crt
-
-                echo "Decrypting KMS data key..."
-                kms_data_key_plaintext=$(aws kms decrypt --region ${AWS::Region} \
-                    --ciphertext-blob fileb://<(echo "${KmsDataKey}" | base64 -d) \
-                    --query Plaintext --output text)
-
-                echo "Decrypting broker key password..."
-                kafka_key_pass=$(openssl enc -d -aes256 \
-                    -k <(echo "${!kms_data_key_plaintext}") \
-                    -in <(echo "${KafkaKeyPass}" | base64 -d))
-
-                # Create PKCS12 format to allow importing into keystore
-                openssl pkcs12 -export \
-                  -in ${EBSMountPath}/ssl/broker.crt \
-                  -inkey ${EBSMountPath}/ssl/broker.key \
-                  -out ${EBSMountPath}/ssl/broker.p12 \
-                  -name broker -CAfile ${EBSMountPath}/ssl/ca.crt \
-                  -caname root \
-                  -password pass:${!kafka_key_pass}
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'
