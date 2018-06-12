@@ -2,6 +2,12 @@
 
 set -e
 
+function cleanup() {
+	echo "Removing PKCS key..."
+	rm -f /tmp/client.p12
+}
+trap cleanup EXIT
+
 if [ -n "$APP_PORT" ]
 then
 	echo "Configuring REST Proxy with APP_PORT: $APP_PORT"
@@ -12,36 +18,36 @@ then
 	export HOST_IP=$(curl $DOCKER_MIRROR/hostip)
 	export HOST_PORT=$(curl $DOCKER_MIRROR/container/$HOSTNAME/port/$APP_PORT)
 
-    export KAFKA_REST_HOST_NAME=${HOST_IP}
-    export KAFKA_REST_LISTENERS="http://0.0.0.0:$HOST_PORT,http://0.0.0.0:$APP_PORT"
+	export KAFKA_REST_HOST_NAME=${HOST_IP}
+	export KAFKA_REST_LISTENERS="http://0.0.0.0:$HOST_PORT,http://0.0.0.0:$APP_PORT"
 else
-    export KAFKA_REST_HOST_NAME=${APP_HOST}
+	export KAFKA_REST_HOST_NAME=${APP_HOST}
 fi
 echo "KAFKA_REST_HOST_NAME: ${KAFKA_REST_HOST_NAME}"
 echo "KAFKA_REST_LISTENERS: ${KAFKA_REST_LISTENERS}"
 
 if [[ -z ${KAFKA_REST_ID} ]]; then
-    uuid=$(cat /proc/sys/kernel/random/uuid)
-    export KAFKA_REST_ID=${uuid}
+	uuid=$(cat /proc/sys/kernel/random/uuid)
+	export KAFKA_REST_ID=${uuid}
 fi
 echo "KAFKA_REST_ID: ${KAFKA_REST_ID}"
 
 if [ -n "${KAFKA_REST_JMX_PORT}" ] || [ -n "${KAFKA_REST_JMX_HOSTNAME}" ] || [ -n "${KAFKA_REST_JMX_OPTS}" ];
 then
-    # JMX agent complains about malformed URLs and is not able to resolve ECS container
-    # short hostnames. This will take care of the problem.
-    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+	# JMX agent complains about malformed URLs and is not able to resolve ECS container
+	# short hostnames. This will take care of the problem.
+	echo "127.0.0.1	 $HOSTNAME" | tee -a /etc/hosts
 
-    if [[ -z ${KAFKA_REST_JMX_OPTS} ]]; then
-        opts="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-        opts="${opts} -Djava.rmi.server.hostname=${KAFKA_REST_JMX_HOSTNAME:-${HOSTNAME}} -Dcom.sun.management.jmxremote.local.only=false"
-        if [[ -n ${KAFKA_REST_JMX_PORT} ]]; then
-            opts="${opts} -Dcom.sun.management.jmxremote.rmi.port=${KAFKA_REST_JMX_PORT} -Dcom.sun.management.jmxremote.port=${KAFKA_REST_JMX_PORT}"
-        fi
-        export KAFKA_REST_JMX_OPTS=${opts}
-    fi
-    # This is the weird thing with the rest proxy and it needs KAFKAREST_JMX_OPTS
-    export KAFKAREST_JMX_OPTS=${KAFKA_REST_JMX_OPTS}
+	if [[ -z ${KAFKA_REST_JMX_OPTS} ]]; then
+		opts="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+		opts="${opts} -Djava.rmi.server.hostname=${KAFKA_REST_JMX_HOSTNAME:-${HOSTNAME}} -Dcom.sun.management.jmxremote.local.only=false"
+		if [[ -n ${KAFKA_REST_JMX_PORT} ]]; then
+			opts="${opts} -Dcom.sun.management.jmxremote.rmi.port=${KAFKA_REST_JMX_PORT} -Dcom.sun.management.jmxremote.port=${KAFKA_REST_JMX_PORT}"
+		fi
+		export KAFKA_REST_JMX_OPTS=${opts}
+	fi
+	# This is the weird thing with the rest proxy and it needs KAFKAREST_JMX_OPTS
+	export KAFKAREST_JMX_OPTS=${KAFKA_REST_JMX_OPTS}
 fi
 echo "KAFKA_REST_JMX_HOSTNAME: ${KAFKA_REST_JMX_HOSTNAME}"
 echo "KAFKA_REST_JMX_PORT: ${KAFKA_REST_JMX_PORT}"
@@ -49,31 +55,39 @@ echo "KAFKA_REST_JMX_PORT: ${KAFKA_REST_JMX_PORT}"
 # If SSL directory env variable is set, generate keystore and truststore
 if [ -n "${SSL_DIR}" ];
 then
-    # If KMS data key is present, decrypt it and use that to decrypt passwords.
-    if [ -n ${KMS_DATA_KEY} ]; then
-        # NOTE: Do not export plaintext KMS data key.
-        echo "Decrypting KMS data key..."
-        kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
-            --ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
-            --query Plaintext --output text)
+	# If KMS data key is present, decrypt it and use that to decrypt passwords.
+	if [ -n ${KMS_DATA_KEY} ]; then
+		# NOTE: Do not export plaintext KMS data key.
+		echo "Decrypting KMS data key..."
+		kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
+			--ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
+			--query Plaintext --output text)
 
-        echo "Decrypting KAFKA_REST_CLIENT_SSL_KEY_PASSWORD..."
-        export KAFKA_REST_CLIENT_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${KAFKA_REST_CLIENT_SSL_KEY_PASSWORD}" | base64 -d))
+		echo "Decrypting KAFKA_REST_CLIENT_SSL_KEY_PASSWORD..."
+		export KAFKA_REST_CLIENT_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${KAFKA_REST_CLIENT_SSL_KEY_PASSWORD}" | base64 -d))
 
-        echo "Decrypting KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD..."
-        export KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD}" | base64 -d))
+		echo "Decrypting KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD..."
+		export KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD}" | base64 -d))
 
-        echo "Decrypting KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD..."
-        export KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
-    fi
+		echo "Decrypting KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD..."
+		export KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${KAFKA_REST_CLIENT_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
+	fi
 
-	# TODO: Handle changes in passwords which would warrant generation of new truststore.
+	# Create PKCS12 format to allow importing into keystore
+	echo "Creating PKCS12 key..."
+	openssl pkcs12 -export \
+		-in ${SSL_DIR}/client.crt \
+		-inkey ${SSL_DIR}/client.key \
+		-out /tmp/client.p12 \
+		-name client -CAfile ${SSL_DIR}/ca.crt \
+		-caname root \
+		-password pass:${KAFKA_REST_CLIENT_SSL_KEY_PASSWORD}
 
 	# If truststore doesn't exist, generate truststore
 	if [ ! -f ${SSL_DIR}/kafka.client.truststore.jks ];
@@ -97,7 +111,7 @@ then
 			-deststorepass ${KAFKA_REST_CLIENT_SSL_KEYSTORE_PASSWORD} \
 			-destkeypass ${KAFKA_REST_CLIENT_SSL_KEY_PASSWORD} \
 			-destkeystore ${SSL_DIR}/kafka.client.keystore.jks \
-			-srckeystore ${SSL_DIR}/client.p12 \
+			-srckeystore /tmp/client.p12 \
 			-srcstoretype PKCS12 \
 			-srcstorepass ${KAFKA_REST_CLIENT_SSL_KEY_PASSWORD} \
 			-alias client

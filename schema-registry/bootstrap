@@ -2,9 +2,15 @@
 
 set -e
 
+function cleanup() {
+	echo "Removing PKCS key..."
+	rm -f /tmp/client.p12
+}
+trap cleanup EXIT
+
 if [ -n "$APP_PORT" ]
 then
-    echo "Configuring Schema Registry with APP_PORT: $APP_PORT"
+	echo "Configuring Schema Registry with APP_PORT: $APP_PORT"
 	DOCKER_MIRROR_HOST=$(/sbin/ip route|awk '/default/ { print $3 }')
 	DOCKER_MIRROR_PORT=${MIRROR_PORT:-9001}
 	DOCKER_MIRROR="http://$DOCKER_MIRROR_HOST:$DOCKER_MIRROR_PORT"
@@ -22,9 +28,9 @@ echo "SCHEMA_REGISTRY_LISTENERS: $SCHEMA_REGISTRY_LISTENERS"
 
 if [ -n "${SCHEMA_REGISTRY_JMX_PORT}" ] || [ -n "${SCHEMA_REGISTRY_JMX_HOSTNAME}" ] || [ -n "${SCHEMA_REGISTRY_JMX_OPTS}" ];
 then
-    # JMX agent complains about malformed URLs and is not able to resolve ECS container
-    # short hostnames. This will take care of the problem.
-    echo "127.0.0.1     $HOSTNAME" | tee -a /etc/hosts
+	# JMX agent complains about malformed URLs and is not able to resolve ECS container
+	# short hostnames. This will take care of the problem.
+	echo "127.0.0.1	 $HOSTNAME" | tee -a /etc/hosts
 fi
 echo "SCHEMA_REGISTRY_JMX_HOSTNAME: ${SCHEMA_REGISTRY_JMX_HOSTNAME}"
 echo "SCHEMA_REGISTRY_JMX_PORT: ${SCHEMA_REGISTRY_JMX_PORT}"
@@ -32,31 +38,39 @@ echo "SCHEMA_REGISTRY_JMX_PORT: ${SCHEMA_REGISTRY_JMX_PORT}"
 # If SSL directory env variable is set, generate keystore and truststore
 if [ -n "${SSL_DIR}" ];
 then
-    # If KMS data key is present, decrypt it and use that to decrypt passwords.
-    if [ -n ${KMS_DATA_KEY} ]; then
-        # NOTE: Do not export plaintext KMS data key.
-        echo "Decrypting KMS data key..."
-        kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
-            --ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
-            --query Plaintext --output text)
+	# If KMS data key is present, decrypt it and use that to decrypt passwords.
+	if [ -n ${KMS_DATA_KEY} ]; then
+		# NOTE: Do not export plaintext KMS data key.
+		echo "Decrypting KMS data key..."
+		kms_data_key_plaintext=$(aws kms decrypt --region ${REGION} \
+			--ciphertext-blob fileb://<(echo ${KMS_DATA_KEY} | base64 -d) \
+			--query Plaintext --output text)
 
-        echo "Decrypting SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD..."
-        export SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD}" | base64 -d))
+		echo "Decrypting SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD..."
+		export SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD}" | base64 -d))
 
-        echo "Decrypting SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD..."
-        export SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD}" | base64 -d))
+		echo "Decrypting SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD..."
+		export SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD}" | base64 -d))
 
-        echo "Decrypting SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD..."
-        export SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
-            -k <(echo "${kms_data_key_plaintext}") \
-            -in <(echo "${SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
-    fi
+		echo "Decrypting SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD..."
+		export SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD=$(openssl enc -d -aes256 \
+			-k <(echo "${kms_data_key_plaintext}") \
+			-in <(echo "${SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
+	fi
 
-	# TODO: Handle changes in passwords which would warrant generation of new truststore.
+	# Create PKCS12 format to allow importing into keystore
+	echo "Creating PKCS12 key..."
+	openssl pkcs12 -export \
+		-in ${SSL_DIR}/client.crt \
+		-inkey ${SSL_DIR}/client.key \
+		-out /tmp/client.p12 \
+		-name client -CAfile ${SSL_DIR}/ca.crt \
+		-caname root \
+		-password pass:${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD}
 
 	# If truststore doesn't exist, generate truststore
 	if [ ! -f ${SSL_DIR}/kafka.client.truststore.jks ];
@@ -80,7 +94,7 @@ then
 			-deststorepass ${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD} \
 			-destkeypass ${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD} \
 			-destkeystore ${SSL_DIR}/kafka.client.keystore.jks \
-			-srckeystore ${SSL_DIR}/client.p12 \
+			-srckeystore /tmp/client.p12 \
 			-srcstoretype PKCS12 \
 			-srcstorepass ${SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD} \
 			-alias client
