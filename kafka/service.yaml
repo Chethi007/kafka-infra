@@ -69,6 +69,18 @@ Parameters:
   SubnetId:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
+  EnableSSL:
+    Description: Enables SSL protocol
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    ConstraintDescription: Must be either 'yes' or 'no'
+  EnablePlaintext:
+    Description: Enables PLAINTEXT protocol
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    ConstraintDescription: Must be either 'yes' or 'no'
   KmsDataKey:
     Description: >
       The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
@@ -116,8 +128,14 @@ Resources:
               Value: !Ref 'BrokerId'
             - Name: KAFKA_ZOOKEEPER_CONNECT
               Value: !Ref 'ZookeeperConnectionString'
-            - Name: KAFKA_ADVERTISED_LISTENERS
-              Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort},PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+            - Name: ENABLE_SSL
+              Value: !Ref 'EnableSSL'
+            - Name: ENABLE_PLAINTEXT
+              Value: !Ref 'EnablePlaintext'
+            - Name: SSL_LISTENER
+              Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort}'
+            - Name: PLAINTEXT_LISTENER
+              Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
             - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
               Value: 2
             - Name: KAFKA_JMX_HOSTNAME

@@ -78,6 +78,18 @@ Parameters:
   KinesisStackName:
     Type: String
     Description: Name of the CF stack used to create the Kinesis stream
+  EnableSSL:
+    Description: Enables SSL protocol
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    ConstraintDescription: Must be either 'yes' or 'no'
+  EnablePlaintext:
+    Description: Enables PLAINTEXT protocol
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    ConstraintDescription: Must be either 'yes' or 'no'
   KmsDataKey:
     Description: >
       The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
@@ -244,6 +256,8 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 0, !Ref 'Subnets' ]
         JMXPort: 8990
+        EnableSSL: !Ref 'EnableSSL'
+        EnablePlaintext: !Ref 'EnablePlaintext'
         KmsDataKey: !Ref 'KmsDataKey'
         KeyPass: !Ref 'KeyPass'
         KeystorePass: !Ref 'KeystorePass'
@@ -272,6 +286,8 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         JMXPort: 8991
+        EnableSSL: !Ref 'EnableSSL'
+        EnablePlaintext: !Ref 'EnablePlaintext'
         KmsDataKey: !Ref 'KmsDataKey'
         KeyPass: !Ref 'KeyPass'
         KeystorePass: !Ref 'KeystorePass'
@@ -300,6 +316,8 @@ Resources:
         SecurityGroup: !Ref 'InternalKafkaSG'
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         JMXPort: 8992
+        EnableSSL: !Ref 'EnableSSL'
+        EnablePlaintext: !Ref 'EnablePlaintext'
         KmsDataKey: !Ref 'KmsDataKey'
         KeyPass: !Ref 'KeyPass'
         KeystorePass: !Ref 'KeystorePass'

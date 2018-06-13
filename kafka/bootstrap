@@ -25,8 +25,21 @@ then
 fi
 echo "KAFKA_BROKER_RACK: ${KAFKA_BROKER_RACK}"
 
+# Handle the advertised listener property
+listeners=()
+if [ "${ENABLE_SSL}" == "yes" ] && [ -n "${SSL_LISTENER}" ];
+then
+    listeners+=("${SSL_LISTENER}")
+fi
+if [ "${ENABLE_PLAINTEXT}" == "yes" ] && [ -n "${PLAINTEXT_LISTENER}" ];
+then
+    listeners+=("${PLAINTEXT_LISTENER}")
+fi
+export KAFKA_ADVERTISED_LISTENERS=$(IFS=$','; echo "${listeners[*]}")
+echo "KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}"
+
 # If SSL directory env variable is set we will build the keystore and truststore.
-if [ -n "${SSL_DIR}" ];
+if [ "${ENABLE_SSL}" == "yes" ] && [ -n "${SSL_DIR}" ];
 then
 	# If KMS data key is present, decrypt it and use that to decrypt passwords.
 	if [ -n ${KMS_DATA_KEY} ]; then
