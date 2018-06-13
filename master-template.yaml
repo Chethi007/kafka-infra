@@ -169,6 +169,18 @@ Parameters:
   PrivateCaArn:
     Type: String
     Description: The ARN of the Private CA that signs the broker certificate
+  EnableKafkaSSL:
+    Description: Enables SSL protocol for Kafka
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    ConstraintDescription: Must be either 'yes' or 'no'
+  EnableKafkaPlaintext:
+    Description: Enables PLAINTEXT protocol for Kafka
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    ConstraintDescription: Must be either 'yes' or 'no'
   KmsDataKey:
     Description: >
       The KMS Data Key Ciphertext (Base64 encoded). If this is not provided the password parameters
@@ -412,7 +424,7 @@ Resources:
         VolumeNameTag: 'broker-data'
         KinesisStackName: !Ref 'KinesisStackName'
         PrivateCaArn: !Ref 'PrivateCaArn'
-        SetupBrokerCerts: 'yes'
+        SetupBrokerCerts: !Ref 'EnableKafkaSSL'
         NodeCount: 3
     DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
 
@@ -439,6 +451,8 @@ Resources:
         KeyPass: !Ref 'KafkaKeyPass'
         KeystorePass: !Ref 'KafkaKeystorePass'
         TruststorePass: !Ref 'KafkaTruststorePass'
+        EnableSSL: !Ref 'EnableKafkaSSL'
+        EnablePlaintext: !Ref 'EnableKafkaPlaintext'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 
   # Create an autoscaling ECS cluster for services like Schema Registry, Kafka Connect and Rest Proxy
