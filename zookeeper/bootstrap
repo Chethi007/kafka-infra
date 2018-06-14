@@ -6,9 +6,22 @@ set -e
 if [ -n "${NODE_ID_FILE_PATH}" ] && [ -f "${NODE_ID_FILE_PATH}" ];
 then
     echo "Overriding ZOOKEEPER_SERVER_ID from '${NODE_ID_FILE_PATH}'..."
-    ZOOKEEPER_SERVER_ID=$(cat ${NODE_ID_FILE_PATH})
+    export ZOOKEEPER_SERVER_ID=$(cat ${NODE_ID_FILE_PATH})
 fi
 echo "ZOOKEEPER_SERVER_ID: ${ZOOKEEPER_SERVER_ID}"
+
+# Based on ZOOKEEPER_SERVER_ID set the current containers hostname in ZOOKEEPER_SERVERS to 0.0.0.0
+IFS=';'; read -a servers <<< "${ZOOKEEPER_SERVERS}"
+for i in ${!servers[@]};
+do
+    id=$(($i + 1))
+    if [ ${id} == ${ZOOKEEPER_SERVER_ID} ];
+    then
+        servers[$i]=$(echo ${servers[$i]} | sed -e 's/[^:][^:]*\(:[^:][^:]*:[^:][^:]*\)/0.0.0.0\1/g')
+    fi;
+done
+export ZOOKEEPER_SERVERS=$(IFS=$';'; echo "${servers[*]}")
+echo "ZOOKEEPER_SERVERS: ${ZOOKEEPER_SERVERS}"
 
 if [ -n "${KAFKA_JMX_PORT}" ] || [ -n "${KAFKA_JMX_HOSTNAME}" ] || [ -n "${KAFKA_JMX_OPTS}" ];
 then
