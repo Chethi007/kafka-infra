@@ -581,8 +581,15 @@ Resources:
 
                 # Get NodeId from volume tag and transfer to instance
                 node_id=$(aws ec2 describe-volumes --volume-ids $volume_id | jq -r '.Volumes[0].Tags[] | select(.Key == "NodeId").Value')
+
                 echo "Setting up InstanceId=$instance_id for tag NodeId=$node_id..."
                 aws ec2 create-tags --resources $instance_id --tags Key=NodeId,Value=$node_id
+
+                # Write the NodeId to a file that will be used by the nodes to configure their
+                # identity (BrokerId, ServerId)
+                echo "Writing ${EBSMountPath}/node/id with '$node_id'..."
+                mkdir -p ${EBSMountPath}/node
+                echo "$node_id" > ${EBSMountPath}/node/id
             '/usr/local/share/setup-ssl-certs':
               mode: '000744'
               owner: root
