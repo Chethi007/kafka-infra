@@ -217,7 +217,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/schema-registry:0.1.0
+          Image: loyaltyone/schema-registry:0.2.0
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -273,7 +273,7 @@ Resources:
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl
         - Name: jmxtrans
-          Image: loyaltyone/jmxtrans:0.1.0
+          Image: loyaltyone/jmxtrans:0.2.0
           Cpu: !Ref 'JmxtransCpu'
           MemoryReservation: !Ref 'JmxtransMemory'
           Links: [!Ref 'AppName']

@@ -117,7 +117,7 @@ Resources:
       NetworkMode: awsvpc
       ContainerDefinitions:
         - Name: broker
-          Image: loyaltyone/kafka:0.1.0
+          Image: loyaltyone/kafka:0.2.0
           Cpu: !Ref 'ServiceCpu'
           MemoryReservation: !Ref 'ServiceMemory'
           User: root
@@ -205,7 +205,7 @@ Resources:
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: !Sub 'broker${BrokerId}'
         - Name: jmxtrans
-          Image: loyaltyone/jmxtrans:0.1.0
+          Image: loyaltyone/jmxtrans:0.2.0
           Cpu: !Ref 'JmxtransCpu'
           MemoryReservation: !Ref 'JmxtransMemory'
           Environment:
