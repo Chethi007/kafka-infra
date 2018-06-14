@@ -2,6 +2,14 @@
 
 set -e
 
+# The id in NODE_ID_FILE_PATH will override ZOOKEEPER_SERVER_ID
+if [ -n "${NODE_ID_FILE_PATH}" ] && [ -f "${NODE_ID_FILE_PATH}" ];
+then
+    echo "Overriding ZOOKEEPER_SERVER_ID from '${NODE_ID_FILE_PATH}'..."
+    ZOOKEEPER_SERVER_ID=$(cat ${NODE_ID_FILE_PATH})
+fi
+echo "ZOOKEEPER_SERVER_ID: ${ZOOKEEPER_SERVER_ID}"
+
 if [ -n "${KAFKA_JMX_PORT}" ] || [ -n "${KAFKA_JMX_HOSTNAME}" ] || [ -n "${KAFKA_JMX_OPTS}" ];
 then
     # JMX agent complains about malformed URLs and is not able to resolve ECS container
