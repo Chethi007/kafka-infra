@@ -226,7 +226,7 @@ Resources:
         SubnetId: !Select [ 1, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
         JMXPort: 8991
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZKNode1']
   ZKNode3:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -250,7 +250,7 @@ Resources:
         SubnetId: !Select [ 2, !Ref 'Subnets' ]
         DomainName: !Ref 'DomainName'
         JMXPort: 8992
-    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG']
+    DependsOn: ['ZKNodesLogGroup', 'InternalZKSG', 'ZKNode2']
 
 Outputs:
   ClientZKSG:
