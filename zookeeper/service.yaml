@@ -77,73 +77,73 @@ Resources:
     Properties:
       NetworkMode: awsvpc
       ContainerDefinitions:
-      - Name: zookeeper
-        Image: loyaltyone/zookeeper:0.2.0
-        Cpu: !Ref 'ServiceCpu'
-        MemoryReservation: !Ref 'ServiceMemory'
-        User: root
-        DockerLabels:
-          'discovery.service.name': !Ref 'ServerName'
-        Environment:
-          - Name: NODE_ID_FILE_PATH
-            Value: '/var/lib/zookeeper/node/id'
-          - Name: ZOOKEEPER_CLIENT_PORT
-            Value: 2181
-          - Name: ZOOKEEPER_SERVERS
-            Value: !Ref 'ServerNames'
-          - Name: ZOOKEEPER_TICK_TIME
-            Value: 2000
-          - Name: ZOOKEEPER_INIT_LIMIT
-            Value: 5
-          - Name: ZOOKEEPER_SYNC_LIMIT
-            Value: 2
-          - Name: KAFKA_JMX_HOSTNAME
-            Value: 'localhost'
-          - Name: KAFKA_JMX_PORT
-            Value: !Ref 'JMXPort'
-        PortMappings:
-          - ContainerPort: !Ref 'ClientPort'
-            HostPort: !Ref 'ClientPort'
-          - ContainerPort: !Ref 'PeerPortOne'
-            HostPort: !Ref 'PeerPortOne'
-          - ContainerPort: !Ref 'PeerPortTwo'
-            HostPort: !Ref 'PeerPortTwo'
-          - ContainerPort: !Ref 'JMXPort'
-            HostPort: !Ref 'JMXPort'
-        MountPoints:
-          - SourceVolume: data
-            ContainerPath: /var/lib/zookeeper/data
-          - SourceVolume: log
-            ContainerPath: /var/lib/zookeeper/log
-          - SourceVolume: secrets
-            ContainerPath: /etc/zookeeper/secrets
-          - SourceVolume: node
-            ContainerPath: /var/lib/zookeeper/node
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group: !Ref 'LogGroup'
-            awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Ref 'ServerName'
-      - Name: jmxtrans
-        Image: loyaltyone/jmxtrans:0.2.0
-        Cpu: !Ref 'JmxtransCpu'
-        MemoryReservation: !Ref 'JmxtransMemory'
-        Environment:
-          - Name: SECONDS_BETWEEN_RUNS
-            Value: 60
-          - Name: JMXTRANS_ENV
-            Value: aws
-          - Name: JMXTRANS_HOSTS
-            Value: !Sub 'zookeeper#localhost:${JMXPort}'
-          - Name: JMXTRANS_ALIASES
-            Value: !Sub '${ServerName}.${DomainName}'
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group: !Ref 'LogGroup'
-            awslogs-region: !Ref 'AWS::Region'
-            awslogs-stream-prefix: !Ref 'ServerName'
+        - Name: zookeeper
+          Image: loyaltyone/zookeeper:0.2.0
+          Cpu: !Ref 'ServiceCpu'
+          MemoryReservation: !Ref 'ServiceMemory'
+          User: root
+          DockerLabels:
+            'discovery.service.name': !Ref 'ServerName'
+          Environment:
+            - Name: NODE_ID_FILE_PATH
+              Value: '/var/lib/zookeeper/node/id'
+            - Name: ZOOKEEPER_CLIENT_PORT
+              Value: 2181
+            - Name: ZOOKEEPER_SERVERS
+              Value: !Ref 'ServerNames'
+            - Name: ZOOKEEPER_TICK_TIME
+              Value: 2000
+            - Name: ZOOKEEPER_INIT_LIMIT
+              Value: 5
+            - Name: ZOOKEEPER_SYNC_LIMIT
+              Value: 2
+            - Name: KAFKA_JMX_HOSTNAME
+              Value: 'localhost'
+            - Name: KAFKA_JMX_PORT
+              Value: !Ref 'JMXPort'
+          PortMappings:
+            - ContainerPort: !Ref 'ClientPort'
+              HostPort: !Ref 'ClientPort'
+            - ContainerPort: !Ref 'PeerPortOne'
+              HostPort: !Ref 'PeerPortOne'
+            - ContainerPort: !Ref 'PeerPortTwo'
+              HostPort: !Ref 'PeerPortTwo'
+            - ContainerPort: !Ref 'JMXPort'
+              HostPort: !Ref 'JMXPort'
+          MountPoints:
+            - SourceVolume: data
+              ContainerPath: /var/lib/zookeeper/data
+            - SourceVolume: log
+              ContainerPath: /var/lib/zookeeper/log
+            - SourceVolume: secrets
+              ContainerPath: /etc/zookeeper/secrets
+            - SourceVolume: node
+              ContainerPath: /var/lib/zookeeper/node
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'LogGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Ref 'ServerName'
+        - Name: jmxtrans
+          Image: loyaltyone/jmxtrans:0.2.0
+          Cpu: !Ref 'JmxtransCpu'
+          MemoryReservation: !Ref 'JmxtransMemory'
+          Environment:
+            - Name: SECONDS_BETWEEN_RUNS
+              Value: 60
+            - Name: JMXTRANS_ENV
+              Value: aws
+            - Name: JMXTRANS_HOSTS
+              Value: !Sub 'zookeeper#localhost:${JMXPort}'
+            - Name: JMXTRANS_ALIASES
+              Value: !Sub '${ServerName}.${DomainName}'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'LogGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Ref 'ServerName'
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.

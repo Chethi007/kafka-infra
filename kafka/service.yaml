@@ -31,9 +31,6 @@ Parameters:
     Type: String
     MinLength: 1
     ConstraintDescription: Must be a valid folder path
-  BrokerId:
-    Description: Broker Id
-    Type: Number
   BrokerName:
     Description: The name of the broker. Used to register a dns entry in route53
     Type: String
@@ -122,10 +119,10 @@ Resources:
           MemoryReservation: !Ref 'ServiceMemory'
           User: root
           DockerLabels:
-            'discovery.service.name': !Sub '${BrokerName}${BrokerId}'
+            'discovery.service.name': !Ref 'BrokerName'
           Environment:
-            - Name: KAFKA_BROKER_ID
-              Value: !Ref 'BrokerId'
+            - Name: NODE_ID_FILE_PATH
+              Value: '/var/lib/kafka/node/id'
             - Name: KAFKA_ZOOKEEPER_CONNECT
               Value: !Ref 'ZookeeperConnectionString'
             - Name: ENABLE_SSL
@@ -133,9 +130,9 @@ Resources:
             - Name: ENABLE_PLAINTEXT
               Value: !Ref 'EnablePlaintext'
             - Name: SSL_LISTENER
-              Value: !Sub 'SSL://${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort}'
+              Value: !Sub 'SSL://${BrokerName}.${DomainName}:${ClientSSLPort}'
             - Name: PLAINTEXT_LISTENER
-              Value: !Sub 'PLAINTEXT://${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+              Value: !Sub 'PLAINTEXT://${BrokerName}.${DomainName}:${ClientPort}'
             - Name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
               Value: 2
             - Name: KAFKA_JMX_HOSTNAME
@@ -198,12 +195,14 @@ Resources:
               ContainerPath: /etc/kafka/secrets
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl
+            - SourceVolume: node
+              ContainerPath: /var/lib/kafka/node
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: !Sub 'broker${BrokerId}'
+              awslogs-stream-prefix: !Ref 'BrokerName'
         - Name: jmxtrans
           Image: loyaltyone/jmxtrans:0.2.0
           Cpu: !Ref 'JmxtransCpu'
@@ -216,30 +215,33 @@ Resources:
             - Name: JMXTRANS_HOSTS
               Value: !Sub 'kafka#localhost:${JMXPort}'
             - Name: JMXTRANS_ALIASES
-              Value: !Sub '${BrokerName}${BrokerId}.${DomainName}'
+              Value: !Sub '${BrokerName}.${DomainName}'
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group: !Ref 'LogGroup'
               awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: !Sub 'broker${BrokerId}'
+              awslogs-stream-prefix: !Ref 'BrokerName'
       Volumes:
         # It's probably not a good idea to change these mounts and deploy against a live
         # cluster in production.
         - Name: data
           Host:
-            SourcePath: !Sub '${DataVolumeMountPath}/broker/${BrokerId}/data'
+            SourcePath: !Sub '${DataVolumeMountPath}/${BrokerName}/data'
         - Name: secrets
           Host:
-            SourcePath: !Sub '${DataVolumeMountPath}/broker/${BrokerId}/secrets'
+            SourcePath: !Sub '${DataVolumeMountPath}/${BrokerName}/secrets'
         - Name: ssl
           Host:
             SourcePath: !Sub '${DataVolumeMountPath}/ssl'
-      Family: !Sub '${StackName}-broker-${BrokerId}'
+        - Name: node
+          Host:
+            SourcePath: !Sub '${DataVolumeMountPath}/node'
+      Family: !Ref 'BrokerName'
   BrokerNodeService:
     Type: 'AWS::ECS::Service'
     Properties:
-      ServiceName: !Sub '${StackName}-broker-${BrokerId}'
+      ServiceName: !Ref 'BrokerName'
       Cluster: !Ref 'Cluster'
       DesiredCount: 1
       TaskDefinition: !Ref 'BrokerNodeTaskDefinition'
@@ -258,7 +260,7 @@ Resources:
 Outputs:
   ConnectionString:
     Description: The connection string for this broker
-    Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientPort}'
+    Value: !Sub '${BrokerName}.${DomainName}:${ClientPort}'
   SSLConnectionString:
     Description: The SSL connection string for this broker
-    Value: !Sub '${BrokerName}${BrokerId}.${DomainName}:${ClientSSLPort}'
+    Value: !Sub '${BrokerName}.${DomainName}:${ClientSSLPort}'

@@ -247,8 +247,7 @@ Resources:
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
-        BrokerId: 1
-        BrokerName: !Sub '${StackName}-broker'
+        BrokerName: !Sub '${StackName}-brokerA'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
         ClientSSLPort: !Ref 'ClientSSLPort'
@@ -277,8 +276,7 @@ Resources:
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
-        BrokerId: 2
-        BrokerName: !Sub '${StackName}-broker'
+        BrokerName: !Sub '${StackName}-brokerB'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
         ClientSSLPort: !Ref 'ClientSSLPort'
@@ -307,8 +305,7 @@ Resources:
         DataVolumeMountPath: !Ref 'DataVolumeMountPath'
         ZookeeperConnectionString: !Ref 'ZookeeperConnectionString'
         ZookeeperSecurityGroup: !Ref 'ZookeeperSecurityGroup'
-        BrokerId: 3
-        BrokerName: !Sub '${StackName}-broker'
+        BrokerName: !Sub '${StackName}-brokerC'
         DomainName: !Ref 'DomainName'
         ClientPort: !Ref 'ClientPort'
         ClientSSLPort: !Ref 'ClientSSLPort'
