@@ -599,6 +599,11 @@ Resources:
 
                 exec >> /var/log/user-data.log 2>&1
 
+                function chr() {
+                  [ "$1" -lt 256 ] || return 1
+                  printf "\\$(printf '%03o' "$1")"
+                }
+
                 if [[ "${SetupBrokerCerts}" == "no" ]]; then
                   echo "Skipping Broker SSL configuration."
                   exit 0
@@ -619,7 +624,8 @@ Resources:
                 # Generate SAN
                 alt_names=""
                 for i in $(seq 1 ${NodeCount}); do
-                  alt_names=$(echo -e "${!alt_names}\nDNS.${!i} = ${ParentStackName}-broker${!i}.${DomainName}")
+                  alt_name="${ParentStackName}-broker$( chr $(($i + 64)) )"
+                  alt_names=$(echo -e "${!alt_names}\nDNS.${!i} = ${!alt_name}.${DomainName}")
                 done
                 alt_names=$(echo "$alt_names" | sed -e '/^$/d')
 
