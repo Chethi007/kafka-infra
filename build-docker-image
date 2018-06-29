@@ -33,6 +33,10 @@ fi
 shift
 
 pushd ${image_name}
-docker build . -t ${docker_repo}/${image_name}:${version}
+if [[ "${image_name}" == "jmxtrans" ]]; then
+    docker build -t ${docker_repo}/${image_name}:${version} --build-arg JMXTRANS_VERSION=270 .
+else
+    docker build -t ${docker_repo}/${image_name}:${version} .
+fi
 docker push ${docker_repo}/${image_name}:${version}
 popd
