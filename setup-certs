@@ -50,48 +50,28 @@ echo "Beginning Client SSL configuration"
 #python /tmp/get-pip.py
 #/usr/local/bin/pip install awscli --upgrade --user
 
-# Get CA certificate
-aws acm-pca get-certificate-authority-certificate --region ${region} --certificate-authority-arn ${private_ca_arn} | jq -r '.Certificate' > ${ssl_directory}/ca.crt
 
-# Generate private key
-openssl req -new \
-  -sha256 \
-  -nodes \
-  -out ${ssl_directory}/client.csr \
-  -newkey rsa:2048 \
-  -keyout ${ssl_directory}/client.key \
-  -config <(
-cat <<-EOF
-[req]
-default_bits = 2048
-prompt = no
-default_md = sha256
-distinguished_name = dn
+certificate_arns=$(aws acm list-certificates | jq -r '.CertificateSummaryList[] | select(.DomainName == "kafka-client.internal.loyalty.com") | .CertificateArn')
+echo $certificate_arns
 
-[ dn ]
-C = CA
-ST = Ontario
-L = Toronto
-O = Kafka
-OU = Kafka
-CN = kafka-client.com
-EOF
-)
+certificate_arn=$(echo $certificate_arns | cut -d ' ' -f1)
+if [ -z $certificate_arn ]; then
+	echo "No certificates found with requested domain name - requesting a new certificate now."
+	certificate_arn=$(aws acm request-certificate --domain-name "kafka-client.internal.loyalty.com" --idempotency-token 1234 --options CertificateTransparencyLoggingPreference=DISABLED --certificate-authority-arn $private_ca_arn | jq -r '.CertificateArn')
 
-# Have aws private ca issue cert
-certificate_arn=$(aws acm-pca issue-certificate --region ${region} \
-  --certificate-authority-arn ${private_ca_arn} \
-  --csr file://${ssl_directory}/client.csr \
-  --signing-algorithm "SHA256WITHRSA" \
-  --validity Value=365,Type="DAYS" \
-  --idempotency-token 1234 | jq -r '.CertificateArn')
+  echo "Sleeping for 10 seconds while cert is issued"
+  sleep 10
+fi
 
-echo "Sleeping for 10 seconds while cert is issued"
-sleep 10
 echo "cert arn: ${certificate_arn}"
 
-aws acm-pca get-certificate --certificate-authority-arn ${private_ca_arn} --region ${region} \
-  --certificate-arn $certificate_arn | jq -r '.Certificate' > ${ssl_directory}/client.crt
+# Ideally, passphrase should be in a file
+certificate_details=$(aws acm export-certificate --certificate-arn $certificate_arn --passphrase $client_key_pass)
+echo $certificate_details | jq -r '.Certificate' > ${ssl_directory}/client.crt
+echo $certificate_details | jq -r '.CertificateChain' > ${ssl_directory}/ca.crt
+echo $certificate_details | jq -r '.PrivateKey' > ${ssl_directory}/encrypted_client.key
+
+openssl rsa -in ${ssl_directory}/encrypted_client.key -out ${ssl_directory}/client.key -passin pass:$client_key_pass
 
 # Create PKCS12 format to allow importing into keystore
 openssl pkcs12 -export \
