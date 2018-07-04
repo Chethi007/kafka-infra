@@ -30,44 +30,6 @@ Parameters:
       Note: This is the HostedZoneName without the period suffix.
     Type: String
 
-  # Certificate information
-  PrivateCaArn:
-    Type: String
-    Description: The ARN of the Private CA that signs the broker certificate
-  SetupBrokerCerts:
-    Type: String
-    Default: 'no'
-    AllowedValues: ['yes','no']
-    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
-  KmsDataKey:
-    Description: The KMS Data Key Ciphertext (Base64 encoded)
-    Type: String
-    NoEcho: true
-    Default: ''
-  KafkaKeyPass:
-    Description: >
-      Password for the broker key. If KmsDataKey is provided,
-      this should be the Base64 encoded; otherwise set it to the
-      plaintext password (not recommended).
-    Type: String
-    NoEcho: true
-    Default: ''
-  CertificateCountry:
-    Description: The country to use in the certificate (usually 2 character country code like CA)
-    Type: String
-  CertificateState:
-    Description: The state or province to use in the certificate
-    Type: String
-  CertificateLocalityName:
-    Description: The locality name to use in the certificate
-    Type: String
-  CertificateOrganizationName:
-    Description: The organization name to use in the certificate
-    Type: String
-  CertificateOrganizationUnit:
-    Description: The organization unit to use in the certificate
-    Type: String
-
   # Instances
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
@@ -590,102 +552,11 @@ Resources:
                 echo "Writing ${EBSMountPath}/node/id with '$node_id'..."
                 mkdir -p ${EBSMountPath}/node
                 echo "$node_id" > ${EBSMountPath}/node/id
-            '/usr/local/share/setup-ssl-certs':
-              mode: '000744'
-              owner: root
-              group: root
-              content: !Sub |
-                #!/bin/bash -e
-
-                exec >> /var/log/user-data.log 2>&1
-
-                function chr() {
-                  [ "$1" -lt 256 ] || return 1
-                  printf "\\$(printf '%03o' "$1")"
-                }
-
-                if [[ "${SetupBrokerCerts}" == "no" ]]; then
-                  echo "Skipping Broker SSL configuration."
-                  exit 0
-                fi
-
-                echo "Beginning Broker SSL configuration"
-
-                cd /tmp/
-                curl -O https://bootstrap.pypa.io/get-pip.py
-                python /tmp/get-pip.py
-                /usr/local/bin/pip install awscli --upgrade --user
-
-                mkdir -p ${EBSMountPath}/ssl
-
-                # Get CA certificate
-                aws acm-pca get-certificate-authority-certificate --region ${AWS::Region} --certificate-authority-arn ${PrivateCaArn}  | jq -r '.Certificate' > ${EBSMountPath}/ssl/ca.crt
-
-                # Generate SAN
-                alt_names=""
-                for i in $(seq 1 ${NodeCount}); do
-                  alt_name="${ParentStackName}-broker$( chr $(($i + 64)) )"
-                  alt_names=$(echo -e "${!alt_names}\nDNS.${!i} = ${!alt_name}.${DomainName}")
-                done
-                alt_names=$(echo "$alt_names" | sed -e '/^$/d')
-
-                echo "The SAN configuration is:"
-                echo -e "$alt_names"
-
-                # Generate private key
-                openssl req -new \
-                  -sha256 \
-                  -nodes \
-                  -out ${EBSMountPath}/ssl/broker.csr \
-                  -newkey rsa:2048 \
-                  -keyout ${EBSMountPath}/ssl/broker.key \
-                  -config <(
-                cat <<-EOF
-                [req]
-                default_bits = 2048
-                prompt = no
-                default_md = sha256
-                req_extensions = req_ext
-                distinguished_name = dn
-
-                [ dn ]
-                C = ${CertificateCountry}
-                ST = ${CertificateState}
-                L = ${CertificateLocalityName}
-                O = ${CertificateOrganizationName}
-                OU = ${CertificateOrganizationUnit}
-                CN = ${ParentStackName}-broker.${DomainName}
-
-                [ req_ext ]
-                subjectAltName = @alt_names
-
-                [ alt_names ]
-                $alt_names
-                EOF
-                )
-
-                # Have aws private ca issue cert
-                certificate_arn=$(aws acm-pca issue-certificate --region ${AWS::Region} \
-                  --certificate-authority-arn ${PrivateCaArn} \
-                  --csr file://${EBSMountPath}/ssl/broker.csr \
-                  --signing-algorithm "SHA256WITHRSA" \
-                  --validity Value=365,Type="DAYS" \
-                  --idempotency-token 1234 | jq -r '.CertificateArn')
-
-                echo "Sleeping for 30 seconds while certificate is issued..."
-                sleep 30
-                echo "cert arn:" + $certificate_arn
-
-                echo "Storing certificate for containers..."
-                aws acm-pca get-certificate --certificate-authority-arn ${PrivateCaArn} --region ${AWS::Region} \
-                  --certificate-arn $certificate_arn | jq -r '.Certificate' > ${EBSMountPath}/ssl/broker.crt
           commands:
             01_setup_tags:
               command: '/usr/local/share/setup-tags'
             02_setup_ebs_volume:
               command: '/usr/local/share/setup-data-volume'
-            03_setup_ssl:
-              command: '/usr/local/share/setup-ssl-certs'
             03_add_instance_to_cluster:
               # Let ecs agent know which cluster to join
               command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'

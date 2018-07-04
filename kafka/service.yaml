@@ -107,6 +107,25 @@ Parameters:
     NoEcho: true
     Default: ''
 
+  # Certificate information
+
+  ParentStackName:
+    Description: Name of parent stack
+    Type: String
+  DomainName:
+    Description: >
+      The domain under which the Kafka and Zookeeper nodes will register their advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
+  PrivateCaArn:
+    Type: String
+    Description: The ARN of the Private CA that signs the broker certificate
+  NodeCount:
+    Type: Number
+    MinValue: 1
+    Description: The total number of nodes in the cluster.
+    ConstraintDescription: Must be a value >= 1
+
 Resources:
   BrokerNodeTaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'
@@ -114,7 +133,7 @@ Resources:
       NetworkMode: awsvpc
       ContainerDefinitions:
         - Name: broker
-          Image: loyaltyone/kafka:0.2.0
+          Image: loyaltyone/kafka:0.2.1-beta
           Cpu: !Ref 'ServiceCpu'
           MemoryReservation: !Ref 'ServiceMemory'
           User: root
@@ -181,6 +200,14 @@ Resources:
               Value: 'WARN, stderr'
             - Name: REGION
               Value: !Ref 'AWS::Region'
+            - Name: DOMAIN_NAME
+              Value: !Ref 'DomainName'
+            - Name: PRIVATE_CA_ARN
+              Value: !Ref 'PrivateCaArn'
+            - Name: NODE_COUNT
+              Value: !Ref 'NodeCount'
+            - Name: PARENT_STACK_NAME
+              Value: !Ref 'ParentStackName'
           PortMappings:
             - ContainerPort: !Ref 'ClientPort'
               HostPort: !Ref 'ClientPort'

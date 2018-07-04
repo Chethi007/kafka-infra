@@ -63,6 +63,36 @@ then
 			-in <(echo "${CONNECT_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
 	fi
 
+	# Detect region based on input ARN
+	IFS=':' read -ra ARRAY <<< "$private_ca_arn"
+	region=${ARRAY[3]}
+	echo "Region detected as: ${region}"
+
+	certificate_arn=$(aws acm list-certificates --region ${region} | jq -r ['.CertificateSummaryList[] | select(.DomainName == "${DOMAIN_NAME}")][0] | .CertificateArn')
+
+	if [ -z $certificate_arn ]; then
+		echo "No certificates found with requested domain name - requesting a new certificate now."
+		certificate_arn=$(aws acm request-certificate \
+		--domain-name "${DOMAIN_NAME}" \
+		--region ${region} \
+		--idempotency-token 1234 \
+		--options CertificateTransparencyLoggingPreference=DISABLED \
+		--certificate-authority-arn $PRIVATE_CA_ARN | jq -r '.CertificateArn')
+
+	  echo "Sleeping for 10 seconds while cert is issued"
+	  sleep 10
+	fi
+
+	echo "cert arn: ${certificate_arn}"
+
+	# Ideally, passphrase should be in a file
+	certificate_details=$(aws acm export-certificate --certificate-arn $certificate_arn --passphrase $CONNECT_SSL_KEY_PASSWORD)
+	echo $certificate_details | jq -r '.Certificate' > ${SSL_DIR}/client.crt
+	echo $certificate_details | jq -r '.CertificateChain' > ${SSL_DIR}/ca.crt
+	echo $certificate_details | jq -r '.PrivateKey' > ${SSL_DIR}/encrypted_client.key
+
+	openssl rsa -in ${SSL_DIR}/encrypted_client.key -out ${SSL_DIR}/client.key -passin pass:$CONNECT_SSL_KEY_PASSWORD
+
 	# Create PKCS12 format to allow importing into keystore
 	echo "Creating PKCS12 key..."
 	openssl pkcs12 -export \

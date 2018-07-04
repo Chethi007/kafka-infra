@@ -128,6 +128,17 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+  ParentStackName:
+    Description: Name of parent stack
+    Type: String
+  DomainName:
+    Description: >
+      The domain under which the Kafka and Zookeeper nodes will register their advertised address.
+      Note: This is the HostedZoneName without the period suffix.
+    Type: String
+  PrivateCaArn:
+    Type: String
+    Description: The ARN of the Private CA that signs the broker certificate
 
 Resources:
   TargetGroup:
@@ -187,7 +198,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Name: !Ref 'AppName'
-          Image: loyaltyone/kafka-rest:0.2.0
+          Image: loyaltyone/kafka-rest:0.2.1-beta
           Cpu: !Ref 'ServiceCpu'
           PortMappings:
             - ContainerPort: !Ref 'AppContainerPort'
@@ -235,6 +246,10 @@ Resources:
               Value: 'HTTPS'
             - Name: REGION
               Value: !Ref 'AWS::Region'
+            - Name: DOMAIN_NAME
+              Value: !Sub '${ParentStackName}-rest-proxy.${DomainName}'
+            - Name: PRIVATE_CA_ARN
+              Value: !Ref 'PrivateCaArn'
           MountPoints:
             - SourceVolume: ssl
               ContainerPath: /var/private/ssl

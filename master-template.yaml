@@ -230,21 +230,6 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
-  CertificateCountry:
-    Description: The country to use in the certificate (usually 2 character country code like CA)
-    Type: String
-  CertificateState:
-    Description: The state or province to use in the certificate
-    Type: String
-  CertificateLocalityName:
-    Description: The locality name to use in the certificate
-    Type: String
-  CertificateOrganizationName:
-    Description: The organization name to use in the certificate
-    Type: String
-  CertificateOrganizationUnit:
-    Description: The organization unit to use in the certificate
-    Type: String
 
 Resources:
   # Security group to allow internal communications for this stack.
@@ -316,19 +301,12 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         DomainName: !Ref 'DomainName'
-        CertificateCountry: !Ref 'CertificateCountry'
-        CertificateState: !Ref 'CertificateState'
-        CertificateLocalityName: !Ref 'CertificateLocalityName'
-        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
-        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'zk-data'
         KinesisStackName: !Ref 'KinesisStackName'
-        PrivateCaArn: !Ref 'PrivateCaArn'
-        SetupBrokerCerts: 'no'
         NodeCount: 3
     DependsOn: ['EBSZKVolume1','EBSZKVolume2','EBSZKVolume3']
 
@@ -410,21 +388,12 @@ Resources:
         HostedZoneId: !ImportValue
           'Fn::Sub': '${HostedZoneStackName}-ZoneId'
         DomainName: !Ref 'DomainName'
-        CertificateCountry: !Ref 'CertificateCountry'
-        CertificateState: !Ref 'CertificateState'
-        CertificateLocalityName: !Ref 'CertificateLocalityName'
-        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
-        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
-        KmsDataKey: !Ref 'KmsDataKey'
-        KafkaKeyPass: !Ref 'KafkaKeyPass'
         RollingDeploymentVersion: !Ref 'RollingDeploymentVersion'
         AdditionalSecurityGroup: !GetAtt 'InternalSecurityGroup.GroupId'
         BastionSG: !Ref 'BastionSG'
         ParentStackName: !Ref 'AWS::StackName'
         VolumeNameTag: 'broker-data'
         KinesisStackName: !Ref 'KinesisStackName'
-        PrivateCaArn: !Ref 'PrivateCaArn'
-        SetupBrokerCerts: !Ref 'EnableKafkaSSL'
         NodeCount: 3
     DependsOn: ['EBSBrokerVolume1','EBSBrokerVolume2','EBSBrokerVolume3']
 
@@ -453,6 +422,8 @@ Resources:
         TruststorePass: !Ref 'KafkaTruststorePass'
         EnableSSL: !Ref 'EnableKafkaSSL'
         EnablePlaintext: !Ref 'EnableKafkaPlaintext'
+        NodeCount: 3
+        PrivateCaArn: !Ref 'PrivateCaArn'
     DependsOn: ['ECSBrokers', 'Zookeeper']
 
   # Create an autoscaling ECS cluster for services like Schema Registry, Kafka Connect and Rest Proxy
@@ -490,13 +461,7 @@ Resources:
         StackName: !Ref 'AWS::StackName'
         BastionSG: !Ref 'BastionSG'
         PrivateCaArn: !Ref 'PrivateCaArn'
-        SetupClientCerts: 'yes'
         DomainName: !Ref 'DomainName'
-        CertificateCountry: !Ref 'CertificateCountry'
-        CertificateState: !Ref 'CertificateState'
-        CertificateLocalityName: !Ref 'CertificateLocalityName'
-        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
-        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
         ParentStackName: !Ref 'AWS::StackName'
         KmsDataKey: !Ref 'KmsDataKey'
         ServicesKeyPass: !Ref 'ServicesKeyPass'

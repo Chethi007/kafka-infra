@@ -5,6 +5,8 @@ MAINTAINER LoyaltyOne
 RUN wget -P /usr/local/share/ https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.3.0/jmx_prometheus_javaagent-0.3.0.jar \
     && pip install --upgrade pip \
     && pip install awscli \
+    && apt-get update \
+    && apt-get install jq \
     && sed -i -e 's/-o errexit.*/-o errexit/g' -e 's/-o verbose.*//g' -e 's/-o xtrace.*//g' /etc/confluent/docker/launch \
     && sed -i -e 's/-o errexit.*/-o errexit/g' -e 's/-o verbose.*//g' -e 's/-o xtrace.*//g' /etc/confluent/docker/configure \
     && sed -i -e 's/-o errexit.*/-o errexit/g' -e 's/-o verbose.*//g' -e 's/-o xtrace.*//g' \

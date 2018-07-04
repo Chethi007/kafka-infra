@@ -2,6 +2,11 @@
 
 set -e
 
+function chr() {
+	[ "$1" -lt 256 ] || return 1
+	printf "\\$(printf '%03o' "$1")"
+}
+
 function cleanup() {
 	echo "Removing PKCS key..."
 	rm -f /tmp/broker.p12
@@ -72,6 +77,47 @@ then
 			-k <(echo "${kms_data_key_plaintext}") \
 			-in <(echo "${KAFKA_SSL_TRUSTSTORE_PASSWORD}" | base64 -d))
 	fi
+
+	# Detect region based on input ARN
+	IFS=':' read -ra ARRAY <<< "$private_ca_arn"
+	region=${ARRAY[3]}
+	echo "Region detected as: ${region}"
+
+	# Generate SAN
+	alt_names=""
+	for i in $(seq 1 ${NODE_COUNT}); do
+	  alt_name="${PARENT_STACK_NAME}-broker$( chr $(($i + 64)) )"
+	  alt_names=$(echo -e "$alt_names \"${alt_name}.${DOMAIN_NAME}\"")
+	done
+	alt_names=$(echo "$alt_names" | sed -e '/^$/d')
+	echo "The SAN configuration is:"
+	echo -e "$alt_names"
+
+	certificate_arn=$(aws acm list-certificates --region $region| jq -r ['.CertificateSummaryList[] | select(.DomainName == "${PARENT_STACK_NAME}-broker.${DOMAIN_NAME}")][0] | .CertificateArn')
+
+	if [ -z $certificate_arn ]; then
+		echo "No certificates found with requested domain name - requesting a new certificate now."
+		certificate_arn=$(aws acm request-certificate \
+		--region $region \
+		--domain-name "${PARENT_STACK_NAME}-broker.${DOMAIN_NAME}" \
+		--idempotency-token 1234 \
+		--options CertificateTransparencyLoggingPreference=DISABLED \
+		--subject-alternative-names $alt_names \
+		--certificate-authority-arn $PRIVATE_CA_ARN | jq -r '.CertificateArn')
+
+	  echo "Sleeping for 10 seconds while cert is issued"
+	  sleep 10
+	fi
+
+	echo "cert arn: ${certificate_arn}"
+
+	# Ideally, passphrase should be in a file
+	certificate_details=$(aws acm export-certificate --certificate-arn $certificate_arn --passphrase $KAFKA_SSL_KEY_PASSWORD)
+	echo $certificate_details | jq -r '.Certificate' > ${SSL_DIR}/client.crt
+	echo $certificate_details | jq -r '.CertificateChain' > ${SSL_DIR}/ca.crt
+	echo $certificate_details | jq -r '.PrivateKey' > ${SSL_DIR}/encrypted_client.key
+
+	openssl rsa -in ${SSL_DIR}/encrypted_client.key -out ${SSL_DIR}/client.key -passin pass:$KAFKA_SSL_KEY_PASSWORD
 
 	# Create PKCS12 format to allow importing into keystore
 	echo "Creating PKCS12 key..."

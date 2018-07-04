@@ -119,6 +119,15 @@ Parameters:
     NoEcho: true
     Default: ''
 
+  PrivateCaArn:
+    Type: String
+    Description: The ARN of the Private CA that signs the broker certificate
+  NodeCount:
+    Type: Number
+    MinValue: 1
+    Description: The total number of nodes in the cluster.
+    ConstraintDescription: Must be a value >= 1
+
 Resources:
   BrokersLogGroup:
     Type: 'AWS::Logs::LogGroup'
@@ -261,6 +270,10 @@ Resources:
         KeyPass: !Ref 'KeyPass'
         KeystorePass: !Ref 'KeystorePass'
         TruststorePass: !Ref 'TruststorePass'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        NodeCount: !Ref 'NodeCount'
+        ParentStackName: !Ref 'StackName'
+        DomainName: !Ref 'DomainName'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG']
   Broker2:
     Type: 'AWS::CloudFormation::Stack'
@@ -290,6 +303,10 @@ Resources:
         KeyPass: !Ref 'KeyPass'
         KeystorePass: !Ref 'KeystorePass'
         TruststorePass: !Ref 'TruststorePass'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        NodeCount: !Ref 'NodeCount'
+        ParentStackName: !Ref 'StackName'
+        DomainName: !Ref 'DomainName'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker1']
   Broker3:
     Type: 'AWS::CloudFormation::Stack'
@@ -319,6 +336,10 @@ Resources:
         KeyPass: !Ref 'KeyPass'
         KeystorePass: !Ref 'KeystorePass'
         TruststorePass: !Ref 'TruststorePass'
+        PrivateCaArn: !Ref 'PrivateCaArn'
+        NodeCount: !Ref 'NodeCount'
+        ParentStackName: !Ref 'StackName'
+        DomainName: !Ref 'DomainName'
     DependsOn: ['BrokersLogGroup', 'InternalKafkaSG', 'Broker2']
 
 Outputs:

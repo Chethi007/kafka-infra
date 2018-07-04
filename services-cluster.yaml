@@ -145,31 +145,11 @@ Parameters:
     Type: String
 
   # Certificate information
-  SetupClientCerts:
-    Type: String
-    Default: 'no'
-    AllowedValues: ['yes','no']
-    Description: "If the cluster is being used for Kafka brokers use 'yes'; otherwise 'no'."
   KafkaKeyPass:
     Description: Password for the Kafka keystore
     Type: String
     NoEcho: true
     Default: ''
-  CertificateCountry:
-    Description: The country to use in the certificate (usually 2 character country code like CA)
-    Type: String
-  CertificateState:
-    Description: The state or province to use in the certificate
-    Type: String
-  CertificateLocalityName:
-    Description: The locality name to use in the certificate
-    Type: String
-  CertificateOrganizationName:
-    Description: The organization name to use in the certificate
-    Type: String
-  CertificateOrganizationUnit:
-    Description: The organization unit to use in the certificate
-    Type: String
 
   KmsDataKey:
     Description: >
@@ -272,15 +252,7 @@ Resources:
         ELBSecurityGroupId: !GetAtt 'ELB.Outputs.ELBSecurityGroupId'
         KinesisStackName: !Ref 'KinesisStackName'
         DomainName: !Ref 'DomainName'
-        PrivateCaArn: !Ref 'PrivateCaArn'
-        CertificateCountry: !Ref 'CertificateCountry'
-        CertificateState: !Ref 'CertificateState'
-        CertificateLocalityName: !Ref 'CertificateLocalityName'
-        CertificateOrganizationName: !Ref 'CertificateOrganizationName'
-        CertificateOrganizationUnit: !Ref 'CertificateOrganizationUnit'
-        SetupClientCerts: !Ref 'SetupClientCerts'
         ParentStackName: !Ref 'ParentStackName'
-        KmsDataKey: !Ref 'KmsDataKey'
         ServicesKeyPass: !Ref 'ServicesKeyPass'
     DependsOn: 'ELB'
 
@@ -308,6 +280,9 @@ Resources:
         KeystorePass: !Ref 'SchemaRegistryKeystorePass'
         TruststorePass: !Ref 'SchemaRegistryTruststorePass'
         KafkaConnectionString: !Ref 'ServiceSSLConnectionString'
+        ParentStackName: !Ref 'ParentStackName'
+        DomainName: !Ref 'DomainName'
+        PrivateCaArn: !Ref 'PrivateCaArn'
     DependsOn: 'ECS'
 
   RestProxy:
@@ -334,6 +309,9 @@ Resources:
         KeyPass: !Ref 'ServicesKeyPass'
         KeystorePass: !Ref 'KafkaRestKeystorePass'
         TruststorePass: !Ref 'KafkaRestTruststorePass'
+        ParentStackName: !Ref 'ParentStackName'
+        DomainName: !Ref 'DomainName'
+        PrivateCaArn: !Ref 'PrivateCaArn'
     DependsOn: 'SchemaRegistry'
 
   Connect:
@@ -360,6 +338,9 @@ Resources:
         KeyPass: !Ref 'ServicesKeyPass'
         KeystorePass: !Ref 'ConnectKeystorePass'
         TruststorePass: !Ref 'ConnectTruststorePass'
+        ParentStackName: !Ref 'ParentStackName'
+        DomainName: !Ref 'DomainName'
+        PrivateCaArn: !Ref 'PrivateCaArn'
     DependsOn: 'SchemaRegistry'
 
 Outputs:

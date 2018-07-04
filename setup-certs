@@ -50,11 +50,8 @@ echo "Beginning Client SSL configuration"
 #python /tmp/get-pip.py
 #/usr/local/bin/pip install awscli --upgrade --user
 
+certificate_arn=$(aws acm list-certificates | jq -r ['.CertificateSummaryList[] | select(.DomainName == "kafka-client.internal.loyalty.com")][0] | .CertificateArn')
 
-certificate_arns=$(aws acm list-certificates | jq -r '.CertificateSummaryList[] | select(.DomainName == "kafka-client.internal.loyalty.com") | .CertificateArn')
-echo $certificate_arns
-
-certificate_arn=$(echo $certificate_arns | cut -d ' ' -f1)
 if [ -z $certificate_arn ]; then
 	echo "No certificates found with requested domain name - requesting a new certificate now."
 	certificate_arn=$(aws acm request-certificate --domain-name "kafka-client.internal.loyalty.com" --idempotency-token 1234 --options CertificateTransparencyLoggingPreference=DISABLED --certificate-authority-arn $private_ca_arn | jq -r '.CertificateArn')
