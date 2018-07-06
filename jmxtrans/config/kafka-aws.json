@@ -9,7 +9,7 @@
         {
           "obj": "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec",
           "resultAlias": "kafka-server",
-          "attr": ["Count"],
+          "attr": ["Count", "OneMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
@@ -27,7 +27,7 @@
         {
           "obj": "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec",
           "resultAlias": "kafka-server",
-          "attr": ["Count"],
+          "attr": ["Count", "OneMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
@@ -45,7 +45,7 @@
         {
           "obj": "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec",
           "resultAlias": "kafka-server",
-          "attr": ["Count"],
+          "attr": ["Count", "OneMinuteRate"],
           "outputWriters": [
             {
               "@class": "com.googlecode.jmxtrans.model.output.CloudWatchWriter",
