@@ -64,11 +64,11 @@ then
 	fi
 
 	# Detect region based on input ARN
-	IFS=':' read -ra ARRAY <<< "$private_ca_arn"
+	IFS=':' read -ra ARRAY <<< "${PRIVATE_CA_ARN}"
 	region=${ARRAY[3]}
 	echo "Region detected as: ${region}"
 
-	certificate_arn=$(aws acm list-certificates --region ${region} | jq -r ['.CertificateSummaryList[] | select(.DomainName == "${DOMAIN_NAME}")][0] | .CertificateArn')
+	certificate_arn=$(aws acm list-certificates --region ${region} | jq -r [".CertificateSummaryList[] | select(.DomainName == \"${PARENT_STACK_NAME}-client.${DOMAIN_NAME}\")][0] | .CertificateArn | select(.!=null)")
 
 	if [ -z $certificate_arn ]; then
 		echo "No certificates found with requested domain name - requesting a new certificate now."
@@ -86,7 +86,7 @@ then
 	echo "cert arn: ${certificate_arn}"
 
 	# Ideally, passphrase should be in a file
-	certificate_details=$(aws acm export-certificate --certificate-arn $certificate_arn --passphrase $CONNECT_SSL_KEY_PASSWORD)
+	certificate_details=$(aws acm export-certificate --region $region --certificate-arn $certificate_arn --passphrase $CONNECT_SSL_KEY_PASSWORD)
 	echo $certificate_details | jq -r '.Certificate' > ${SSL_DIR}/client.crt
 	echo $certificate_details | jq -r '.CertificateChain' > ${SSL_DIR}/ca.crt
 	echo $certificate_details | jq -r '.PrivateKey' > ${SSL_DIR}/encrypted_client.key

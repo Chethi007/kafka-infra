@@ -253,7 +253,6 @@ Resources:
         KinesisStackName: !Ref 'KinesisStackName'
         DomainName: !Ref 'DomainName'
         ParentStackName: !Ref 'ParentStackName'
-        ServicesKeyPass: !Ref 'ServicesKeyPass'
     DependsOn: 'ELB'
 
   SchemaRegistry:
